@@ -91,7 +91,7 @@ export default function ThreeScene() {
           sprite.scale.set(width, height, 1);
           sprite.position.set(
             Math.random() * 8 - 4, // tighter x range
-            Math.random() * -2 + 2, // tighter y range
+            Math.random() * 10 - 5, // wider y range (-3 to 3)
             Math.random() * -2 + 2 // keep z similar
           );
 
