@@ -78,6 +78,7 @@ export default function Home() {
         });
       });
 
+      // Mouse movement for desktop
       window.addEventListener('mousemove', (event) => {
         if (!clickedRef.current) {
           mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -90,6 +91,21 @@ export default function Home() {
         }
       });
 
+      // Touch movement for mobile
+      window.addEventListener('touchmove', (event) => {
+        if (!clickedRef.current && event.touches.length === 1) {
+          const touch = event.touches[0];
+          mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+          mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, camera);
+          const intersects = raycaster.intersectObjects(sprites);
+          containerRef.current.style.cursor =
+            intersects.length > 0 ? 'pointer' : 'default';
+        }
+      });
+
+      // Click for desktop
       window.addEventListener('click', (event) => {
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(sprites);
@@ -148,6 +164,73 @@ export default function Home() {
               router.push(`/posts/${clickedSprite.userData.slug}`);
             },
           });
+        }
+      });
+
+      // Tap for mobile
+      window.addEventListener('touchend', (event) => {
+        if (!clickedRef.current && event.changedTouches.length === 1) {
+          const touch = event.changedTouches[0];
+          mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+          mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, camera);
+          const intersects = raycaster.intersectObjects(sprites);
+          if (intersects.length > 0) {
+            const clickedSprite = intersects[0].object;
+            const { slug, imageAspect } = clickedSprite.userData;
+            clickedRef.current = clickedSprite;
+
+            // Disable floating for all
+            sprites.forEach((sprite) => {
+              sprite.userData.floating = false;
+            });
+
+            // Animate other sprites to fall down
+            sprites.forEach((sprite) => {
+              if (sprite !== clickedSprite) {
+                gsap.to(sprite.position, {
+                  y: sprite.position.y - 10,
+                  duration: 1,
+                  ease: 'power2.in',
+                });
+                gsap.to(sprite.material, {
+                  opacity: 0,
+                  duration: 0.8,
+                  ease: 'power1.out',
+                });
+              }
+            });
+
+            // Animate clicked sprite to center (preserving aspect ratio)
+            const targetHeight = 2;
+            const targetWidth = targetHeight * imageAspect;
+
+            gsap.to(clickedSprite.position, {
+              x: 0,
+              y: 0,
+              z: 2,
+              duration: 1,
+              ease: 'power2.out',
+            });
+
+            gsap.to(clickedSprite.scale, {
+              x: targetWidth,
+              y: targetHeight,
+              duration: 1,
+              ease: 'power2.out',
+            });
+
+            gsap.to(clickedSprite.material, {
+              opacity: 0,
+              delay: 1,
+              duration: 0.5,
+              ease: 'power1.in',
+              onComplete: () => {
+                router.push(`/posts/${clickedSprite.userData.slug}`);
+              },
+            });
+          }
         }
       });
 
