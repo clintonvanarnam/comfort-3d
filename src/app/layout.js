@@ -1,7 +1,7 @@
 // src/app/layout.js
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import AnimatedLayout from "@/components/AnimatedLayout"; // we'll create this next
+import AnimatedLayout from "../components/AnimatedLayout"; // we'll create this next
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,7 +21,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      {/* suppressHydrationWarning prevents React from complaining about minor attribute differences
+          injected by browser extensions (for example Grammarly) before hydration */}
+      <body suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable}`}>
         <AnimatedLayout>{children}</AnimatedLayout>
       </body>
     </html>

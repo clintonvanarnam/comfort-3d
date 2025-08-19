@@ -20,7 +20,7 @@ export default function ThreeScene() {
   const preloadedTexturesRef = useRef({});
   const preloadedPostsRef = useRef(null);
   const preloadedDoneRef = useRef(false);
-  const [useSphere, setUseSphere] = useState(true);
+  // sphere mode is always enabled by default
   const useSphereRef = useRef(true);
   const sphereGroupRef = useRef(null);
   const isDraggingRef = useRef(false);
@@ -92,9 +92,7 @@ export default function ThreeScene() {
     })();
   }, []);
 
-  useEffect(() => {
-    useSphereRef.current = useSphere;
-  }, [useSphere]);
+  // sphere mode always enabled via useSphereRef default
 
   useEffect(() => {
   if (!mounted || !introComplete) return;
@@ -408,23 +406,7 @@ export default function ThreeScene() {
         ref={containerRef}
         style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: 'black' }}
       />
-      <button
-        onClick={() => { setUseSphere((s) => { const nv = !s; useSphereRef.current = nv; return nv; }); }}
-        style={{
-          position: 'fixed',
-          right: '1rem',
-          top: '1rem',
-          zIndex: 9999999999,
-          padding: '0.5rem 0.75rem',
-          background: 'rgba(255,255,255,0.06)',
-          color: '#fff',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '4px',
-          fontFamily: 'monospace',
-        }}
-      >
-        {useSphere ? 'Sphere: ON' : 'Sphere: OFF'}
-      </button>
+  {/* sphere mode always on; toggle removed */}
       {hoveredInfo && (
         <div
           style={{

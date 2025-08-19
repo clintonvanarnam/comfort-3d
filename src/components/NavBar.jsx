@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import gsap from 'gsap';
 
 export default function NavBar() {
   const router = useRouter();
   const navRef = useRef(null);
+  const pathname = usePathname();
+  const useDifference = pathname !== '/';
 
   useEffect(() => {
     const el = navRef.current;
@@ -37,6 +39,9 @@ export default function NavBar() {
         pointerEvents: 'auto',
         zIndex: 2147483647,
         background: 'transparent',
+        // use difference blend mode only when not on the root 3D page
+        mixBlendMode: useDifference ? 'difference' : 'normal',
+        WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
       }}
       aria-label="Main navigation"
     >
@@ -57,10 +62,12 @@ export default function NavBar() {
           src="/COMFORT_MAG_LOGO_WHITE.svg"
           alt="COMFORT Home"
           style={{
-            height: 40,
+            height: 20,
             display: 'block',
             userSelect: 'none',
             pointerEvents: 'none',
+            mixBlendMode: useDifference ? 'difference' : 'normal',
+            WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
           }}
         />
       </button>

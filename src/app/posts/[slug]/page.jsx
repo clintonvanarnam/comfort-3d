@@ -5,6 +5,7 @@ import { getPostBySlug } from '@/lib/getPosts';
 import { useParams } from 'next/navigation';
 import { PortableText } from '@portabletext/react';
 import gsap from 'gsap';
+import NavBar from '@/components/NavBar';
 
 export default function PostPage() {
   const params = useParams();
@@ -16,31 +17,12 @@ export default function PostPage() {
   useEffect(() => {
     async function loadPost() {
       const fetched = await getPostBySlug(params.slug);
-    console.log('Fetched post:', fetched); // Debug: see what is returned
       setPost(fetched);
     }
     loadPost();
   }, [params.slug]);
 
   useEffect(() => {
-    const animateContentUp = () => {
-      if (contentRef.current) {
-        const title = contentRef.current.querySelector('h1');
-        const img = contentRef.current.querySelector('.flip-image');
-        const body = contentRef.current.querySelector('.pt-body');
-
-        if (title) {
-          gsap.fromTo(title, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' });
-        }
-        if (img) {
-          gsap.fromTo(img, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out', delay: 0.15 });
-        }
-        if (body) {
-          gsap.fromTo(body, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out', delay: 0.3 });
-        }
-      }
-    };
-
     const data = sessionStorage.getItem('transitionPost');
     if (data) {
       const { slug, image } = JSON.parse(data);
@@ -65,24 +47,31 @@ export default function PostPage() {
               el.style.display = 'none';
               setTransitionDone(true);
               sessionStorage.removeItem('transitionPost');
-              animateContentUp();
+
+              // Animate content upward
+              if (contentRef.current) {
+                gsap.fromTo(
+                  contentRef.current,
+                  { y: 50, opacity: 0 },
+                  { y: 0, opacity: 1, duration: 0.8, ease: 'power2.out' }
+                );
+              }
             },
           }
         );
       } else {
         setTransitionDone(true);
-        animateContentUp();
       }
     } else {
       setTransitionDone(true);
-      animateContentUp();
     }
-  }, [params.slug, post]);
+  }, [params.slug]);
 
   if (!post) return <div>Loading...</div>;
 
   return (
     <div style={{ position: 'relative', padding: '2rem' }}>
+      <NavBar />
       {/* Floating image transition layer */}
       <img
         ref={transitionImageRef}
@@ -114,7 +103,7 @@ export default function PostPage() {
           <img
             src={post.image}
             alt={post.title}
-            className="flip-image"
+              className="flip-image"
             style={{
               width: '100%',
               height: 'auto',
@@ -123,9 +112,7 @@ export default function PostPage() {
             }}
           />
         )}
-        <div className="pt-body">
-          <PortableText value={post.body} />
-        </div>
+        <PortableText value={post.body} />
       </div>
     </div>
   );
