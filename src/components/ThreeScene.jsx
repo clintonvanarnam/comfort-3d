@@ -71,6 +71,7 @@ export default function ThreeScene() {
             baseY: sprite.position.y,
             floating: true,
             imageAspect,
+            preloaded: false,
           };
 
           scene.add(sprite);
@@ -78,6 +79,7 @@ export default function ThreeScene() {
         });
       });
 
+      // Mouse hover → preload route
       window.addEventListener('mousemove', (event) => {
         if (!clickedRef.current) {
           mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -87,25 +89,42 @@ export default function ThreeScene() {
           const intersects = raycaster.intersectObjects(sprites);
           containerRef.current.style.cursor =
             intersects.length > 0 ? 'pointer' : 'default';
+
+          if (intersects.length > 0) {
+            const hovered = intersects[0].object;
+            const slug = hovered.userData.slug;
+            if (!hovered.userData.preloaded) {
+              router.prefetch(`/posts/${slug}`);
+              hovered.userData.preloaded = true;
+            }
+          }
         }
       });
 
+      // Touch hover → preload route
       window.addEventListener('touchmove', (event) => {
         if (!clickedRef.current && event.touches.length === 1) {
           const touch = event.touches[0];
           mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
           mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, camera);
+          const intersects = raycaster.intersectObjects(sprites);
+          if (intersects.length > 0) {
+            const hovered = intersects[0].object;
+            const slug = hovered.userData.slug;
+            if (!hovered.userData.preloaded) {
+              router.prefetch(`/posts/${slug}`);
+              hovered.userData.preloaded = true;
+            }
+          }
         }
       });
 
-      window.addEventListener('click', () => {
-        handleInteraction();
-      });
-
-      window.addEventListener('touchstart', (event) => {
-        if (event.touches.length === 1) {
-          handleInteraction();
-        }
+      // Click handlers
+      window.addEventListener('click', () => handleInteraction());
+      window.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) handleInteraction();
       });
 
       function handleInteraction() {
@@ -166,8 +185,8 @@ export default function ThreeScene() {
         }
       }
 
+      // Animation loop
       const clock = new THREE.Clock();
-
       function animate() {
         requestAnimationFrame(animate);
         const t = clock.getElapsedTime();
@@ -183,11 +202,10 @@ export default function ThreeScene() {
           }
         });
 
-        const cameraIntensity = 10;
-
+        const intensity = 10;
         if (!clickedRef.current) {
-          camera.position.x += (mouse.x * cameraIntensity - camera.position.x) * 0.1;
-          camera.position.y += (mouse.y * cameraIntensity - camera.position.y) * 0.1;
+          camera.position.x += (mouse.x * intensity - camera.position.x) * 0.1;
+          camera.position.y += (mouse.y * intensity - camera.position.y) * 0.1;
         } else {
           camera.position.x += (0 - camera.position.x) * 0.1;
           camera.position.y += (0 - camera.position.y) * 0.1;
