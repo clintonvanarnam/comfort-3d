@@ -7,6 +7,9 @@ export async function getPosts() {
     _id,
     title,
     slug,
+    author->{
+      name
+    },
     mainImage {
       asset->{
         _id,
@@ -20,6 +23,8 @@ export async function getPosts() {
   // Format for 3D sprite usage
   return data.map(post => ({
     slug: post.slug,
+    title: post.title,
+    author: post.author?.name || '',
     image: post.mainImage?.asset?.url || '',
   }));
 }

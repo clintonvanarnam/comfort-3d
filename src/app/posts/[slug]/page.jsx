@@ -16,6 +16,7 @@ export default function PostPage() {
   useEffect(() => {
     async function loadPost() {
       const fetched = await getPostBySlug(params.slug);
+    console.log('Fetched post:', fetched); // Debug: see what is returned
       setPost(fetched);
     }
     loadPost();
