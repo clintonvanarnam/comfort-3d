@@ -7,9 +7,7 @@ export async function getPosts() {
     _id,
     title,
     slug,
-    author->{
-      name
-    },
+  author->{name},
     mainImage {
       asset->{
         _id,
@@ -35,6 +33,7 @@ export async function getPostBySlug(slug) {
     _id,
     title,
     slug,
+  author->{name},
     mainImage {
       asset->{
         _id,
@@ -49,7 +48,8 @@ export async function getPostBySlug(slug) {
   return {
     slug: post.slug,
     title: post.title,
-    image: post.mainImage?.asset?.url || '',
-    body: post.body || null,
+  image: post.mainImage?.asset?.url || '',
+  author: post.author?.name || '',
+  body: post.body || null,
   };
 }

@@ -67,52 +67,42 @@ export default function PostPage() {
     }
   }, [params.slug]);
 
-  if (!post) return <div>Loading...</div>;
+  if (!post) return <div></div>;
 
   return (
-    <div style={{ position: 'relative', padding: '2rem' }}>
+    <div className="post-page">
       <NavBar />
       {/* Floating image transition layer */}
       <img
         ref={transitionImageRef}
         alt=""
-        style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          width: 'auto',
-          height: '80vh',
-          transform: 'translate(-50%, -50%) scale(1)',
-          zIndex: 1000,
-          display: 'none',
-        }}
+        className="post-transition-img"
       />
 
       {/* Actual Post Content */}
       <div
         ref={contentRef}
-        style={{
-          opacity: transitionDone ? 1 : 0,
-          transition: 'opacity 0.2s ease-in-out',
-          maxWidth: '800px',
-          margin: '0 auto',
-        }}
+        className={`post-content ${transitionDone ? 'is-visible' : ''}`}
       >
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>{post.title}</h1>
-        {post.image && (
-          <img
-            src={post.image}
-            alt={post.title}
-              className="flip-image"
-            style={{
-              width: '100%',
-              height: 'auto',
-              marginBottom: '2rem',
-              borderRadius: '8px',
-            }}
-          />
-        )}
-        <PortableText value={post.body} />
+
+        <div className="post-header">
+          <div className="post-meta-row">
+            <h1 className="post-title">{post.title}</h1>
+            <h2 className="post-author">{post.author}</h2>
+          </div>
+
+          {post.image && (
+            <img
+              src={post.image}
+              alt={post.title}
+              className="post-header-image flip-image"
+            />
+          )}
+        </div>
+
+        <div className="post-body">
+          <PortableText value={post.body} />
+        </div>
       </div>
     </div>
   );

@@ -26,11 +26,15 @@ export default function ThreeScene() {
   const isDraggingRef = useRef(false);
   const lastPointerRef = useRef({ x: 0, y: 0 });
   const sphereRotationTargetRef = useRef({ x: 0, y: 0 });
+  const hoverEnabledRef = useRef(true);
 
   useEffect(() => {
     let debounceTimer;
     if (hoveredInfo && (hoveredInfo.title || hoveredInfo.author)) {
-      if (typeof window !== 'undefined' && window.speechSynthesis && window.SpeechSynthesisUtterance) {
+      // skip hover-based speech if the user has clicked a sprite
+      if (!hoverEnabledRef.current) {
+        // don't speak, but still allow hover UI to update
+      } else if (typeof window !== 'undefined' && window.speechSynthesis && window.SpeechSynthesisUtterance) {
         window.speechSynthesis.cancel();
         debounceTimer = setTimeout(() => {
           const utterance = new window.SpeechSynthesisUtterance();
@@ -251,6 +255,21 @@ export default function ThreeScene() {
             clickedRef.current = clickedSprite;
             setSelectedTitle(clickedSprite.userData.title);
 
+            // disable hover-based speech after a user click
+            hoverEnabledRef.current = false;
+
+            // speak the title and author once on click
+            if (typeof window !== 'undefined' && window.speechSynthesis && window.SpeechSynthesisUtterance) {
+              window.speechSynthesis.cancel();
+              const utt = new window.SpeechSynthesisUtterance();
+              utt.text = clickedSprite.userData.author
+                ? `${clickedSprite.userData.title} by ${clickedSprite.userData.author}`
+                : clickedSprite.userData.title;
+              utt.rate = 1.05;
+              utt.pitch = 1.1;
+              window.speechSynthesis.speak(utt);
+            }
+
             sprites.forEach(sprite => sprite.userData.floating = false);
 
             sprites.forEach((sprite) => {
@@ -415,8 +434,8 @@ export default function ThreeScene() {
             left: 0,
             width: '100%',
             textAlign: 'center',
-            fontSize: '1.5rem',
-            fontFamily: 'monospace',
+            fontSize: '1rem',
+            fontFamily: 'var(--font-monument)',
             color: '#fff',
             background: 'transparent',
             zIndex: 99999999999,
@@ -427,7 +446,7 @@ export default function ThreeScene() {
           {hoveredInfo.title}
           {hoveredInfo.author && (
             <span style={{ marginLeft: '1rem', opacity: 0.7 }}>
-              by {hoveredInfo.author}
+              {hoveredInfo.author}
             </span>
           )}
         </div>
