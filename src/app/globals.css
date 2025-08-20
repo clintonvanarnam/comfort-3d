@@ -128,29 +128,25 @@ a {
 .post-meta-row {
   display: flex;
   width: 100%;
-  /* bottom-align the title and author so their bottoms line up */
-  align-items: flex-end;
-  justify-content: space-between; /* title left, author right */
+  /* stack title and author vertically and center them */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 1rem 2rem;
   box-sizing: border-box;
+  text-align: center;
 }
 
-/* Ensure title and author never pass the center of the viewport */
-.post-meta-row .post-title {
-  max-width: 50vw;
-  box-sizing: border-box;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  hyphens: auto;
-}
-
+/* constrain title/author width and center text when stacked */
+.post-meta-row .post-title,
 .post-meta-row .post-author {
-  max-width: 50vw;
+  max-width: 750px;
+  width: 100%;
   box-sizing: border-box;
-  text-align: right;
   overflow-wrap: break-word;
   word-break: break-word;
   hyphens: auto;
+  text-align: center;
 }
 
 /* when image is part of header-row, occupy half the row and sit on the left */
