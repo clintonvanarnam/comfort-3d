@@ -14,9 +14,7 @@ export default function Footer() {
         </div>
 
         <div className="site-footer-top-right">
-          <p className="site-footer-desc">
-            COMFORT is an annual magazine and creative studio based in Los Angeles, California. Our focus is to collaborate with a considered group of artists, creators, and brands on editorial projects and cultural initiatives, while focusing on the contemporary Anthropocene. We keep our studios approach organic, working on suiting projects ranging from strategy, identity, exhibition making, research, 360 brand campaigns, &amp; more.
-          </p>
+         
         </div>
       </div>
 

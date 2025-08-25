@@ -381,101 +381,12 @@ export default function PostPage() {
                     </figure>
                   );
                 },
-                // Serializer for the twoImageSpread custom type
-                twoImageSpread: ({ value }) => {
-                  if (!value) return null;
-                  const left = value.leftImage || null;
-                  const right = value.rightImage || null;
-
-                  const buildSrc = (img) => {
-                    if (!img) return null;
-                    let src = img.asset?.url || null;
-                    if (!src && urlFor) {
-                      try {
-                        src = urlFor(img).width(1200).url();
-                      } catch (e) {
-                        src = null;
-                      }
-                    }
-                    return src;
-                  };
-
-                  const leftSrc = buildSrc(left);
-                  const rightSrc = buildSrc(right);
-
-                  // If neither image has a source, nothing to render
-                  if (!leftSrc && !rightSrc) return null;
-
-                  // compute grid style for a 12-column layout on wide screens
-                  const colStart = (offset, span) => {
-                    // css grid uses 1-based column lines; convert offset (0-based) to start line
-                    const start = (offset || 0) + 1;
-                    const end = start + (span || 6);
-                    return `${start} / ${end}`;
-                  };
-
-                  return (
-                    <div className={`two-image-spread ${value.stackOnMobile ? 'stack-on-mobile fullwidth' : ''}`}>
-                      {leftSrc && (
-                        <figure
-                          className="two-image-side left"
-                          style={{ gridColumn: colStart(value.leftOffset, value.leftSpan) }}
-                        >
-                          <img
-                            src={leftSrc}
-                            alt={left?.alt || ''}
-                            className="two-image"
-                            loading="lazy"
-                            decoding="async"
-                            role="button"
-                            tabIndex={0}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openLightbox({ src: leftSrc, alt: left?.alt || '', caption: left?.caption || null });
-                            }}
-                          />
-                          {(left?.caption || left?.credit) && (
-                            <figcaption className="two-image-caption">
-                              {left?.caption && <PortableText value={left.caption} />}
-                              {left?.credit && <div className="image-credit">{left.credit}</div>}
-                            </figcaption>
-                          )}
-                        </figure>
-                      )}
-
-                      {rightSrc && (
-                        <figure
-                          className="two-image-side right"
-                          style={{ gridColumn: colStart(value.rightOffset, value.rightSpan) }}
-                        >
-                          <img
-                            src={rightSrc}
-                            alt={right?.alt || ''}
-                            className="two-image"
-                            loading="lazy"
-                            decoding="async"
-                            role="button"
-                            tabIndex={0}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openLightbox({ src: rightSrc, alt: right?.alt || '', caption: right?.caption || null });
-                            }}
-                          />
-                          {(right?.caption || right?.credit) && (
-                            <figcaption className="two-image-caption">
-                              {right?.caption && <PortableText value={right.caption} />}
-                              {right?.credit && <div className="image-credit">{right.credit}</div>}
-                            </figcaption>
-                          )}
-                        </figure>
-                      )}
-                    </div>
-                  );
-                },
+                // Removed twoImageSpread: prefer multiImageSpread or imageWithCaption
                 multiImageSpread: ({ value }) => {
                   if (!value || !Array.isArray(value.images) || value.images.length === 0) return null;
                   const cols = value.columnsDesktop || 3;
                   const gutter = (typeof value.gutter === 'number') ? value.gutter : 16;
+                  const layout = value.layout || 'masonry';
 
                   const buildSrc = (img) => {
                     if (!img) return null;
@@ -494,16 +405,21 @@ export default function PostPage() {
                   const padBottomToken = value.paddingBottomToken || 'space-md';
                   const padTopVar = `var(--${padTopToken})`;
                   const padBottomVar = `var(--${padBottomToken})`;
+                  // determine effective layout: if editor picked 'auto', choose grid for small sets
+                  const declaredLayout = value.layout || 'auto';
+                  const effectiveLayout = (declaredLayout === 'auto') ? (Array.isArray(value.images) && value.images.length <= 4 ? 'grid' : 'masonry') : declaredLayout;
+                  const layoutClass = `layout-${effectiveLayout}`;
+
                   return (
                     <div
-                      className={`multi-image-spread ${value.stackOnMobile ? 'stack-on-mobile' : ''}`}
+                      className={`multi-image-spread ${layoutClass} ${value.stackOnMobile ? 'stack-on-mobile' : ''}`}
                       style={{
                         ['--cols']: cols,
                         ['--gutter']: `${gutter}px`,
                         ['--pad-top']: padTopVar,
                         ['--pad-bottom']: padBottomVar,
-                        paddingTop: padTopVar,
-                        paddingBottom: padBottomVar,
+                        ...(value.stackOnMobile ? {} : { paddingTop: padTopVar, paddingBottom: padBottomVar }),
+                        ...(layout === 'grid' ? { gridTemplateColumns: `repeat(${cols}, 1fr)` } : {}),
                       }}
                     >
                       {value.images.map((img, i) => {

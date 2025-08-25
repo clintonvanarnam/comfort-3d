@@ -3,11 +3,11 @@
   --foreground: #171717;
   --font-monument: 'Monument Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
   /* Design system spacing tokens (site-wide) */
-  --space-xs: 8px;
-  --space-sm: 16px;
-  --space-md: 32px;
-  --space-lg: 48px;
-  --space-xl: 64px;
+  --space-xs: 32px;
+  --space-sm: 64px;
+  --space-md: 128px;
+  --space-lg: 192px;
+  --space-xl: 256px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -281,49 +281,10 @@ img[role="button"] {
   max-width: 100%;
   max-height: 80vh;
   object-fit: contain;
-  border-radius: 4px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-}
-.post-lightbox-caption {
-  margin-top: 0.8rem;
-  color: #ddd;
-  max-width: 80vw;
   text-align: center;
 }
 .post-lightbox-close {
   position: fixed;
-  right: 1.25rem;
-  top: 1.25rem;
-  /* remove the circular chrome */
-  background: transparent;
-  border: none;
-  color: #fff;
-  /* make the X much larger (about twice previous size) */
-  font-size: 5.2rem;
-  /* use a light font weight for a thinner X */
-  font-weight: 300;
-  /* prefer Monument Grotesk (we now load thin/light/regular/medium weights) */
-  font-family: var(--font-monument), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  /* prefer the real font weights, don't synthesize */
-  font-synthesis: none;
-  padding: 0.2rem 0.4rem;
-  width: auto;
-  height: auto;
-  border-radius: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  cursor: pointer;
-  /* ensure the close button is above the NavBar */
-  z-index: 2147483651;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
-}
-
-.post-main-caption {
-  /* caption constrained to the same column as the post body */
-  max-width: 800px;
-  margin-left: calc(50% - 400px);
   margin-right: calc(50% - 400px);
   margin-top: 0.5rem;
   padding: 0 1rem;
@@ -727,33 +688,7 @@ body:not(.footer-visible) .site-footer {
   }
 }
 
-.two-image-spread .two-image-side {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.two-image-spread .two-image-side .two-image {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.two-image-spread .two-image-caption {
-  color: #6b6b6b;
-  font-size: 0.95rem;
-}
-
-/* stacking behavior on mobile: make the grid a single column and let images flow */
-.two-image-spread.stack-on-mobile {
-  grid-template-columns: 1fr;
-}
-
-@media (max-width: 900px) {
-  .two-image-spread {
-    grid-template-columns: 1fr;
-  }
-}
+/* two-image-spread styles removed (type deprecated) */
 
 /* Multi-image spread (masonry using CSS columns) */
 .multi-image-spread {
@@ -783,16 +718,53 @@ body:not(.footer-visible) .site-footer {
   margin-top: 0.4rem;
 }
 
+/* Grid layout variant: use CSS grid instead of columns */
+.multi-image-spread.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap: var(--gutter);
+  /* match the masonry breakout so grid also goes full-bleed */
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding: var(--pad-top, 32px) 2rem var(--pad-bottom, 32px);
+  box-sizing: border-box;
+}
+.multi-image-spread.layout-grid .multi-image-item {
+  break-inside: unset;
+  margin-bottom: 0;
+}
+.multi-image-spread.layout-grid img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.multi-image-spread.layout-grid .multi-image-caption {
+  color: #6b6b6b;
+  font-size: 0.9rem;
+  margin-top: 0.4rem;
+}
+
 @media (max-width: 900px) {
   .multi-image-spread {
     column-count: 1;
-    padding-left: 0;
-    padding-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+  padding-bottom: 0;
   }
   .multi-image-spread.stack-on-mobile {
     width: 100vw;
     margin-left: calc(50% - 50vw);
     margin-right: calc(50% - 50vw);
+  }
+
+  /* When the masonry is stacking on mobile remove the vertical padding so
+     items flow like regular inline images (no extra top/bottom whitespace). */
+  .multi-image-spread.stack-on-mobile {
+    padding-top: 0;
+    padding-bottom: 0;
   }
 }
 
@@ -801,66 +773,6 @@ body:not(.footer-visible) .site-footer {
    so they appear staggered (left image shifts left, right image shifts right).
    This mirrors the reference where stacked images touch opposite edges. */
 @media (max-width: 900px) {
-  .two-image-spread.stack-on-mobile {
-    width: 100vw;
-    max-width: 100vw;
-    margin-left: calc(50% - 50vw);
-    margin-right: calc(50% - 50vw);
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
-    padding: 1.5rem 0;
-    box-sizing: border-box;
-    /* ensure stacked spread doesn't create horizontal scroll */
-    overflow: visible;
-  }
-
-  /* If the spread has a .fullwidth class ensure it breaks out of any parent
-     column constraints and spans the viewport. This helps when the post-body
-     container centers content; fullwidth ensures the spread touches edges. */
-  .two-image-spread.fullwidth {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    margin-left: calc(50% - 50vw) !important;
-    margin-right: calc(50% - 50vw) !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    box-sizing: border-box;
-  }
-
-  .two-image-spread.stack-on-mobile .two-image-side {
-    width: 100vw;
-    max-width: 100vw;
-    display: flex;
-    justify-content: center;
-    box-sizing: border-box;
-    padding: 0;
-  }
-
-  /* make the visible image narrower than viewport so offsetting reveals negative space */
-  .two-image-spread.stack-on-mobile .two-image-side .two-image {
-    width: calc(100vw - 18vw);
-    max-width: calc(100vw - 18vw);
-    height: auto;
-    display: block;
-    transition: transform 280ms ease, width 200ms ease;
-  }
-
-  /* left image shifted left, right shifted right. Tweaks can be adjusted later. */
-  .two-image-spread.stack-on-mobile .two-image-side.left .two-image {
-    transform: translateX(-9vw);
-  }
-  .two-image-spread.stack-on-mobile .two-image-side.right .two-image {
-    transform: translateX(9vw);
-  }
-
-  /* captions stay constrained to the post column so they remain readable */
-  .two-image-spread.stack-on-mobile .two-image-caption {
-    max-width: 800px;
-    margin-left: calc(50% - 400px);
-    margin-right: calc(50% - 400px);
-    padding: 0 1rem;
-    margin-top: 0.5rem;
-    color: #6b6b6b;
-  }
+  /* two-image spread styles removed */
 }
 
