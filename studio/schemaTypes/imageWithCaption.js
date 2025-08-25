@@ -23,7 +23,9 @@ export default defineType({
       title: 'Display',
       type: 'string',
       initialValue: 'inline',
+      validation: (Rule) => Rule.required().error('Please choose either Inline or Full width'),
       options: {
+        // Strictly two choices: inline (constrained) or fullWidth (edge-to-edge)
         list: [
           {title: 'Inline (constrained)', value: 'inline'},
           {title: 'Full width (breaks text)', value: 'fullWidth'},
@@ -38,7 +40,7 @@ export default defineType({
       description: 'When using Full width display, check this to show the image fully (contain) instead of cropping to cover.',
       initialValue: false,
       options: { isHighlighted: false },
-      hidden: ({ parent }) => parent?.display !== 'fullWidth',
+  hidden: ({ parent }) => parent?.display !== 'fullWidth',
     },
     {
       name: 'wideMargins',
@@ -46,7 +48,7 @@ export default defineType({
       type: 'boolean',
       description: 'Inset the full-width image by 10rem on each side (useful for a wide, but not edge-to-edge, layout). Visible only for Full width display.',
       initialValue: false,
-      hidden: ({ parent }) => parent?.display !== 'fullWidth',
+  hidden: ({ parent }) => parent?.display !== 'fullWidth',
     },
   ],
 })

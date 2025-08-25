@@ -63,5 +63,13 @@ export default defineType({
       type: 'imageWithCaption',
       options: {hotspot: true},
     }),
+    defineArrayMember({
+      type: 'twoImageSpread',
+      options: {hotspot: false},
+    }),
+    defineArrayMember({
+      type: 'multiImageSpread',
+      options: { hotspot: false },
+    }),
   ],
 })
