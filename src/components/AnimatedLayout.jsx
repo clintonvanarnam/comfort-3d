@@ -2,160 +2,127 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
-import gsap from 'gsap';
-import Flip from 'gsap/Flip';
+import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import gsap from 'gsap';
 
-// Load Footer only on the client to avoid any server-side flash/hydration issues
+// Load Footer only on the client (prevents SSR flash/hydration issues)
 const FooterClient = dynamic(() => import('./Footer'), { ssr: false });
 
-// Register GSAP Flip plugin
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(Flip);
-}
+// Optional: routes that should *not* delay the footer (empty to always delay)
+const BYPASS_DELAY_ON_ROUTES = new Set([
+  // '/',             // uncomment if you want the home page to show footer immediately
+  // '/about',
+]);
 
 export default function AnimatedLayout({ children }) {
   const pathname = usePathname();
 
-  // control delayed footer rendering specifically for the /projects page
-  // start hidden to avoid any initial flash; we'll reveal as appropriate
-  const [projectsFooterVisible, setProjectsFooterVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [contentPainted, setContentPainted] = useState(false);
+  const [pageReady, setPageReady] = useState(false);
+  const [footerVisible, setFooterVisible] = useState(false);
+
   const footerWrapperRef = useRef(null);
 
+  // Mark mounted (client only)
   useEffect(() => {
-    const flipElements = document.querySelectorAll('.flip-image');
-    if (flipElements.length === 0) {
-      // No flip elements — reveal the footer on /projects after a short fallback
-      // so it doesn't stay hidden indefinitely.
-      if (pathname === '/projects') {
-        const t = setTimeout(() => setProjectsFooterVisible(true), 250);
-        return () => clearTimeout(t);
-      }
-      return;
-    }
+    setMounted(true);
+  }, []);
 
-    const state = Flip.getState(flipElements);
-
-    Flip.from(state, {
-      duration: 0.8,
-      ease: 'power2.inOut',
-      absolute: true,
-      onEnter: (el) => {
-        gsap.fromTo(
-          el,
-          { opacity: 0, y: 40 },
-          { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }
-        );
-      },
-      onComplete: () => {
-        // After the Flip/GSAP entrance finishes, reveal the footer on /projects
-        if (pathname === '/projects') {
-          setProjectsFooterVisible(true);
-        }
-      },
-    });
+  // Reset state on route change
+  useEffect(() => {
+    setPageReady(false);
+    setFooterVisible(false);
+    setContentPainted(false); // re-detect FCP per route
   }, [pathname]);
 
-
-  // Ensure we don't show the footer on initial render; once mounted, show it
-  // immediately on non-/projects pages, otherwise keep hidden until Flip/fallback.
+  // Listen for page’s “ready” signal (dispatch this from your page’s GSAP onComplete)
   useEffect(() => {
-  setMounted(true);
-    if (pathname === '/projects') {
-      // Keep hidden until Flip/onComplete or fallback timeout handles it.
-      setProjectsFooterVisible(false);
-      return;
-    }
+    const onReady = () => setPageReady(true);
+    window.addEventListener('page:ready', onReady);
+    return () => window.removeEventListener('page:ready', onReady);
+  }, []);
 
-    // For all other pages, defer revealing the footer until after the first
-    // visible paint. Using two RAF ticks gives the browser a chance to paint
-    // main content so the footer doesn't appear before other page content.
-    let raf1 = 0;
-    let raf2 = 0;
-    raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => {
-        setProjectsFooterVisible(true);
-      });
-    });
-
-    return () => {
-      if (raf1) cancelAnimationFrame(raf1);
-      if (raf2) cancelAnimationFrame(raf2);
-    };
+  // Fallback so footer won’t get stuck hidden if the event never fires
+  useEffect(() => {
+    if (BYPASS_DELAY_ON_ROUTES.has(pathname)) return; // don’t arm fallback if bypassing
+    const t = setTimeout(() => setPageReady((v) => v || true), 1800);
+    return () => clearTimeout(t);
   }, [pathname]);
 
-
-  // Detect first content paint so we can reveal footer only after the page
-  // has painted. Prefer PerformanceObserver('paint') but fall back to two RAFs.
+  // Detect first (contentful) paint so we never show the footer before anything else has painted
   useEffect(() => {
     if (contentPainted) return;
 
-    let mountedLocal = true;
+    let alive = true;
 
-    if (typeof PerformanceObserver !== 'undefined' && PerformanceObserver.supportedEntryTypes && PerformanceObserver.supportedEntryTypes.includes('paint')) {
+    // Prefer PerformanceObserver('paint') for accuracy
+    if (
+      typeof PerformanceObserver !== 'undefined' &&
+      PerformanceObserver.supportedEntryTypes &&
+      PerformanceObserver.supportedEntryTypes.includes('paint')
+    ) {
       const obs = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
+          if (!alive) return;
           if (entry.name === 'first-contentful-paint' || entry.name === 'first-paint') {
-            if (mountedLocal) setContentPainted(true);
-            obs.disconnect();
+            setContentPainted(true);
+            try { obs.disconnect(); } catch {}
             return;
           }
         }
       });
       try {
         obs.observe({ type: 'paint', buffered: true });
-      } catch (e) {
-        // ignore and fall back to RAF
+      } catch {
+        // fall through to RAF
       }
       return () => {
-        mountedLocal = false;
-        try { obs.disconnect(); } catch (e) {}
+        alive = false;
+        try { obs.disconnect(); } catch {}
       };
     }
 
-    // Fallback: wait two RAFs which gives the browser a chance to paint.
-    let r1 = 0;
-    let r2 = 0;
+    // RAF fallback (two ticks gives the browser time to paint something)
+    let r1 = 0, r2 = 0;
     r1 = requestAnimationFrame(() => {
       r2 = requestAnimationFrame(() => {
-        if (mountedLocal) setContentPainted(true);
+        if (alive) setContentPainted(true);
       });
     });
     return () => {
-      mountedLocal = false;
+      alive = false;
       if (r1) cancelAnimationFrame(r1);
       if (r2) cancelAnimationFrame(r2);
     };
   }, [contentPainted]);
 
-  // Sync a body class so CSS can hide the footer before hydration and show it
-  // only when JS says it's visible. This prevents an initial flash.
+  // Decide when the footer can become visible
+  useEffect(() => {
+    const bypass = BYPASS_DELAY_ON_ROUTES.has(pathname);
+    // If bypassing, only wait for mount + paint; otherwise require pageReady too.
+    const canShow = mounted && contentPainted && (bypass ? true : pageReady);
+    setFooterVisible(canShow);
+  }, [mounted, contentPainted, pageReady, pathname]);
+
+  // Sync a body class for CSS-only guards (prevents any flash before hydration)
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const body = document.body;
-  if (mounted && projectsFooterVisible && contentPainted && pathname !== '/') {
-      body.classList.add('footer-visible');
-    } else {
-      body.classList.remove('footer-visible');
-    }
-
+    if (footerVisible) body.classList.add('footer-visible');
+    else body.classList.remove('footer-visible');
     return () => body.classList.remove('footer-visible');
-  }, [mounted, projectsFooterVisible, pathname, contentPainted]);
+  }, [footerVisible]);
 
-
-  // Animate footer wrapper when it becomes visible so it enters last.
+  // Animate the footer *when* it becomes visible (so it enters last)
   useEffect(() => {
-    if (!mounted || !contentPainted || !projectsFooterVisible || pathname === '/') return;
-    const wrapper = footerWrapperRef.current;
-    if (!wrapper) return;
+    if (!footerVisible) return;
+    const el = footerWrapperRef.current;
+    if (!el) return;
 
-    // Start hidden (in case CSS or earlier state made it visible)
-    gsap.set(wrapper, { opacity: 0, y: 18, pointerEvents: 'none' });
-
-    const tl = gsap.to(wrapper, {
+    gsap.set(el, { opacity: 0, y: 16, pointerEvents: 'none' });
+    const tl = gsap.to(el, {
       opacity: 1,
       y: 0,
       duration: 0.6,
@@ -164,14 +131,16 @@ export default function AnimatedLayout({ children }) {
     });
 
     return () => {
-      try { tl.kill(); } catch (e) {}
+      try { tl.kill(); } catch {}
     };
-  }, [mounted, contentPainted, projectsFooterVisible, pathname]);
+  }, [footerVisible]);
 
   return (
     <>
       {children}
-      {mounted && contentPainted && pathname !== '/' && projectsFooterVisible && (
+
+      {/* Only render once we decide it’s allowed to be visible */}
+      {footerVisible && (
         <div ref={footerWrapperRef} className="animated-footer-wrapper">
           <FooterClient />
         </div>
@@ -179,4 +148,3 @@ export default function AnimatedLayout({ children }) {
     </>
   );
 }
-
