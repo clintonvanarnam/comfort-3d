@@ -24,6 +24,64 @@ export default function NavBar() {
     };
   }, []);
 
+  // Hide nav when scrolling down, show when scrolling up.
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+
+    // Initial values
+    let lastY = typeof window !== 'undefined' ? window.scrollY : 0;
+    let ticking = false;
+
+    const showNav = () => {
+      el.style.transform = 'translateY(0)';
+      el.style.pointerEvents = 'auto';
+    };
+
+    const hideNav = () => {
+      el.style.transform = 'translateY(-100%)';
+      // while hidden, avoid accidental clicks
+      el.style.pointerEvents = 'none';
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const currentY = window.scrollY;
+        const delta = currentY - lastY;
+
+        // small threshold to avoid jitter
+        if (Math.abs(delta) > 6) {
+          if (delta > 0 && currentY > 60) {
+            // scrolling down
+            hideNav();
+          } else {
+            // scrolling up
+            showNav();
+          }
+        }
+
+        lastY = currentY;
+        ticking = false;
+      });
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // ensure nav is visible initially
+    showNav();
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      // reset styles
+      if (el) {
+        el.style.transform = '';
+        el.style.pointerEvents = '';
+      }
+    };
+  }, []);
+
   return (
     <nav
       ref={navRef}
@@ -39,6 +97,8 @@ export default function NavBar() {
         pointerEvents: 'auto',
         zIndex: 2147483647,
         background: 'transparent',
+  transition: 'transform 360ms cubic-bezier(.22,1,.36,1)',
+  willChange: 'transform',
         // use difference blend mode only when not on the root 3D page
         mixBlendMode: useDifference ? 'difference' : 'normal',
         WebkitMixBlendMode: useDifference ? 'difference' : 'normal',

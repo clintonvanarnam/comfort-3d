@@ -5,6 +5,9 @@ import AnimatedLayout from "../components/AnimatedLayout";
 
 const monument = localFont({
   src: [
+    { path: '../../public/fonts/ABCMonumentGrotesk-Thin-Trial.woff2', weight: '200', style: 'normal' },
+    { path: '../../public/fonts/ABCMonumentGrotesk-Light-Trial.woff2', weight: '300', style: 'normal' },
+    { path: '../../public/fonts/ABCMonumentGrotesk-Regular-Trial.woff2', weight: '400', style: 'normal' },
     { path: '../../public/fonts/ABCMonumentGrotesk-Medium-Trial.woff2', weight: '500', style: 'normal' },
   ],
   variable: '--font-monument',
@@ -22,6 +25,10 @@ export default function RootLayout({ children }) {
       {/* suppressHydrationWarning prevents React from complaining about minor attribute differences
           injected by browser extensions (for example Grammarly) before hydration */}
       <body suppressHydrationWarning className={`${monument.variable}`}>
+        {/* Critical inline style: hide the footer by default on the server so it cannot flash
+            before client JS decides whether to reveal it. AnimatedLayout toggles
+            `document.body.classList.add('footer-visible')` when it's safe to show. */}
+        <style dangerouslySetInnerHTML={{ __html: "body:not(.footer-visible) .site-footer { display: none !important; opacity: 0 !important; visibility: hidden !important; }" }} />
         <AnimatedLayout>{children}</AnimatedLayout>
       </body>
     </html>

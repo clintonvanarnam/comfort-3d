@@ -123,17 +123,20 @@ export default function ThreeScene() {
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   const sprites = [];
+  const preloadedSprites = [];
+  const lateSprites = [];
+  let phase1Done = false;
   const sphereGroup = new THREE.Group();
   sphereGroupRef.current = sphereGroup;
   scene.add(sphereGroup);
   // random seed so sphere distribution isn't identical every load
   const sphereSeed = Math.random() * Math.PI * 2;
 
-        posts.forEach((post, idx) => {
+  posts.forEach((post, idx) => {
           if (!post.image) return;
           const key = post.slug?.current || post.slug || post._id || post.title;
           const preTex = preloadedTexturesRef.current[key];
-          const onTexture = (texture) => {
+          const onTexture = (texture, wasPreloaded = false) => {
             texture.colorSpace = THREE.SRGBColorSpace;
             const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 1 });
             const sprite = new THREE.Sprite(material);
@@ -162,6 +165,7 @@ export default function ThreeScene() {
               slug: post.slug?.current || post.slug || '',
               title: typeof post.title === 'string' ? post.title : 'Untitled',
               author: post.author || '',
+              imageUrl: post.image || '',
               floatPhase: Math.random() * Math.PI * 2,
               floatSpeed: 0.5 + Math.random(),
               floatAmplitude: 0.2 + Math.random() * 0.3,
@@ -169,16 +173,76 @@ export default function ThreeScene() {
               floating: true,
               imageAspect,
               preloaded: !!preTex,
+              // remember the original scale so we can animate back to it
+              origScale: { x: sprite.scale.x, y: sprite.scale.y },
             };
+            // set initial state to be small/transparent so we can animate them in with GSAP
+            sprite.material.opacity = 0;
+            sprite.scale.set(0.001, 0.001, 0.001);
             sprites.push(sprite);
+            if (wasPreloaded) preloadedSprites.push(sprite);
+            else lateSprites.push(sprite);
+
+            // If phase1 has already completed, animate late arrivals individually
+            if (phase1Done && !wasPreloaded) {
+              // Phase 2 quick animation for late arrivals
+              gsap.to(sprite.material, { opacity: 1, duration: 0.14, ease: 'power1.out' });
+              gsap.to(sprite.scale, {
+                x: sprite.userData.origScale.x,
+                y: sprite.userData.origScale.y,
+                duration: 0.14,
+                ease: 'back.out(1.1)'
+              });
+            }
           };
 
           if (preTex) {
-            onTexture(preTex);
+            onTexture(preTex, true);
           } else {
-            loader.load(post.image, (texture) => onTexture(texture));
+            loader.load((post.image), (texture) => onTexture(texture, false));
           }
         });
+
+        // After all sprites have been added, run a quick two-phase staggered entrance
+        // Phase 1: animate preloaded sprites quickly
+        setTimeout(() => {
+          if (preloadedSprites.length > 0) {
+            const mats = preloadedSprites.map((s) => s.material);
+            const scales = preloadedSprites.map((s) => s.scale);
+            gsap.to(mats, { opacity: 1, duration: 0.18, ease: 'power1.out', stagger: 0.01 });
+            gsap.to(scales, {
+              x: (i, t) => preloadedSprites[i].userData.origScale.x,
+              y: (i, t) => preloadedSprites[i].userData.origScale.y,
+              duration: 0.18,
+              ease: 'back.out(1.1)',
+              stagger: 0.01,
+            });
+          }
+          phase1Done = true;
+
+          // Phase 2: shortly after phase 1, animate any currently-collected late sprites as a batch
+          setTimeout(() => {
+            if (lateSprites.length > 0) {
+              // filter out any sprites that don't have userData/origScale to avoid runtime errors
+              const validLate = lateSprites.filter((s) => s && s.userData && s.userData.origScale);
+              const mats2 = validLate.map((s) => s.material);
+              const scales2 = validLate.map((s) => s.scale);
+              const origScales = validLate.map((s) => s.userData.origScale);
+              if (mats2.length > 0) {
+                gsap.to(mats2, { opacity: 1, duration: 0.14, ease: 'power1.out', stagger: 0.03 });
+                gsap.to(scales2, {
+                  x: (i, t) => origScales[i]?.x ?? t.x,
+                  y: (i, t) => origScales[i]?.y ?? t.y,
+                  duration: 0.14,
+                  ease: 'back.out(1.1)',
+                  stagger: 0.03,
+                });
+              }
+              // clear lateSprites so new arrivals animate individually
+              lateSprites.length = 0;
+            }
+          }, 120);
+        }, 30);
 
         // pointer & mouse handling
         function onPointerMove(event) {
@@ -208,7 +272,14 @@ export default function ThreeScene() {
             const hovered = intersects[0].object;
             setHoveredInfo({ title: hovered.userData.title, author: hovered.userData.author });
             if (!hovered.userData.preloaded) {
+              // prefetch the route (Next) and warm the HTTP cache for the full image
               router.prefetch(`/posts/${hovered.userData.slug}`);
+              try {
+                const img = new Image();
+                img.src = hovered.userData.imageUrl || '';
+              } catch (e) {
+                // ignore
+              }
               hovered.userData.preloaded = true;
             }
           } else {
@@ -360,60 +431,61 @@ export default function ThreeScene() {
   if (!introComplete) {
     return (
       <div
-        onClick={() => {
-          setIntroFading(true);
-          setTimeout(() => setIntroComplete(true), 400);
-        }}
-        onMouseMove={(e) => setIntroCursor({ x: e.clientX, y: e.clientY, visible: true })}
-        onMouseEnter={(e) => setIntroCursor({ x: e.clientX, y: e.clientY, visible: true })}
-        onMouseLeave={() => setIntroCursor((s) => ({ ...s, visible: false }))}
-        onTouchMove={(e) => {
-          const t = e.touches[0];
-          if (t) setIntroCursor({ x: t.clientX, y: t.clientY, visible: true });
-        }}
-        onTouchEnd={() => setIntroCursor((s) => ({ ...s, visible: false }))}
+      onClick={() => {
+        setIntroFading(true);
+        setTimeout(() => setIntroComplete(true), 400);
+      }}
+      onMouseMove={(e) => setIntroCursor({ x: e.clientX, y: e.clientY, visible: true })}
+      onMouseEnter={(e) => setIntroCursor({ x: e.clientX, y: e.clientY, visible: true })}
+      onMouseLeave={() => setIntroCursor((s) => ({ ...s, visible: false }))}
+      onTouchMove={(e) => {
+        const t = e.touches[0];
+        if (t) setIntroCursor({ x: t.clientX, y: t.clientY, visible: true });
+      }}
+      onTouchEnd={() => setIntroCursor((s) => ({ ...s, visible: false }))}
+      style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        background: 'black',
+        position: 'relative',
+        color: 'white',
+        fontFamily: 'monospace',
+        fontSize: '24px',
+        cursor: 'none',
+      }}
+      >
+      <img
+        src="/COMFORT_MAG_LOGO_WHITE.svg"
+        alt="Comfort Logo"
         style={{
-          width: '100vw',
-          height: '100vh',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          background: 'black',
-          position: 'relative',
-          color: 'white',
-          fontFamily: 'monospace',
-          fontSize: '24px',
-          cursor: 'none',
+        maxWidth: '80%',
+        maxHeight: '50%',
+        opacity: introFading ? 0 : 1,
+        transition: 'opacity 0.4s',
+        }}
+      />
+      <div
+        style={{
+        position: 'fixed',
+        left: introCursor.x,
+        top: introCursor.y,
+        transform: 'translate(-50%, -50%)',
+        fontFamily: 'monospace',
+        fontSize: '15px',
+        color: '#fff',
+        pointerEvents: 'none',
+        zIndex: 2147483647,
+        display: introCursor.visible ? 'block' : 'none',
+        userSelect: 'none',
+        whiteSpace: 'nowrap',
+        mixBlendMode: 'difference',
         }}
       >
-        <img
-          src="/COMFORT_MAG_LOGO_WHITE.svg"
-          alt="Comfort Logo"
-          style={{
-            maxWidth: '80%',
-            maxHeight: '50%',
-            opacity: introFading ? 0 : 1,
-            transition: 'opacity 0.4s',
-          }}
-        />
-        <div
-          style={{
-            position: 'fixed',
-            left: introCursor.x,
-            top: introCursor.y,
-            transform: 'translate(-50%, -50%)',
-            fontFamily: 'monospace',
-            fontSize: '20px',
-            color: '#fff',
-            pointerEvents: 'none',
-            zIndex: 2147483647,
-            display: introCursor.visible ? 'block' : 'none',
-            userSelect: 'none',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          [CLICK]
-        </div>
+        [CLICK]
+      </div>
       </div>
     );
   }

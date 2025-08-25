@@ -38,7 +38,9 @@ export async function getPostBySlug(slug) {
       asset->{
         _id,
         url
-      }
+      },
+      caption,
+      alt
     },
     body
   }`;
@@ -48,8 +50,8 @@ export async function getPostBySlug(slug) {
   return {
     slug: post.slug,
     title: post.title,
-  image: post.mainImage?.asset?.url || '',
-  author: post.author?.name || '',
-  body: post.body || null,
+    mainImage: post.mainImage || null,
+    author: post.author?.name || '',
+    body: post.body || null,
   };
 }
