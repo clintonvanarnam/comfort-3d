@@ -197,6 +197,18 @@ export default function PostPage() {
   function openLightbox({ src, alt = '', caption = null }) {
     setLightboxData({ src, alt, caption });
     setLightboxOpen(true);
+    // ensure the cursor updates immediately (some browsers only change
+    // cursors on mousemove when elements mount). Set body cursor and a
+    // class to allow CSS transitions on the visible plus overlay.
+    try {
+      document.body.classList.add('lightbox-open');
+      document.body.offsetWidth;
+      const xCursor = "url('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\' viewBox=\'0 0 48 48\'><rect x=\'22\' y=\'6\' width=\'4\' height=\'36\' fill=\'white\' transform=\'rotate(45 24 24)\'/><rect x=\'6\' y=\'22\' width=\'36\' height=\'4\' fill=\'white\' transform=\'rotate(45 24 24)\'/></svg>') 24 24, pointer";
+      document.body.style.cursor = xCursor;
+      if (lightboxRef.current) {
+        lightboxRef.current.style.cursor = xCursor;
+      }
+    } catch (e) {}
     // animate in after next tick
     requestAnimationFrame(() => {
       const overlay = lightboxRef.current;
@@ -215,6 +227,13 @@ export default function PostPage() {
     if (!overlay || !img) {
       setLightboxOpen(false);
       setLightboxData(null);
+      try {
+        document.body.classList.remove('lightbox-open');
+        document.body.style.cursor = '';
+        if (lightboxRef.current) {
+          lightboxRef.current.style.cursor = '';
+        }
+      } catch (e) {}
       return;
     }
     gsap.to(img, { scale: 0.95, duration: 0.28, ease: 'power2.in' });
@@ -225,6 +244,10 @@ export default function PostPage() {
       onComplete: () => {
         setLightboxOpen(false);
         setLightboxData(null);
+        try {
+          document.body.classList.remove('lightbox-open');
+          document.body.style.cursor = '';
+        } catch (e) {}
       },
     });
   }
@@ -384,9 +407,10 @@ export default function PostPage() {
                 // Removed twoImageSpread: prefer multiImageSpread or imageWithCaption
                 multiImageSpread: ({ value }) => {
                   if (!value || !Array.isArray(value.images) || value.images.length === 0) return null;
-                  const cols = value.columnsDesktop || 3;
                   const gutter = (typeof value.gutter === 'number') ? value.gutter : 16;
-                  const layout = value.layout || 'masonry';
+                  const imgCount = Array.isArray(value.images) ? value.images.length : 0;
+                  const cols = Math.min(Math.max(imgCount, 1), 4); // 1-4 columns
+                  const isGrid = cols > 1;
 
                   const buildSrc = (img) => {
                     if (!img) return null;
@@ -405,47 +429,64 @@ export default function PostPage() {
                   const padBottomToken = value.paddingBottomToken || 'space-md';
                   const padTopVar = `var(--${padTopToken})`;
                   const padBottomVar = `var(--${padBottomToken})`;
-                  // determine effective layout: if editor picked 'auto', choose grid for small sets
-                  const declaredLayout = value.layout || 'auto';
-                  const effectiveLayout = (declaredLayout === 'auto') ? (Array.isArray(value.images) && value.images.length <= 4 ? 'grid' : 'masonry') : declaredLayout;
-                  const layoutClass = `layout-${effectiveLayout}`;
+
+                  // Render as either an auto grid (N columns) or a vertical stack for single image
+                  const captions = value.images.map((img) => {
+                    if (!img) return '';
+                    // prefer explicit caption rich text, fallback to credit or empty
+                    if (img.caption) return img.caption;
+                    if (img.credit) return [{ _type: 'block', children: [{ text: img.credit }] }];
+                    return null;
+                  });
 
                   return (
-                    <div
-                      className={`multi-image-spread ${layoutClass} ${value.stackOnMobile ? 'stack-on-mobile' : ''}`}
-                      style={{
-                        ['--cols']: cols,
-                        ['--gutter']: `${gutter}px`,
-                        ['--pad-top']: padTopVar,
-                        ['--pad-bottom']: padBottomVar,
-                        ...(value.stackOnMobile ? {} : { paddingTop: padTopVar, paddingBottom: padBottomVar }),
-                        ...(layout === 'grid' ? { gridTemplateColumns: `repeat(${cols}, 1fr)` } : {}),
-                      }}
-                    >
-                      {value.images.map((img, i) => {
-                        const src = buildSrc(img);
-                        if (!src) return null;
-                        return (
-                          <figure key={i} className="multi-image-item">
-                            <img
-                              src={src}
-                              alt={img.alt || ''}
-                              loading="lazy"
-                              decoding="async"
-                              onClick={(e) => { e.stopPropagation(); openLightbox({ src, alt: img.alt || '', caption: img.caption || null }); }}
-                              role="button"
-                              tabIndex={0}
-                            />
-                            {(img.caption || img.credit) && (
-                              <figcaption className="multi-image-caption">
-                                {img.caption && <PortableText value={img.caption} />}
-                                {img.credit && <div className="image-credit">{img.credit}</div>}
-                              </figcaption>
-                            )}
-                          </figure>
-                        );
-                      })}
-                    </div>
+                    <>
+                      <div
+                        className={`multi-image-spread ${isGrid ? 'auto-columns' : 'vertical-stack'} ${value.stackOnMobile ? 'stack-on-mobile' : ''}`}
+                        style={{
+                          ['--gutter']: `${gutter}px`,
+                          ['--pad-top']: padTopVar,
+                          ['--pad-bottom']: padBottomVar,
+                          ...(value.stackOnMobile ? {} : { paddingTop: padTopVar, paddingBottom: padBottomVar }),
+                          ...(isGrid ? { gridTemplateColumns: `repeat(${cols}, 1fr)` } : {}),
+                        }}
+                      >
+                        {value.images.map((img, i) => {
+                          const src = buildSrc(img);
+                          if (!src) return null;
+                          return (
+                            <figure key={i} className="multi-image-item">
+                                <img
+                                  src={src}
+                                  alt={img.alt || ''}
+                                  className="multi-image-row"
+                                  loading="lazy"
+                                  decoding="async"
+                                  onClick={(e) => { e.stopPropagation(); openLightbox({ src, alt: img.alt || '', caption: img.caption || null }); }}
+                                  role="button"
+                                  tabIndex={0}
+                                />
+                              {/* per-image captions removed — captions are shown in the stacked list below */}
+                            </figure>
+                          );
+                        })}
+                      </div>
+
+                      {/* stacked numbered captions that correspond left-to-right with images */}
+                      {isGrid && (
+                        <div className="multi-image-captions-list">
+                          {captions.map((cap, idx) => {
+                            const num = String(idx + 1).padStart(2, '0');
+                            return (
+                              <div key={idx} className="multi-image-captions-item">
+                                <span className="multi-image-captions-index">{num}</span>
+                                <span className="multi-image-captions-text">{cap ? <PortableText value={cap} /> : null}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
                   );
                 },
               },

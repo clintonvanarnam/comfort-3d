@@ -30,28 +30,6 @@ export default defineType({
       description: 'When true the spread will stack vertically on small screens.',
     },
     {
-      name: 'layout',
-      title: 'Layout',
-      type: 'string',
-      initialValue: 'auto',
-      options: {
-        list: [
-          { title: 'Auto', value: 'auto' },
-          { title: 'Masonry', value: 'masonry' },
-          { title: 'Grid', value: 'grid' },
-        ],
-      },
-      description: 'Choose how images are arranged: auto (smart pick), masonry (columns) or a regular grid.',
-    },
-    {
-      name: 'columnsDesktop',
-      title: 'Desktop columns',
-      type: 'number',
-      initialValue: 3,
-      description: 'Number of masonry columns to use on desktop (2-6).',
-      validation: (Rule) => Rule.min(1).max(6).integer(),
-    },
-    {
       name: 'gutter',
       title: 'Gutter (px)',
       type: 'number',

@@ -162,6 +162,13 @@ export default function PostPage() {
   function openLightbox({ src, alt = '', caption = null }) {
     setLightboxData({ src, alt, caption });
     setLightboxOpen(true);
+    try {
+      document.body.classList.add('lightbox-open');
+      // trigger layout read to force repaint so pseudo-element rotation applies instantly
+      // eslint-disable-next-line no-unused-expressions
+      document.body.offsetWidth;
+      document.body.style.cursor = 'url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2748%27%20height%3D%2748%27%20viewBox%3D%270%200%2048%2048%27%3E%3Cline%20x1%3D%2712%27%20y1%3D%2712%27%20x2%3D%2736%27%20y2%3D%2736%27%20stroke%3D%27white%27%20stroke-width%3D%274%27%20stroke-linecap%3D%27round%27%2F%3E%3Cline%20x1%3D%2736%27%20y1%3D%2712%27%20x2%3D%2712%27%20y2%3D%2736%27%20stroke%3D%27white%27%20stroke-width%3D%274%27%20stroke-linecap%3D%27round%27%2F%3E%3C%2Fsvg%3E") 24 24, pointer';
+    } catch (e) {}
     // animate in after next tick
     requestAnimationFrame(() => {
       const overlay = lightboxRef.current;
@@ -180,6 +187,10 @@ export default function PostPage() {
     if (!overlay || !img) {
       setLightboxOpen(false);
       setLightboxData(null);
+      try {
+        document.body.classList.remove('lightbox-open');
+        document.body.style.cursor = '';
+      } catch (e) {}
       return;
     }
     gsap.to(img, { scale: 0.95, duration: 0.28, ease: 'power2.in' });
@@ -190,6 +201,10 @@ export default function PostPage() {
       onComplete: () => {
         setLightboxOpen(false);
         setLightboxData(null);
+        try {
+          document.body.classList.remove('lightbox-open');
+          document.body.style.cursor = '';
+        } catch (e) {}
       },
     });
   }
