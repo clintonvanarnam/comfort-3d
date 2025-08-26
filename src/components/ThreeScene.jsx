@@ -113,8 +113,9 @@ export default function ThreeScene() {
         // prefer preloaded posts if available
         const posts = preloadedPostsRef.current || (await getPosts());
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5;
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  // Start the camera offset along +Z so the sphere (at origin) is centered in view
+  camera.position.set(0, 0, 8);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -122,15 +123,28 @@ export default function ThreeScene() {
         renderer.setClearColor(0x000000, 1); // Set background to black
         // Respect devicePixelRatio for crisper rendering but clamp for perf
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        // Use actual container size so mouse/touch coordinates map correctly
-        const initialWidth = containerRef.current ? containerRef.current.clientWidth : window.innerWidth;
-        const initialHeight = containerRef.current ? containerRef.current.clientHeight : window.innerHeight;
-        renderer.setSize(initialWidth, initialHeight, false);
+  // Use actual container size so mouse/touch coordinates map correctly
+  const initialWidth = containerRef.current ? containerRef.current.clientWidth : window.innerWidth;
+  const initialHeight = containerRef.current ? containerRef.current.clientHeight : window.innerHeight;
+  // Use the container aspect for the camera so projection matches the canvas size
+  camera.aspect = initialWidth / initialHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(initialWidth, initialHeight, false);
         if (containerRef.current) {
           containerRef.current.appendChild(renderer.domElement);
           // avoid the browser's default touch gestures interfering with pointer events
           renderer.domElement.style.touchAction = 'none';
+          // ensure the canvas exactly covers the container and has no extra offset
+          renderer.domElement.style.position = 'absolute';
+          renderer.domElement.style.top = '0';
+          renderer.domElement.style.left = '0';
+          renderer.domElement.style.width = '100%';
+          renderer.domElement.style.height = '100%';
+          renderer.domElement.style.display = 'block';
         }
+
+        // Ensure camera initially points at the scene origin (sphere center)
+        camera.lookAt(scene.position);
 
   const loader = new THREE.TextureLoader();
   const raycaster = new THREE.Raycaster();
