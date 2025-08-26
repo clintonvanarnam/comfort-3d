@@ -610,7 +610,8 @@ body.lightbox-open {
   width: 100%;
   padding: 0;
   display: block;
-  background: #0a0a0a;
+  background: var(--background);
+  color: var(--foreground);
   /* make all footer text display bold */
   font-weight: 700;
 }
@@ -634,6 +635,7 @@ body.lightbox-open {
 /* Strong fallback: ensure footer is not visible unless explicitly allowed.
    This uses high specificity and !important to override other rules or inline
    styles that might cause a flash. */
+.site-footer.hidden,
 body:not(.footer-visible) .site-footer {
   display: none !important;
   opacity: 0 !important;
@@ -686,6 +688,11 @@ body:not(.footer-visible) .site-footer {
   height: auto;
   display: block;
   object-fit: cover;
+}
+
+/* Ensure the footer logo displays its native colors (black svg) */
+.site-footer-logo {
+  filter: none !important;
 }
 
 .site-footer-text {
@@ -741,6 +748,13 @@ body:not(.footer-visible) .site-footer {
   .site-footer-desc {
     margin-top: 0.25rem;
   }
+}
+
+/* Hide footer when the Three.js scene is active so it doesn't overlay the canvas */
+body.three-scene-active .site-footer {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
 }
 
 /* Two-image spread: 12-column grid for offsets and spans */

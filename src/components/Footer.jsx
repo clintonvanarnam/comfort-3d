@@ -19,7 +19,7 @@ export default function Footer() {
       </div>
 
       <div className="site-footer-logo-wrap">
-        <img src="/COMFORT_MAG_LOGO_WHITE.svg" alt="COMFORT" className="site-footer-logo" />
+        <img src="/COMFORT_MAG_LOGO_BLACK.svg" alt="COMFORT" className="site-footer-logo" />
       </div>
     </footer>
   );

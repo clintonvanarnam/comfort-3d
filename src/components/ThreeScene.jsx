@@ -57,6 +57,12 @@ export default function ThreeScene() {
 
   useEffect(() => {
     setMounted(true);
+    // add a body class so other parts of the UI (like the footer) can
+    // respond to the 3D-scene being active and hide UI that shouldn't overlay.
+    if (typeof document !== 'undefined') document.body.classList.add('three-scene-active');
+    return () => {
+      if (typeof document !== 'undefined') document.body.classList.remove('three-scene-active');
+    };
     // start preloading posts and textures in background
     (async function preload() {
       try {
