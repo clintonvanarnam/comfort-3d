@@ -20,12 +20,7 @@ body.lightbox-open * {
   --space-xl: 256px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #000000;
-    --foreground: #ffffff;
-  }
-}
+/* Dark mode removed: site uses the light color variables defined in :root */
 
 html,
 body {
@@ -58,11 +53,7 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-}
+/* color-scheme forced to default (no dark mode) */
 
 /* Post page styles moved from inline styles */
 .post-page {
@@ -734,34 +725,7 @@ body:not(.footer-visible) .site-footer {
   text-align: left;
 }
 
-/* In light mode, invert the white SVG to black so it remains visible on white pages */
-@media (prefers-color-scheme: light) {
-  .site-footer {
-    background: #fff;
-  }
-  .site-footer-logo {
-    filter: invert(0) grayscale(100%) brightness(0);
-  }
-  .site-footer-contact .footer-contact,
-  .site-footer-contact .footer-instagram,
-  .site-footer-desc {
-    color: #000;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .site-footer {
-    background: #0a0a0a;
-  }
-  .site-footer-logo {
-    filter: none;
-  }
-  .site-footer-contact .footer-contact,
-  .site-footer-contact .footer-instagram,
-  .site-footer-desc {
-    color: #ddd;
-  }
-}
+/* Removed color-scheme specific footer rules so footer uses default light styling */
 
 @media (max-width: 760px) {
   .site-footer-top {
