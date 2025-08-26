@@ -120,9 +120,16 @@ export default function ThreeScene() {
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.NoToneMapping;
         renderer.setClearColor(0x000000, 1); // Set background to black
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        // Respect devicePixelRatio for crisper rendering but clamp for perf
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        // Use actual container size so mouse/touch coordinates map correctly
+        const initialWidth = containerRef.current ? containerRef.current.clientWidth : window.innerWidth;
+        const initialHeight = containerRef.current ? containerRef.current.clientHeight : window.innerHeight;
+        renderer.setSize(initialWidth, initialHeight, false);
         if (containerRef.current) {
           containerRef.current.appendChild(renderer.domElement);
+          // avoid the browser's default touch gestures interfering with pointer events
+          renderer.domElement.style.touchAction = 'none';
         }
 
   const loader = new THREE.TextureLoader();
@@ -251,10 +258,19 @@ export default function ThreeScene() {
         }, 30);
 
         // pointer & mouse handling
+        // Helper: map an event's client coords to normalized device coords relative to the canvas
+        function updateMouseFromEvent(event) {
+          if (!renderer || !renderer.domElement) return;
+          const rect = renderer.domElement.getBoundingClientRect();
+          const x = (event.clientX - rect.left) / rect.width;
+          const y = (event.clientY - rect.top) / rect.height;
+          mouse.x = x * 2 - 1;
+          mouse.y = - (y * 2 - 1);
+        }
+
         function onPointerMove(event) {
           // always update mouse for accurate raycasting
-          mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-          mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+          updateMouseFromEvent(event);
 
           // if dragging, update rotation target based on pointer delta (drag-to-rotate)
           if (isDraggingRef.current) {
@@ -294,6 +310,8 @@ export default function ThreeScene() {
         }
 
         function onPointerDown(e) {
+          // ensure mouse is up-to-date even if the user didn't move before tapping
+          updateMouseFromEvent(e);
           isDraggingRef.current = true;
           lastPointerRef.current.x = e.clientX;
           lastPointerRef.current.y = e.clientY;
@@ -308,7 +326,21 @@ export default function ThreeScene() {
         window.addEventListener('pointerdown', onPointerDown);
         window.addEventListener('pointerup', onPointerUp);
 
+        // Keep renderer & camera sized to the container if the viewport changes
+        function onWindowResize() {
+          if (!containerRef.current) return;
+          const w = containerRef.current.clientWidth;
+          const h = containerRef.current.clientHeight;
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+          renderer.setSize(w, h, false);
+        }
+        window.addEventListener('resize', onWindowResize);
+
         window.addEventListener('click', (e) => {
+          // update mouse from the click location (covers taps without prior move)
+          updateMouseFromEvent(e);
           // ignore clicks that happen while dragging
           if (!isDraggingRef.current) handleInteraction();
         });
