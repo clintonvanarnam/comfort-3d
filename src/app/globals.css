@@ -205,8 +205,8 @@ a {
   .post-meta-row .post-author {
     max-width: 100%;
     text-align: center;
-    font-size: 5rem;
-    line-height: 1.05;
+    font-size: 3.5rem;
+    line-height: .9;
   }
 }
 
@@ -545,6 +545,29 @@ body.lightbox-open {
   line-height: 1.25;
   text-align: left;
   box-sizing: border-box;
+}
+
+/* Mobile-first override placed after the desktop rules so it wins the cascade.
+   Ensure fullwidth image captions use the post gutters on small screens and
+   remove any desktop padding that causes a left indent. */
+@media (max-width: 800px) {
+  .post-body-figure.fullwidth .post-body-caption,
+  .post-body-figure.fullwidth.fullheight .post-body-caption,
+  .post-main-figure .post-main-caption {
+    margin-left: 1rem;
+    margin-right: 1rem;
+    max-width: calc(100% - 2rem);
+    padding: 0; /* remove the desktop `padding: 0 1rem` that can persist in the cascade */
+    box-sizing: border-box;
+    text-align: left;
+    color: #6b6b6b;
+  }
+
+  /* Ensure paragraphs inside captions don't reintroduce extra horizontal offsets */
+  .post-body-figure.fullwidth .post-body-caption :where(p) {
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 
 
