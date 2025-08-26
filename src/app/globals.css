@@ -199,6 +199,14 @@ a {
     font-size: 3.5rem;
     line-height: .9;
   }
+  /* Prevent author names from being hyphenated on small screens; force
+     wrapping only at whitespace so a long last name moves to the next line. */
+  .post-meta-row .post-author,
+  .post-author {
+    hyphens: none;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
 }
 
 /* Post body centered single column */
