@@ -4,5 +4,6 @@ import post from './post'
 import author from './author'
 import imageWithCaption from './imageWithCaption'
 import multiImageSpread from './multiImageSpread'
+import about from './about'
 
-export const schemaTypes = [post, author, category, blockContent, imageWithCaption, multiImageSpread]
+export const schemaTypes = [post, author, category, blockContent, imageWithCaption, multiImageSpread, about]

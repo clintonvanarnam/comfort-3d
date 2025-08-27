@@ -3,8 +3,9 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
 import gsap from 'gsap';
+import dynamic from 'next/dynamic';
+import AboutSlideOver from './AboutSlideOver';
 
 // Load Footer only on the client (prevents SSR flash/hydration issues)
 const FooterClient = dynamic(() => import('./Footer'), { ssr: false });
@@ -24,6 +25,9 @@ export default function AnimatedLayout({ children }) {
   const [footerVisible, setFooterVisible] = useState(false);
 
   const footerWrapperRef = useRef(null);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [aboutPrefetchBody, setAboutPrefetchBody] = useState(null);
+  const [aboutPrefetchStatus, setAboutPrefetchStatus] = useState('idle');
 
   // Mark mounted (client only)
   useEffect(() => {
@@ -40,8 +44,46 @@ export default function AnimatedLayout({ children }) {
   // Listen for page’s “ready” signal (dispatch this from your page’s GSAP onComplete)
   useEffect(() => {
     const onReady = () => setPageReady(true);
+    // listen for page ready
     window.addEventListener('page:ready', onReady);
-    return () => window.removeEventListener('page:ready', onReady);
+    // listen for nav intent to open About
+    const onAboutOpen = () => setAboutOpen(true);
+    const onAboutClose = () => setAboutOpen(false);
+    window.addEventListener('about:open', onAboutOpen);
+    window.addEventListener('about:close', onAboutClose);
+    return () => {
+      window.removeEventListener('page:ready', onReady);
+      window.removeEventListener('about:open', onAboutOpen);
+      window.removeEventListener('about:close', onAboutClose);
+    };
+  }, []);
+
+  // Prefetch About content in the background so opening the panel shows content immediately
+  useEffect(() => {
+    const controller = new AbortController();
+    (async () => {
+      try {
+        setAboutPrefetchStatus('loading');
+        const res = await fetch('/api/about', { signal: controller.signal });
+        if (!res.ok) {
+          setAboutPrefetchStatus('error');
+          return;
+        }
+        const data = await res.json();
+        const blocks = Array.isArray(data?.body) ? data.body : [];
+        if (blocks.length) {
+          setAboutPrefetchBody(blocks);
+          setAboutPrefetchStatus('ready');
+        } else {
+          setAboutPrefetchStatus('error');
+        }
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setAboutPrefetchStatus('error');
+      }
+    })();
+
+    return () => controller.abort();
   }, []);
 
   // Fallback so footer won’t get stuck hidden if the event never fires
@@ -138,6 +180,17 @@ export default function AnimatedLayout({ children }) {
   return (
     <>
       {children}
+
+      {/* Global About slide-over mounted at app root to avoid nav blend issues */}
+      <AboutSlideOver
+        open={aboutOpen}
+        onClose={() => {
+          setAboutOpen(false);
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('about:close'));
+        }}
+  initialBody={aboutPrefetchBody}
+  initialStatus={aboutPrefetchStatus}
+      />
 
       {/* Only render once we decide it’s allowed to be visible */}
       {footerVisible && (

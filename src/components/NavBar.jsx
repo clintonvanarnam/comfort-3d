@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import gsap from 'gsap';
 
 export default function NavBar() {
   const router = useRouter();
   const navRef = useRef(null);
+  // nav no longer mounts the slide-over; it will dispatch an event to open it
   const pathname = usePathname();
   const useDifference = pathname !== '/';
 
@@ -91,14 +92,15 @@ export default function NavBar() {
         left: 0,
         width: '100%',
         height: 64,
-        display: 'flex',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyItems: 'center',
         pointerEvents: 'auto',
         zIndex: 2147483647,
         background: 'transparent',
-  transition: 'transform 360ms cubic-bezier(.22,1,.36,1)',
-  willChange: 'transform',
+        transition: 'transform 360ms cubic-bezier(.22,1,.36,1)',
+        willChange: 'transform',
         // use difference blend mode only when not on the root 3D page
         mixBlendMode: useDifference ? 'difference' : 'normal',
         WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
@@ -115,6 +117,7 @@ export default function NavBar() {
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
+          gridColumn: '2',
         }}
         aria-label="Home"
       >
@@ -131,6 +134,65 @@ export default function NavBar() {
           }}
         />
       </button>
+      {/* Right-aligned action group: ABOUT + SHOP */}
+      <div
+        style={{
+          gridColumn: '3',
+          justifySelf: 'end',
+          alignSelf: 'center',
+          display: 'flex',
+          gap: '0.5rem',
+          alignItems: 'center',
+          height: '100%',
+          marginRight: '1rem',
+        }}
+      >
+        <button
+          onClick={() => router.push('/shop')}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#fff',
+            fontFamily: 'var(--font-monument)',
+            fontWeight: 700,
+            fontSize: '0.95rem',
+            cursor: 'pointer',
+            padding: '0.25rem 0.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            height: '100%',
+            mixBlendMode: useDifference ? 'difference' : 'normal',
+            WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
+          }}
+          aria-label="Shop"
+        >
+          SHOP
+        </button>
+
+        <button
+          onClick={() => {
+            if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('about:open'));
+          }}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#fff',
+            fontFamily: 'var(--font-monument)',
+            fontWeight: 700,
+            fontSize: '0.95rem',
+            cursor: 'pointer',
+            padding: '0.25rem 0.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            height: '100%',
+            mixBlendMode: useDifference ? 'difference' : 'normal',
+            WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
+          }}
+          aria-label="About"
+        >
+          ABOUT
+        </button>
+      </div>
     </nav>
   );
 }
