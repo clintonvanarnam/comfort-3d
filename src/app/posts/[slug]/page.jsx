@@ -407,7 +407,7 @@ export default function PostPage() {
                 // Removed twoImageSpread: prefer multiImageSpread or imageWithCaption
                 multiImageSpread: ({ value }) => {
                   if (!value || !Array.isArray(value.images) || value.images.length === 0) return null;
-                  const gutter = (typeof value.gutter === 'number') ? value.gutter : 16;
+                  const gutter = (typeof value.gutter === 'number') ? value.gutter : 12;
                   const imgCount = Array.isArray(value.images) ? value.images.length : 0;
                   const cols = Math.min(Math.max(imgCount, 1), 4); // 1-4 columns
                   const isGrid = cols > 1;
@@ -439,6 +439,22 @@ export default function PostPage() {
                     return null;
                   });
 
+                  // only show the captions list if there is at least one non-empty caption
+                  const hasCaptions = captions.some((cap) => {
+                    if (!cap) return false;
+                    if (Array.isArray(cap)) return cap.length > 0;
+                    return true;
+                  });
+
+                  // compute aspect ratios for images where possible so spacers can match
+                  const aspectRatios = value.images.map((img) => {
+                    if (!img || img._type === 'spacer') return null;
+                    const w = img?.asset?.metadata?.dimensions?.width;
+                    const h = img?.asset?.metadata?.dimensions?.height;
+                    if (w && h) return w / h;
+                    return null;
+                  });
+
                   return (
                     <>
                       <div
@@ -452,6 +468,22 @@ export default function PostPage() {
                         }}
                       >
                         {value.images.map((img, i) => {
+                          // spacer object (from Sanity schema)
+                          if (img && img._type === 'spacer') {
+                            // try to use the aspect ratio from the corresponding aspectRatios[i]
+                            const ratio = aspectRatios[i] || aspectRatios.find(r => r) || 1.5;
+                            const paddingTop = `${(1 / ratio) * 100}%`;
+                            return (
+                              <figure key={i} className="multi-image-item">
+                                <div
+                                  className="multi-image-spacer"
+                                  style={{ width: '100%', paddingTop }}
+                                  aria-hidden="true"
+                                />
+                              </figure>
+                            );
+                          }
+
                           const src = buildSrc(img);
                           if (!src) return null;
                           return (
@@ -473,7 +505,7 @@ export default function PostPage() {
                       </div>
 
                       {/* stacked numbered captions that correspond left-to-right with images */}
-                      {isGrid && (
+                      {isGrid && hasCaptions && (
                         <div className="multi-image-captions-list">
                           {captions.map((cap, idx) => {
                             const num = String(idx + 1).padStart(2, '0');

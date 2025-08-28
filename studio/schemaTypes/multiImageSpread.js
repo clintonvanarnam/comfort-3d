@@ -19,6 +19,29 @@ export default defineType({
             { name: 'credit', title: 'Credit', type: 'string' },
           ],
         },
+        // spacer option: renders as a blank div in the front-end
+        {
+          name: 'spacer',
+          title: 'Spacer',
+          type: 'object',
+          fields: [
+            {
+              name: 'auto',
+              title: 'Auto spacer',
+              type: 'boolean',
+              description: 'Internal placeholder field. Hidden in the editor.',
+              initialValue: true,
+              readOnly: true,
+              hidden: true,
+            },
+          ],
+          description: 'Blank spacer that will automatically match the space an image would take.',
+          preview: {
+            prepare() {
+              return { title: 'Spacer', subtitle: 'auto-sized' };
+            },
+          },
+        },
       ],
       validation: (Rule) => Rule.required().min(1),
     },
@@ -33,7 +56,7 @@ export default defineType({
       name: 'gutter',
       title: 'Gutter (px)',
       type: 'number',
-      initialValue: 16,
+  initialValue: 12,
       description: 'Space between images in pixels.',
     },
     {

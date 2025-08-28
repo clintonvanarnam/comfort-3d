@@ -13,8 +13,9 @@ body.lightbox-open * {
   --foreground: #171717;
   --font-monument: 'Monument Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
   /* Design system spacing tokens (site-wide) */
-  --space-xs: 32px;
-  --space-sm: 64px;
+  --space-0: 0px;
+  --space-xs: 0.75rem; /* was 32px */
+  --space-sm: 1.5rem;  /* was 64px */
   --space-md: 128px;
   --space-lg: 192px;
   --space-xl: 256px;
@@ -816,7 +817,7 @@ body.three-scene-active .site-footer {
 
 /* Multi-image spread vertical stack: each image becomes its own full-bleed row */
 .multi-image-spread.vertical-stack {
-  --gutter: 16px;
+  --gutter: var(--space-xs);
   width: 100vw;
   max-width: 100vw;
   margin-left: calc(50% - 50vw);
@@ -863,6 +864,14 @@ body.three-scene-active .site-footer {
   width: 100%;
   height: auto;
   display: block;
+}
+
+/* Spacer placeholder that preserves aspect ratio like an image would */
+.multi-image-spread .multi-image-spacer {
+  width: 100%;
+  display: block;
+  background-color: transparent;
+  pointer-events: none;
 }
 
 /* Stacked captions block under an auto-columns grid */
