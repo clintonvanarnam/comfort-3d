@@ -28,7 +28,22 @@ export default function Footer() {
           
           </div>
           <div className="site-footer-time" aria-live="polite">
-            Los Angeles | Time<span className="blink-colon">:</span> {laTime}
+            Los Angeles |{' '}
+            {laTime
+              ? (() => {
+                  const [h, m, ...rest] = laTime.split(':');
+                  // If laTime includes AM/PM, join rest
+                  const suffix = rest.length ? `:${rest.join(':')}` : '';
+                  return (
+                    <>
+                      {h}
+                      <span className="blink-colon">:</span>
+                      {m}
+                      {suffix}
+                    </>
+                  );
+                })()
+              : ''}
           </div>
           <div className="site-designer">
             Site designed by{' '}

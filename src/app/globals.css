@@ -92,8 +92,7 @@ a {
      position independently */
   width: 100%;
   max-width: none;
-  margin: 0;
-  margin-top: 10rem;
+  margin: 10rem 0 5rem 0; /* top:10rem, right:0, bottom:5rem, left:0 */
 }
 
 .post-content.is-visible {
@@ -662,7 +661,6 @@ body:not(.footer-visible) .site-footer {
 .site-footer-top-left {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
 }
 .site-footer-top-left .footer-contact,
 .site-footer-top-left .footer-instagram {

@@ -156,6 +156,77 @@ export default function PostPage() {
     return () => ctx.revert();
   }, [transitionDone, post]);
 
+  // animate multi-image items on scroll using GSAP ScrollTrigger
+  useEffect(() => {
+    if (!post) return;
+    if (typeof window === 'undefined') return;
+    // respect prefers-reduced-motion
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let mounted = true;
+    let ScrollTrigger;
+
+    const setup = async () => {
+      try {
+        const mod = await import('gsap/ScrollTrigger');
+        ScrollTrigger = mod.ScrollTrigger || mod.default || mod;
+        gsap.registerPlugin(ScrollTrigger);
+      } catch (e) {
+        // if ScrollTrigger isn't available, bail
+        return;
+      }
+
+      if (!mounted) return;
+
+      const ctx = gsap.context(() => {
+        // include multi-image grid items plus inline images and imageWithCaption images
+        const selector = '.multi-image-item, .post-body-image, .post-body-figure .post-body-image';
+        const nodes = gsap.utils.toArray(selector);
+        nodes.forEach((el, i) => {
+          // skip the hero/main image which is handled elsewhere
+          if (el.classList && el.classList.contains('post-main-image')) return;
+
+          // normalize target: animate the element itself (figure or img)
+          const target = el;
+
+          gsap.fromTo(
+            target,
+            { y: 50, opacity: 0.95 },
+            {
+              y: 0,
+              opacity: 1,
+              duration: 0.8,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: target,
+                start: 'top 85%',
+                end: 'bottom 60%',
+                scrub: true,
+                // markers: true,
+              },
+            }
+          );
+        });
+      }, contentRef);
+
+      // cleanup when unmounting or post changes
+      return () => {
+        try { ctx.revert(); } catch (e) {}
+        try { ScrollTrigger && ScrollTrigger.kill(); } catch (e) {}
+      };
+    };
+
+    let cleanupFn;
+    setup().then((maybeCleanup) => {
+      if (typeof maybeCleanup === 'function') cleanupFn = maybeCleanup;
+    });
+
+    return () => {
+      mounted = false;
+      if (cleanupFn) cleanupFn();
+    };
+  }, [post]);
+
   // preload the hero image early to reduce perceived load time
   useEffect(() => {
     if (!post) return;
