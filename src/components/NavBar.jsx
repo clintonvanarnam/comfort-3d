@@ -7,6 +7,7 @@ import gsap from 'gsap';
 export default function NavBar() {
   const router = useRouter();
   const navRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
   // nav no longer mounts the slide-over; it will dispatch an event to open it
   const pathname = usePathname();
   const useDifference = pathname !== '/';
@@ -22,6 +23,18 @@ export default function NavBar() {
     return () => {
       tween.kill();
       gsap.killTweensOf(el);
+    };
+  }, []);
+
+  // Track small viewport to adjust nav layout (shop left, about right on mobile)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 640px)');
+    const update = () => setIsMobile(!!mq.matches);
+    update();
+    mq.addEventListener ? mq.addEventListener('change', update) : mq.addListener(update);
+    return () => {
+      mq.removeEventListener ? mq.removeEventListener('change', update) : mq.removeListener(update);
     };
   }, []);
 
@@ -84,7 +97,7 @@ export default function NavBar() {
   }, []);
 
   return (
-    <nav
+  <nav
       ref={navRef}
       style={{
         position: 'fixed',
@@ -92,10 +105,9 @@ export default function NavBar() {
         left: 0,
         width: '100%',
         height: 64,
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
-        alignItems: 'center',
-        justifyItems: 'center',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
         pointerEvents: 'auto',
         zIndex: 2147483647,
         background: 'transparent',
@@ -107,7 +119,19 @@ export default function NavBar() {
       }}
       aria-label="Main navigation"
     >
-      <button
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        margin: '0 auto',
+        padding: `0 var(--site-gutter)`,
+        boxSizing: 'border-box',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+    <button
         onClick={() => router.push('/')}
         style={{
           background: 'transparent',
@@ -115,9 +139,11 @@ export default function NavBar() {
           padding: 0,
           margin: 0,
           cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gridColumn: '2',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '64px',
+      alignSelf: 'center',
         }}
         aria-label="Home"
       >
@@ -134,40 +160,82 @@ export default function NavBar() {
           }}
         />
       </button>
-      {/* Right-aligned action group: ABOUT + SHOP */}
+      {/* Left action container (always positioned left) */}
       <div
         style={{
-          gridColumn: '3',
-          justifySelf: 'end',
-          alignSelf: 'center',
+          position: 'absolute',
+          left: 0,
+          top: 0,
           display: 'flex',
-          gap: '0.5rem',
+          gap: '1.5rem',
           alignItems: 'center',
-          height: '100%',
-          marginRight: '1rem',
+          height: '64px',
+          marginLeft: 'var(--site-gutter)',
         }}
       >
-        <button
-          onClick={() => router.push('/shop')}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: '#fff',
-            fontFamily: 'var(--font-monument)',
-            fontWeight: 700,
-            fontSize: '0.95rem',
-            cursor: 'pointer',
-            padding: '0.25rem 0.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            height: '100%',
-            mixBlendMode: useDifference ? 'difference' : 'normal',
-            WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
-          }}
-          aria-label="Shop"
-        >
-          SHOP
-        </button>
+        {isMobile && (
+          <button
+            onClick={() => router.push('/shop')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#fff',
+              fontFamily: 'var(--font-monument)',
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              cursor: 'pointer',
+              padding: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '64px',
+              mixBlendMode: useDifference ? 'difference' : 'normal',
+              WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
+            }}
+            aria-label="Shop"
+          >
+            SHOP
+          </button>
+        )}
+    </div>
+
+    {/* Right action container (always positioned right) */}
+      <div
+        style={{
+      position: 'absolute',
+      right: 0,
+      top: 0,
+          display: 'flex',
+          gap: '1.5rem',
+          alignItems: 'center',
+          height: '64px',
+          marginRight: 'var(--site-gutter)',
+        }}
+      >
+        {!isMobile && (
+          <button
+            onClick={() => router.push('/shop')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#fff',
+              fontFamily: 'var(--font-monument)',
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              cursor: 'pointer',
+              padding: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '64px',
+              mixBlendMode: useDifference ? 'difference' : 'normal',
+              WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
+            }}
+            aria-label="Shop"
+          >
+            SHOP
+          </button>
+        )}
 
         <button
           onClick={() => {
@@ -181,10 +249,11 @@ export default function NavBar() {
             fontWeight: 700,
             fontSize: '0.95rem',
             cursor: 'pointer',
-            padding: '0.25rem 0.5rem',
-            display: 'flex',
+            padding: 0,
+            display: 'inline-flex',
             alignItems: 'center',
-            height: '100%',
+            justifyContent: 'center',
+            height: '64px',
             mixBlendMode: useDifference ? 'difference' : 'normal',
             WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
           }}
@@ -193,6 +262,8 @@ export default function NavBar() {
           ABOUT
         </button>
       </div>
+    </div>
     </nav>
   );
+
 }

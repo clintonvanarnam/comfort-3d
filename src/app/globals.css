@@ -19,6 +19,8 @@ body.lightbox-open * {
   --space-md: 128px;
   --space-lg: 192px;
   --space-xl: 256px;
+  /* Single gutter variable used by layout elements (nav, content padding) */
+  --site-gutter: 2rem;
 }
 
 /* Dark mode removed: site uses the light color variables defined in :root */
@@ -145,7 +147,7 @@ a {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1rem 2rem;
+  padding: var(--site-gutter) var(--site-gutter);
   box-sizing: border-box;
   text-align: center;
 }
@@ -215,15 +217,15 @@ a {
   margin-left: auto;
   margin-right: auto;
   margin-top: 4rem;
-  padding: 0 1rem;
+  padding: 0 var(--site-gutter);
   font-size: 1.25rem;
 }
 
 @media (max-width: 768px) {
   .post-body {
     max-width: 100%;
-    margin-left: 1rem;
-    margin-right: 1rem;
+    margin-left: var(--site-gutter);
+    margin-right: var(--site-gutter);
     padding: 0;
     /* width: 100%; removed as requested */
   }
@@ -319,9 +321,9 @@ body.lightbox-open {
 }
 .post-lightbox-close {
   position: fixed;
-  right: 1rem;
+  right: var(--site-gutter);
   top: 0.5rem;
-  padding: 0 1rem;
+  padding: 0 var(--site-gutter);
   color: #6b6b6b;
   font-size: 0.95rem;
   line-height: 1.25;
@@ -334,8 +336,8 @@ body.lightbox-open {
 
 @media (max-width: 800px) {
   .post-body {
-    margin-left: 1rem;
-    margin-right: 1rem;
+  margin-left: var(--site-gutter);
+  margin-right: var(--site-gutter);
     max-width: 100%;
   }
   .post-main-figure {
@@ -345,10 +347,10 @@ body.lightbox-open {
     max-width: 100%;
     box-sizing: border-box;
   }
-  .post-main-caption,
+    .post-main-caption,
   .post-body-caption {
-    margin-left: 1rem;
-    margin-right: 1rem;
+    margin-left: var(--site-gutter);
+    margin-right: var(--site-gutter);
     max-width: calc(100% - 2rem);
     padding: 0;
     text-align: left;
@@ -384,8 +386,8 @@ body.lightbox-open {
   .post-body-figure.fullwidth .post-body-caption,
   .post-main-figure .post-main-caption,
   .post-body-figure.fullwidth .post-body-caption :where(p) {
-    margin-left: 1rem;
-    margin-right: 1rem;
+    margin-left: var(--site-gutter);
+    margin-right: var(--site-gutter);
     max-width: calc(100% - 2rem);
     padding: 0;
     box-sizing: border-box;
@@ -522,7 +524,7 @@ body.lightbox-open {
   margin-left: auto;
   margin-right: auto;
   margin-top: 0.5rem;
-  padding: 0 1rem;
+  padding: 0 var(--site-gutter);
   color: #6b6b6b;
   font-size: 0.95rem;
   line-height: 1.25;
@@ -538,7 +540,7 @@ body.lightbox-open {
   margin-left: auto;
   margin-right: auto;
   margin-top: 0.5rem;
-  padding: 0 1rem;
+  padding: 0 var(--site-gutter);
   color: #6b6b6b;
   font-size: 0.95rem;
   line-height: 1.25;
@@ -553,10 +555,10 @@ body.lightbox-open {
   .post-body-figure.fullwidth .post-body-caption,
   .post-body-figure.fullwidth.fullheight .post-body-caption,
   .post-main-figure .post-main-caption {
-    margin-left: 1rem;
-    margin-right: 1rem;
-    max-width: calc(100% - 2rem);
-    padding: 0; /* remove the desktop `padding: 0 1rem` that can persist in the cascade */
+  margin-left: var(--site-gutter);
+  margin-right: var(--site-gutter);
+  max-width: calc(100% - (2 * var(--site-gutter)));
+  padding: 0; /* remove the desktop `padding` that can persist in the cascade */
     box-sizing: border-box;
     text-align: left;
     color: #6b6b6b;
@@ -727,6 +729,7 @@ body:not(.footer-visible) .site-footer {
   margin: 0 auto;
   font-size: 0.95rem;
   line-height: 1.45;
+  padding: 0 var(--site-gutter);
 }
 
 /* Tagline directly under the bio - match the bio's line-height and spacing */
@@ -784,13 +787,13 @@ body.three-scene-active .site-footer {
     max-width: 100vw;
     margin-left: calc(50% - 50vw);
     margin-right: calc(50% - 50vw);
-    padding: 0 2rem;
+  padding: 0 var(--site-gutter);
     /* keep the 12-column grid so editor offsets still work via inline gridColumn */
     grid-template-columns: repeat(12, 1fr);
     gap: 1.5rem;
   }
   .two-image-spread .two-image-side {
-    padding: 0 1rem;
+    padding: 0 var(--site-gutter);
   }
 
   /* left and right images take up ~half the viewport and are nudged outward */
@@ -820,7 +823,7 @@ body.three-scene-active .site-footer {
   max-width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  padding: var(--pad-top, 32px) 2rem var(--pad-bottom, 32px);
+  padding: var(--pad-top, 32px) var(--site-gutter) var(--pad-bottom, 32px);
   box-sizing: border-box;
   display: block;
 }
@@ -852,7 +855,7 @@ body.three-scene-active .site-footer {
   max-width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  padding: var(--pad-top, 32px) 2rem var(--pad-bottom, 32px);
+  padding: var(--pad-top, 32px) var(--site-gutter) var(--pad-bottom, 32px);
   box-sizing: border-box;
 }
 .multi-image-spread.auto-columns .multi-image-item {
@@ -879,7 +882,7 @@ body.three-scene-active .site-footer {
   max-width: 800px;
   margin-left: calc(50% - 400px);
   margin-right: calc(50% - 400px);
-  padding: 0.5rem 1rem 1rem;
+  padding: 0.5rem var(--site-gutter) 1rem;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -950,8 +953,8 @@ body.three-scene-active .site-footer {
   }
   .multi-image-captions-list {
    max-width: 100%;
-   margin-left: 1rem;
-   margin-right: 1rem;
+   margin-left: var(--site-gutter);
+   margin-right: var(--site-gutter);
    padding: 0.5rem 0 1rem;
    /* Ensure the index column still aligns visually on mobile by reducing
      the left padding so numbers sit near the caption text */
