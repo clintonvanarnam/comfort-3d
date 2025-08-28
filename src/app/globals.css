@@ -23,6 +23,13 @@ body.lightbox-open * {
   --site-gutter: 2rem;
 }
 
+/* Mobile override: smaller gutters on narrow viewports */
+@media (max-width: 640px) {
+  :root {
+    --site-gutter: 1rem;
+  }
+}
+
 /* Dark mode removed: site uses the light color variables defined in :root */
 
 html,
