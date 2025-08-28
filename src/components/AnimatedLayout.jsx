@@ -188,8 +188,11 @@ export default function AnimatedLayout({ children }) {
           setAboutOpen(false);
           if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('about:close'));
         }}
-  initialBody={aboutPrefetchBody}
-  initialStatus={aboutPrefetchStatus}
+        initialBody={aboutPrefetchBody}
+        // Avoid passing a 'loading' initial status from the background prefetch.
+        // Treat an in-progress prefetch as 'idle' so the slide-over doesn't render
+        // a loading UI when opened.
+        initialStatus={aboutPrefetchStatus === 'loading' ? 'idle' : aboutPrefetchStatus}
       />
 
       {/* Only render once we decide it’s allowed to be visible */}

@@ -162,7 +162,10 @@ export default function AboutSlideOver({ open, onClose, initialBody = null, init
 
         {/* Scrollable content */}
         <div style={{ flex: '1 1 auto', overflowY: 'auto', padding: '1rem' }}>
-          {status === 'loading' && <p>Loading…</p>}
+          {/* Intentionally do not render a visible "Loading…" string.
+              Keep errors visible so users see problems; when content is loading
+              we silently fetch and show the content when ready to avoid jarring
+              loading screens. */}
           {status === 'error' && <p style={{ color: '#ff6b6b' }}>{errMsg}</p>}
           {status === 'ready' && Array.isArray(body) && (
             <PortableText value={body} components={ptComponents} />

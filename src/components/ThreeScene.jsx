@@ -20,6 +20,7 @@ export default function ThreeScene() {
   const preloadedTexturesRef = useRef({});
   const preloadedPostsRef = useRef(null);
   const preloadedDoneRef = useRef(false);
+  const introCompleteRef = useRef(false);
   // sphere mode is always enabled by default
   const useSphereRef = useRef(true);
   const sphereGroupRef = useRef(null);
@@ -29,7 +30,13 @@ export default function ThreeScene() {
   const hoverEnabledRef = useRef(true);
 
   useEffect(() => {
-    let debounceTimer;
+    // keep a ref in sync so event listeners inside the scene can check
+    // whether the intro overlay has been dismissed without stale closures
+    introCompleteRef.current = introComplete;
+  }, [introComplete]);
+
+  useEffect(() => {
+  let debounceTimer;
     if (hoveredInfo && (hoveredInfo.title || hoveredInfo.author)) {
       // skip hover-based speech if the user has clicked a sprite
       if (!hoverEnabledRef.current) {
@@ -53,61 +60,76 @@ export default function ThreeScene() {
       }
       if (debounceTimer) clearTimeout(debounceTimer);
     };
-  }, [hoveredInfo]);
+    }, [hoveredInfo]);
 
   useEffect(() => {
     setMounted(true);
     // add a body class so other parts of the UI (like the footer) can
     // respond to the 3D-scene being active and hide UI that shouldn't overlay.
     if (typeof document !== 'undefined') document.body.classList.add('three-scene-active');
-    return () => {
-      if (typeof document !== 'undefined') document.body.classList.remove('three-scene-active');
-    };
-    // start preloading posts and textures in background
+    // start preloading posts and textures in the background with limited concurrency
     (async function preload() {
       try {
         const posts = await getPosts();
         preloadedPostsRef.current = posts;
         const loader = new THREE.TextureLoader();
-        let remaining = posts.length;
-        if (!remaining) {
+        const items = posts.filter(p => p && p.image).map(p => ({
+          key: p.slug?.current || p.slug || p._id || p.title,
+          url: p.image,
+        }));
+
+        if (!items.length) {
           preloadedDoneRef.current = true;
           return;
         }
-        posts.forEach((post) => {
-          if (!post.image) {
-            remaining -= 1;
-            if (remaining <= 0) preloadedDoneRef.current = true;
-            return;
+
+        const maxConcurrent = 4; // tune as needed
+        let idx = 0;
+
+        const loadTexturePromise = (url) => new Promise((resolve, reject) => {
+          try {
+            loader.load(url, (tex) => resolve(tex), undefined, () => reject(new Error('load error')));
+          } catch (e) {
+            reject(e);
           }
-          loader.load(
-            post.image,
-            (texture) => {
-              preloadedTexturesRef.current[post.slug?.current || post.slug || post._id || post.title] = texture;
-              remaining -= 1;
-              if (remaining <= 0) preloadedDoneRef.current = true;
-            },
-            undefined,
-            () => {
-              // on error, still mark as done for this item
-              remaining -= 1;
-              if (remaining <= 0) preloadedDoneRef.current = true;
-            }
-          );
         });
+
+        const worker = async () => {
+          while (true) {
+            const i = idx++;
+            if (i >= items.length) return;
+            const item = items[i];
+            try {
+              const tex = await loadTexturePromise(item.url);
+              preloadedTexturesRef.current[item.key] = tex;
+            } catch (e) {
+              // ignore individual load errors
+            }
+          }
+        };
+
+        await Promise.all(Array.from({ length: Math.min(maxConcurrent, items.length) }, () => worker()));
+        preloadedDoneRef.current = true;
       } catch (e) {
         console.warn('Preload failed', e);
         preloadedDoneRef.current = true;
       }
     })();
+
+    return () => {
+      if (typeof document !== 'undefined') document.body.classList.remove('three-scene-active');
+    };
   }, []);
 
   // sphere mode always enabled via useSphereRef default
 
   useEffect(() => {
-  if (!mounted || !introComplete) return;
+    if (!mounted) return;
 
-    // Defer scene initialization to next tick so React can remove the intro overlay first
+    // Initialize the 3D scene as soon as the component mounts so sprites/textures
+    // can be created and animated behind the intro overlay. We still keep the
+    // intro overlay on top visually; when it is dismissed the scene is already ready.
+    // Defer to next tick so DOM is ready.
     setTimeout(() => {
       async function init() {
         // prefer preloaded posts if available
@@ -159,78 +181,89 @@ export default function ThreeScene() {
   // random seed so sphere distribution isn't identical every load
   const sphereSeed = Math.random() * Math.PI * 2;
 
-  posts.forEach((post, idx) => {
-          if (!post.image) return;
-          const key = post.slug?.current || post.slug || post._id || post.title;
-          const preTex = preloadedTexturesRef.current[key];
-          const onTexture = (texture, wasPreloaded = false) => {
-            texture.colorSpace = THREE.SRGBColorSpace;
-            const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 1 });
-            const sprite = new THREE.Sprite(material);
-            const baseHeight = 1.5;
-            const imageAspect = texture.image.width / texture.image.height;
-            const width = baseHeight * imageAspect;
-            const height = baseHeight;
-            sprite.scale.set(width, height, 1);
-            if (useSphereRef.current) {
-              // Fibonacci sphere algorithm
-              const total = posts.length || 1;
-              const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-              const y = 1 - (idx / (total - 1 || 1)) * 2; // from 1 to -1
-              const radiusAtY = Math.sqrt(1 - y * y);
-              const theta = goldenAngle * idx + sphereSeed;
-              const x = Math.cos(theta) * radiusAtY;
-              const z = Math.sin(theta) * radiusAtY;
-              const sphereRadius = 4;
-              sprite.position.set(x * sphereRadius, y * sphereRadius, z * sphereRadius);
-              sphereGroup.add(sprite);
-            } else {
-              sprite.position.set(Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * -2 + 2);
-              scene.add(sprite);
-            }
-            sprite.userData = {
-              slug: post.slug?.current || post.slug || '',
-              title: typeof post.title === 'string' ? post.title : 'Untitled',
-              author: post.author || '',
-              imageUrl: post.image || '',
-              floatPhase: Math.random() * Math.PI * 2,
-              floatSpeed: 0.5 + Math.random(),
-              floatAmplitude: 0.2 + Math.random() * 0.3,
-              baseY: sprite.position.y,
-              floating: true,
-              imageAspect,
-              preloaded: !!preTex,
-              // remember the original scale so we can animate back to it
-              origScale: { x: sprite.scale.x, y: sprite.scale.y },
-            };
-            // set initial state to be small/transparent so we can animate them in with GSAP
-            sprite.material.opacity = 0;
-            sprite.scale.set(0.001, 0.001, 0.001);
-            sprites.push(sprite);
-            if (wasPreloaded) preloadedSprites.push(sprite);
-            else lateSprites.push(sprite);
+  // Create sprites in small batches to avoid blocking the main thread
+  (function createSpritesInBatches() {
+    const batchSize = 6; // tune to balance throughput vs responsiveness
+    let i = 0;
+    const total = posts.length;
 
-            // If phase1 has already completed, animate late arrivals individually
-            if (phase1Done && !wasPreloaded) {
-              // Phase 2 quick animation for late arrivals
-              gsap.to(sprite.material, { opacity: 1, duration: 0.14, ease: 'power1.out' });
-              gsap.to(sprite.scale, {
-                x: sprite.userData.origScale.x,
-                y: sprite.userData.origScale.y,
-                duration: 0.14,
-                ease: 'back.out(1.1)'
-              });
-            }
-          };
-
-          if (preTex) {
-            onTexture(preTex, true);
+    const processBatch = () => {
+      const end = Math.min(i + batchSize, total);
+      for (let idx = i; idx < end; idx++) {
+        const post = posts[idx];
+        if (!post || !post.image) continue;
+        const key = post.slug?.current || post.slug || post._id || post.title;
+        const preTex = preloadedTexturesRef.current[key];
+        const onTexture = (texture, wasPreloaded = false) => {
+          texture.colorSpace = THREE.SRGBColorSpace;
+          const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 1 });
+          const sprite = new THREE.Sprite(material);
+          const baseHeight = 1.5;
+          const imageAspect = texture.image.width / texture.image.height;
+          const width = baseHeight * imageAspect;
+          const height = baseHeight;
+          sprite.scale.set(width, height, 1);
+          if (useSphereRef.current) {
+            const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+            const y = 1 - (idx / (total - 1 || 1)) * 2; // from 1 to -1
+            const radiusAtY = Math.sqrt(1 - y * y);
+            const theta = goldenAngle * idx + sphereSeed;
+            const x = Math.cos(theta) * radiusAtY;
+            const z = Math.sin(theta) * radiusAtY;
+            const sphereRadius = 4;
+            sprite.position.set(x * sphereRadius, y * sphereRadius, z * sphereRadius);
+            sphereGroup.add(sprite);
           } else {
-            loader.load((post.image), (texture) => onTexture(texture, false));
+            sprite.position.set(Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * -2 + 2);
+            scene.add(sprite);
           }
-        });
+          sprite.userData = {
+            slug: post.slug?.current || post.slug || '',
+            title: typeof post.title === 'string' ? post.title : 'Untitled',
+            author: post.author || '',
+            imageUrl: post.image || '',
+            floatPhase: Math.random() * Math.PI * 2,
+            floatSpeed: 0.5 + Math.random(),
+            floatAmplitude: 0.2 + Math.random() * 0.3,
+            baseY: sprite.position.y,
+            floating: true,
+            imageAspect,
+            preloaded: !!preTex,
+            origScale: { x: sprite.scale.x, y: sprite.scale.y },
+          };
+          sprite.material.opacity = 0;
+          sprite.scale.set(0.001, 0.001, 0.001);
+          sprites.push(sprite);
+          if (wasPreloaded) preloadedSprites.push(sprite);
+          else lateSprites.push(sprite);
+          if (phase1Done && !wasPreloaded) {
+            gsap.to(sprite.material, { opacity: 1, duration: 0.14, ease: 'power1.out' });
+            gsap.to(sprite.scale, {
+              x: sprite.userData.origScale.x,
+              y: sprite.userData.origScale.y,
+              duration: 0.14,
+              ease: 'back.out(1.1)'
+            });
+          }
+        };
 
-        // After all sprites have been added, run a quick two-phase staggered entrance
+        if (preTex) {
+          onTexture(preTex, true);
+        } else {
+          loader.load((post.image), (texture) => onTexture(texture, false));
+        }
+      }
+      i = end;
+      if (i < total) {
+        // yield to the main thread briefly
+        setTimeout(processBatch, 30);
+      }
+    };
+
+    processBatch();
+  })();
+
+  // After all sprites have been added, run a quick two-phase staggered entrance
         // Phase 1: animate preloaded sprites quickly
         setTimeout(() => {
           if (preloadedSprites.length > 0) {
@@ -283,6 +316,8 @@ export default function ThreeScene() {
         }
 
         function onPointerMove(event) {
+          // Ignore hover interactions until the intro overlay has been dismissed
+          if (!introCompleteRef.current) return;
           // always update mouse for accurate raycasting
           updateMouseFromEvent(event);
 
@@ -353,6 +388,8 @@ export default function ThreeScene() {
         window.addEventListener('resize', onWindowResize);
 
         window.addEventListener('click', (e) => {
+          // Ignore interactions until intro is dismissed
+          if (!introCompleteRef.current) return;
           // update mouse from the click location (covers taps without prior move)
           updateMouseFromEvent(e);
           // ignore clicks that happen while dragging
@@ -476,80 +513,82 @@ export default function ThreeScene() {
       }
       init();
     }, 0);
-  }, [mounted, introComplete, router]);
+  }, [mounted, router]);
 
   if (!mounted) return null;
 
-  if (!introComplete) {
-    return (
-      <div
-      onClick={() => {
-        setIntroFading(true);
-        setTimeout(() => setIntroComplete(true), 400);
-      }}
-      onMouseMove={(e) => setIntroCursor({ x: e.clientX, y: e.clientY, visible: true })}
-      onMouseEnter={(e) => setIntroCursor({ x: e.clientX, y: e.clientY, visible: true })}
-      onMouseLeave={() => setIntroCursor((s) => ({ ...s, visible: false }))}
-      onTouchMove={(e) => {
-        const t = e.touches[0];
-        if (t) setIntroCursor({ x: t.clientX, y: t.clientY, visible: true });
-      }}
-      onTouchEnd={() => setIntroCursor((s) => ({ ...s, visible: false }))}
-      style={{
-        width: '100vw',
-        height: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        background: 'black',
-        position: 'relative',
-        color: 'white',
-        fontFamily: 'monospace',
-        fontSize: '24px',
-        cursor: 'none',
-      }}
-      >
-      <img
-        src="/COMFORT_MAG_LOGO_WHITE.svg"
-        alt="Comfort Logo"
-        style={{
-        maxWidth: '80%',
-        maxHeight: '50%',
-        opacity: introFading ? 0 : 1,
-        transition: 'opacity 0.4s',
-        }}
-      />
-      <div
-        style={{
-        position: 'fixed',
-        left: introCursor.x,
-        top: introCursor.y,
-        transform: 'translate(-50%, -50%)',
-        fontFamily: 'monospace',
-        fontSize: '15px',
-        color: '#fff',
-        pointerEvents: 'none',
-        zIndex: 2147483647,
-        display: introCursor.visible ? 'block' : 'none',
-        userSelect: 'none',
-        whiteSpace: 'nowrap',
-        mixBlendMode: 'difference',
-        }}
-      >
-        [CLICK]
-      </div>
-      </div>
-    );
-  }
-
   return (
     <>
-  <NavBar />
+      <NavBar />
+
+      {/* Canvas container - always mounted so scene can initialize and load assets */}
       <div
         ref={containerRef}
-        style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: 'black' }}
+        style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: 'black', position: 'relative' }}
       />
-  {/* sphere mode always on; toggle removed */}
+
+      {/* Intro overlay sits above the canvas and can be dismissed to reveal the scene */}
+      <div
+        onClick={() => {
+          setIntroFading(true);
+          setTimeout(() => setIntroComplete(true), 400);
+        }}
+        onMouseMove={(e) => setIntroCursor({ x: e.clientX, y: e.clientY, visible: true })}
+        onMouseEnter={(e) => setIntroCursor({ x: e.clientX, y: e.clientY, visible: true })}
+        onMouseLeave={() => setIntroCursor((s) => ({ ...s, visible: false }))}
+        onTouchMove={(e) => {
+          const t = e.touches[0];
+          if (t) setIntroCursor({ x: t.clientX, y: t.clientY, visible: true });
+        }}
+        onTouchEnd={() => setIntroCursor((s) => ({ ...s, visible: false }))}
+        style={{
+          width: '100vw',
+          height: '100vh',
+          display: introComplete ? 'none' : 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background: 'black',
+          position: 'fixed',
+          inset: 0,
+          color: 'white',
+          fontFamily: 'monospace',
+          fontSize: '24px',
+          cursor: 'none',
+          zIndex: 2147483647,
+          transition: 'opacity 0.4s',
+          opacity: introFading ? 0 : 1,
+        }}
+      >
+        <img
+          src="/COMFORT_MAG_LOGO_WHITE.svg"
+          alt="Comfort Logo"
+          style={{
+            maxWidth: '80%',
+            maxHeight: '50%',
+          }}
+        />
+        <div
+          style={{
+            position: 'fixed',
+            left: introCursor.x,
+            top: introCursor.y,
+            transform: 'translate(-50%, -50%)',
+            fontFamily: 'monospace',
+            fontSize: '15px',
+            color: '#fff',
+            pointerEvents: 'none',
+            zIndex: 2147483648,
+            display: introCursor.visible ? 'block' : 'none',
+            userSelect: 'none',
+            whiteSpace: 'nowrap',
+            mixBlendMode: 'difference',
+          }}
+        >
+          [CLICK]
+        </div>
+      </div>
+
+      {/* sphere mode always on; hover info sits above the canvas */}
       {hoveredInfo && (
         <div
           style={{
