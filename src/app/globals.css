@@ -965,7 +965,7 @@ body.three-scene-active .site-footer {
    padding: 0.5rem 0 1rem;
    /* Ensure the index column still aligns visually on mobile by reducing
      the left padding so numbers sit near the caption text */
-   padding-left: 0.25rem;
+   padding-left: 0;
   }
 }
 
