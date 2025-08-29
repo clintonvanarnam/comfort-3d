@@ -29,6 +29,9 @@ export default function ThreeScene() {
   const touchStartRef = useRef({ x: 0, y: 0 });
   const touchMovedRef = useRef(false);
   const lastInteractionTimeRef = useRef(0);
+  const touchHoldTimerRef = useRef(null);
+  const touchHoldActiveRef = useRef(false);
+  const pointerDownTimeRef = useRef(0);
   const sphereRotationTargetRef = useRef({ x: 0, y: 0 });
   const hoverEnabledRef = useRef(true);
 
@@ -390,7 +393,19 @@ export default function ThreeScene() {
             touchStartRef.current.x = e.clientX;
             touchStartRef.current.y = e.clientY;
             touchMovedRef.current = false;
+            touchHoldActiveRef.current = false;
             isDraggingRef.current = false;
+            pointerDownTimeRef.current = Date.now();
+            // start a hold timer; only after this delay will movement become rotation
+            const holdDelay = 250; // ms - tuneable
+            if (touchHoldTimerRef.current) clearTimeout(touchHoldTimerRef.current);
+            touchHoldTimerRef.current = setTimeout(() => {
+              touchHoldActiveRef.current = true;
+              // begin drag state only when hold becomes active
+              isDraggingRef.current = true;
+              lastPointerRef.current.x = e.clientX;
+              lastPointerRef.current.y = e.clientY;
+            }, holdDelay);
           } else {
             isDraggingRef.current = true;
             lastPointerRef.current.x = e.clientX;
@@ -399,20 +414,41 @@ export default function ThreeScene() {
         }
 
         function onPointerUp(e) {
-          // Touch taps: if the finger didn't move, treat as a click/tap
+          // Cleanup hold timer if present
+          if (touchHoldTimerRef.current) {
+            clearTimeout(touchHoldTimerRef.current);
+            touchHoldTimerRef.current = null;
+          }
+
           if (e && e.pointerType === 'touch') {
-            if (!touchMovedRef.current) {
-              // avoid double-firing with the click event: record timestamp
-              lastInteractionTimeRef.current = Date.now();
-              updateMouseFromEvent(e);
-              handleInteraction();
+            // If the hold became active, we were dragging; stop dragging and don't treat as a click
+            if (touchHoldActiveRef.current) {
+              touchHoldActiveRef.current = false;
+              isDraggingRef.current = false;
+              touchMovedRef.current = false;
+              return;
             }
+
+            // short touch (no hold) counts as a click/tap regardless of tiny movement
+            lastInteractionTimeRef.current = Date.now();
+            updateMouseFromEvent(e);
+            handleInteraction();
             touchMovedRef.current = false;
             isDraggingRef.current = false;
             return;
           }
 
-          // small delay to allow click handlers to check dragging state
+          // small delay to allow click handlers to check dragging state for mouse/pen
+          isDraggingRef.current = false;
+        }
+
+        function onPointerCancel(e) {
+          if (touchHoldTimerRef.current) {
+            clearTimeout(touchHoldTimerRef.current);
+            touchHoldTimerRef.current = null;
+          }
+          touchHoldActiveRef.current = false;
+          touchMovedRef.current = false;
           isDraggingRef.current = false;
         }
 
@@ -430,9 +466,9 @@ export default function ThreeScene() {
           renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
           renderer.setSize(w, h, false);
         }
-        window.addEventListener('resize', onWindowResize);
+  window.addEventListener('resize', onWindowResize);
 
-        window.addEventListener('click', (e) => {
+  window.addEventListener('click', (e) => {
           // Ignore interactions until intro is dismissed
           if (!introCompleteRef.current) return;
           // Dedupe after touch-based pointerup already triggered the interaction
@@ -442,6 +478,7 @@ export default function ThreeScene() {
           // ignore clicks that happen while dragging
           if (!isDraggingRef.current) handleInteraction();
         });
+  window.addEventListener('pointercancel', onPointerCancel);
 
         function handleInteraction() {
           raycaster.setFromCamera(mouse, camera);
