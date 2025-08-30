@@ -940,11 +940,22 @@ body.three-scene-active .site-footer {
 
 
 @media (max-width: 900px) {
-  .multi-image-spread.vertical-stack {
-    padding-left: 0;
-    padding-right: 0;
+  /* On small screens, remove the large pad-top/pad-bottom coming from the
+     desktop fallback (var(--pad-top) / var(--pad-bottom)). Keep images
+     full-bleed horizontally but use 1.5rem vertical rhythm like inline images. */
+  .multi-image-spread.vertical-stack,
+  .multi-image-spread.auto-columns,
+  .multi-image-spread.stack-on-mobile {
+    /* remove the desktop padding values that introduce large gaps */
     padding-top: 0;
     padding-bottom: 0;
+    /* preserve full-bleed horizontal offset, but remove inner horizontal padding */
+    padding-left: 0;
+    padding-right: 0;
+    box-sizing: border-box;
+    /* use the same vertical rhythm as inline images */
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
   }
   .multi-image-spread.vertical-stack .multi-image-row {
     width: 100vw;
@@ -953,10 +964,8 @@ body.three-scene-active .site-footer {
   }
   .multi-image-spread.auto-columns {
     grid-template-columns: 1fr !important;
-    padding-left: 0;
-    padding-right: 0;
-    padding-top: 0;
-    padding-bottom: 0;
+    /* ensure the single-column grid still uses full-bleed offsets defined
+       by the base rules (margin-left/right calc preserved) */
   }
   .multi-image-captions-list {
    max-width: 100%;
