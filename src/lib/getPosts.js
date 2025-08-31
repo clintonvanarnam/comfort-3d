@@ -1,46 +1,29 @@
 // src/lib/getPosts.js
 import client from './sanity';
-import imageUrlBuilder from '@sanity/image-url';
-
-const builder = imageUrlBuilder(client);
 
 // Get all posts for homepage / 3D view
 export async function getPosts() {
-  // Fetch the image object (so we can build a resized URL) and also the
-  // original asset URL as a fallback.
   const query = `*[_type == "post"]{
     _id,
     title,
     slug,
-    author->{name},
-    mainImage,
-    "imageUrl": mainImage.asset->url
+    mainImage {
+      asset->{
+        _id,
+        url
+      }
+    }
   }`;
 
   const data = await client.fetch(query);
 
-  // Format for 3D sprite usage; build a small thumbnail URL where possible
-  return data.map(post => {
-    let image = '';
-    try {
-      if (post.mainImage) {
-        // builder.image accepts the image object (including asset ref)
-        image = builder.image(post.mainImage).width(600).auto('format').url();
-      } else if (post.imageUrl) {
-        image = post.imageUrl;
-      }
-    } catch (e) {
-      // fallback to the raw URL if builder fails for any reason
-      image = post.imageUrl || '';
-    }
-
-    return {
-      slug: post.slug,
-      title: post.title,
-      author: post.author?.name || '',
-      image,
-    };
-  });
+  // Format for 3D sprite usage
+  return data.map(post => ({
+    _id: post._id,
+    title: post.title || '',
+    slug: post.slug?.current || (typeof post.slug === 'string' ? post.slug : ''),
+    image: post.mainImage?.asset?.url || '',
+  }));
 }
 
 // Get a single post by its slug
@@ -49,22 +32,28 @@ export async function getPostBySlug(slug) {
     _id,
     title,
     slug,
-    author->{name},
-    mainImage,
-    "imageUrl": mainImage.asset->url,
-    caption, alt, body
+  mainImage {
+      asset->{
+        _id,
+        url
+      }
+    },
+  body,
+  author-> { name },
+  publishedAt
   }`;
 
   const post = await client.fetch(query, { slug });
 
-  const mainImage = post?.mainImage || null;
   return {
-    slug: post?.slug,
-    title: post?.title,
-    mainImage,
-    // also expose a usable URL for non-builder contexts
-    imageUrl: post?.imageUrl || null,
-    author: post?.author?.name || '',
-    body: post?.body || null,
+  slug: post.slug?.current || (typeof post.slug === 'string' ? post.slug : ''),
+    title: post.title,
+  // keep the original mainImage object so UI code that expects
+  // `post.mainImage.asset.url`, alt, caption etc continues to work
+  mainImage: post.mainImage || null,
+  image: post.mainImage?.asset?.url || '',
+  body: post.body || null,
+  author: post.author?.name || null,
+  publishedAt: post.publishedAt || null,
   };
 }

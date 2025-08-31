@@ -1,9 +1,3 @@
-
-@media (max-width: 640px) {
-  .post-carousel-img {
-    height: 40vh !important;
-  }
-}
 .post-lightbox-caption {
   color: #fff !important;
   margin-top: 0.75rem;
@@ -107,7 +101,7 @@ a {
      position independently */
   width: 100%;
   max-width: none;
-  margin: 10rem 0 5rem 0; /* top:10rem, right:0, bottom:5rem, left:0 */
+  margin: 10rem 0 1rem 0; /* top:10rem, right:0, bottom:1rem, left:0 */
 }
 
 .post-content.is-visible {
@@ -134,16 +128,25 @@ a {
   border-radius: 0;
 }
 
-/* make the header image full-bleed across the viewport while inside the centered container */
-.post-image-header {
-  width: 100vw;
-  max-width: 100vw;
+/* make the header image visually inset by the site gutter while remaining edge-aware
+   The image still uses the viewport as the reference (100vw) but is shifted and
+   sized so both left and right gutters equal --site-gutter. */
+.post-image-header,
+.post-main-image,
+.post-header-image {
+  /* make width equal to viewport minus the left/right gutters */
+  width: calc(100vw - (var(--site-gutter) * 2));
+  max-width: calc(100vw - (var(--site-gutter) * 2));
   height: auto;
   display: block;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  /* shift the element left by half the viewport then push it in by the gutter so
+     the visual edges align with the gutters while the element remains centered */
+  margin-left: calc(50% - 50vw + var(--site-gutter));
+  margin-right: calc(50% - 50vw + var(--site-gutter));
   margin-bottom: 2rem;
   object-fit: cover;
+  object-position: center;
+  border-radius: 0;
 }
 
 /* header row: metadata and header image side-by-side on wide screens */
@@ -308,20 +311,20 @@ img[role="button"] {
 /* Carousel side-image custom cursors (use public/cursors/*.svg)
    More specific selector targets interactive images and includes a compact inline
    fallback. The !important is applied to the property so it overrides other rules. */
-.post-carousel-slide.is-prev img[role="button"] {
+.post-carousel-slide-3d.is-prev img[role="button"] {
   /* use small 48x48 PNG cursor for reliable browser support; enforce with !important */
   cursor: url('/cursors/left-48.png') 24 24, url('/cursors/left.png') 24 24, url('/cursors/left.svg?v=2') 24 24, w-resize !important;
 }
-.post-carousel-slide.is-next img[role="button"] {
+.post-carousel-slide-3d.is-next img[role="button"] {
   /* use small 48x48 PNG cursor for reliable browser support; enforce with !important */
   cursor: url('/cursors/right-48.png') 24 24, url('/cursors/right.png') 24 24, url('/cursors/right.svg?v=2') 24 24, e-resize !important;
 }
 
 /* Also apply cursor to the slide container itself so hovering the side area (not only the image) shows the cursor */
-.post-carousel-slide.is-prev {
+.post-carousel-slide-3d.is-prev {
   cursor: url('/cursors/left-48.png') 24 24, url('/cursors/left.png') 24 24, url('/cursors/left.svg?v=2') 24 24, w-resize !important;
 }
-.post-carousel-slide.is-next {
+.post-carousel-slide-3d.is-next {
   cursor: url('/cursors/right-48.png') 24 24, url('/cursors/right.png') 24 24, url('/cursors/right.svg?v=2') 24 24, e-resize !important;
 }
 
@@ -694,6 +697,68 @@ body.lightbox-open {
   font-weight: 700;
 }
 
+/* Related Content grid - align with post gutters and be responsive */
+.related-grid-outer {
+  margin-left: auto;
+  margin-right: auto;
+  padding: 2rem var(--site-gutter);
+  margin-bottom: 5rem;
+  box-sizing: border-box;
+}
+
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.related-card {
+  display: block;
+  color: inherit;
+}
+
+.related-thumb-wrap {
+  position: relative;
+  width: 100%;
+  padding-top: 100%; /* square */
+  overflow: hidden;
+  background: #f7f7f7;
+}
+
+.related-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.related-meta {
+  padding: 0.5rem 0 0 0;
+}
+
+/* Match related content text/titles to post body typography */
+.related-grid-outer h3,
+.related-meta,
+.related-title {
+  font-size: 1.25rem; /* match .post-body */
+  line-height: 1.2;
+  font-weight: 400;
+  color: inherit;
+}
+
+@media (max-width: 1024px) {
+  /* Medium screens: 3 columns so 6 items form 2 rows */
+  .related-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 640px) {
+  /* Small screens: 2 columns so 6 items form 3 rows */
+  .related-grid { grid-template-columns: repeat(2, 1fr); }
+  .related-grid-outer { padding-left: var(--site-gutter); padding-right: var(--site-gutter); }
+}
+
 /* Hide footer by default to avoid it flashing before client JS decides visibility.
    The layout will add the `footer-visible` class to <body> when the footer
    should be shown. */
@@ -1016,15 +1081,15 @@ body.three-scene-active .site-footer {
 
 /* Reduce carousel height on smaller viewports so more of the side images are visible */
 @media (max-width: 1024px) {
-  .post-carousel { height: 44vh; }
+  .post-carousel-3d { height: 44vh; }
 }
 @media (max-width: 640px) {
   /* smaller mobile height to show more of the left/right slides */
-  .post-carousel { height: 18vh; }
+  .post-carousel-3d { height: 18vh; }
 }
 @media (max-width: 420px) {
   /* very small screens (narrow phones) */
-  .post-carousel { height: 16vh; }
+  .post-carousel-3d { height: 16vh; }
 }
 }
 .post-carousel-image {
@@ -1070,8 +1135,8 @@ body.three-scene-active .site-footer {
   background: #fff;
 }
 
-/* CSS carousel visuals */
-.post-carousel {
+/* CSS 3D carousel visuals */
+.post-carousel-3d {
   position: relative;
   width: 100%;
   height: 56vh;
@@ -1082,12 +1147,19 @@ body.three-scene-active .site-footer {
   display: flex;
   align-items: center;
   height: 100%;
-  width: 100%;
   /* no padding here either; JS controls visual centering and gap */
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+  padding-left: 0;
+  padding-right: 0;
 }
-.post-carousel-slide {
+.post-carousel-slide-3d {
+  /* slide box used by the simple track layout */
+  box-sizing: border-box;
+}
+.post-carousel-track {
+  width: 100%;
+  height: 100%;
+}
+.post-carousel-slide-3d {
   /* use site background so letterboxing matches the page */
   background: var(--background);
   display: flex;
@@ -1100,7 +1172,7 @@ body.three-scene-active .site-footer {
 /* Embla variable-width helpers: let slides size to their content, not a fixed percent */
 .embla__container {
   display: flex;
-  gap: 0 !important; /* ensure no gap between slides */
+  gap: 0; /* gaps handled by slide padding if desired */
   align-items: center;
 }
 .embla__slide {
@@ -1109,39 +1181,19 @@ body.three-scene-active .site-footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 !important; /* ensure slides sit flush */
 }
 .embla__slide__img {
   height: 100%;
   width: auto;
   display: block;
-  margin: 0 !important;
-  padding: 0 !important;
 }
-/* Mobile: slightly reduce center image size so side slides peek into view */
-@media (max-width: 640px) {
-  .embla__slide__img {
-    /* constrain images so adjacent slides can peek into view */
-    max-width: 82vw;
-    height: auto;
-  }
-  .post-carousel {
-    height: 28vh;
-  }
-  /* no margin between slides on mobile either */
-  .embla__slide { margin: 0 !important; }
-  .embla__slide.post-carousel-slide.is-prev img,
-  .embla__slide.post-carousel-slide.is-next img { max-width: 70vw; }
-}
-.post-carousel-slide img,
+.post-carousel-slide-3d img,
 .post-carousel-image {
   /* size by height and contain so images fill vertical space without cropping */
   height: 100%;
   width: auto;
   object-fit: contain;
   display: block;
-  margin: 0 !important;
-  padding: 0 !important;
 }
 .post-carousel-controls {
   position: absolute;
@@ -1204,19 +1256,13 @@ body.three-scene-active .site-footer {
 }
 
 /* Also apply cursor to the slide container itself so hovering the side area shows the arrows */
-.post-carousel-slide.is-prev,
-.post-carousel-slide.is-prev img {
+.post-carousel-slide-3d.is-prev,
+.post-carousel-slide-3d.is-prev img {
   cursor: url('/cursors/left.png') 24 24, url('/cursors/left.svg?v=2') 24 24, w-resize !important;
 }
-.post-carousel-slide.is-next,
-.post-carousel-slide.is-next img {
+.post-carousel-slide-3d.is-next,
+.post-carousel-slide-3d.is-next img {
   cursor: url('/cursors/right.png') 24 24, url('/cursors/right.svg?v=2') 24 24, e-resize !important;
-}
-
-/* Show the plus/X cursor when hovering or focusing carousel images to indicate lightbox */
-.post-carousel-img:hover,
-.post-carousel-img:focus {
-  cursor: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect x='22' y='6' width='4' height='36' fill='white'/%3E%3Crect x='6' y='22' width='36' height='4' fill='white'/%3E%3C/svg%3E") 24 24, pointer !important;
 }
 
 

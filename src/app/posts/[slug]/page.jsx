@@ -8,6 +8,8 @@ import client from '@/lib/sanity';
 import gsap from 'gsap';
 import NavBar from '@/components/NavBar';
 import PostCarousel from '@/components/PostCarousel';
+import RelatedContent from '@/components/RelatedContent';
+import { getPosts } from '@/lib/getPosts';
 
 export default function PostPage() {
   const params = useParams();
@@ -327,7 +329,8 @@ export default function PostPage() {
   if (!post) return <div></div>;
 
   return (
-    <div className="post-page">
+    <>
+      <div className="post-page">
       <NavBar />
       {/* Floating image transition layer */}
       <img
@@ -632,6 +635,14 @@ export default function PostPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+
+      {/* Related content placed after the post page container and before the footer wrapper */}
+      <div className="related-content-outer" aria-label="Related content wrapper">
+        <RelatedContent currentSlug={post.slug?.current || post.slug || ''} />
+      </div>
+    </>
   );
 }
+
+// RelatedContent is implemented as a separate component in src/components/RelatedContent.jsx
