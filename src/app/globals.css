@@ -295,8 +295,29 @@ a {
 }
 
 /* show a plus cursor on clickable images (indicates image will open a lightbox) */
-img[role="button"] {
+
+/* Only apply plus cursor to images that open the lightbox, not carousel navigation images */
+.post-image-lightbox[role="button"], .post-main-image-lightbox[role="button"] {
   cursor: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect x='22' y='6' width='4' height='36' fill='white'/%3E%3Crect x='6' y='22' width='36' height='4' fill='white'/%3E%3C/svg%3E") 24 24, pointer;
+}
+
+/* Carousel side-image custom cursors (use public/cursors/*.svg)
+   More specific selector targets interactive images and includes a compact inline
+   fallback. The !important is applied to the property so it overrides other rules. */
+.post-carousel-slide-3d.is-prev img[role="button"] {
+  cursor: url('/cursors/left.svg') 24 24 !important;
+}
+.post-carousel-slide-3d.is-next img[role="button"] {
+  cursor: url('/cursors/right.svg') 24 24 !important;
+}
+
+/* Also apply the same cursor on the slide container so hovering areas outside the <img>
+   still show the custom cursor (some layout/overlays can cover the image). */
+.post-carousel-slide-3d.is-prev {
+  cursor: url('/cursors/left.svg') 24 24 !important;
+}
+.post-carousel-slide-3d.is-next {
+  cursor: url('/cursors/right.svg') 24 24 !important;
 }
 
 /* Visual plus overlay on image wrappers (figures) that rotates into an X when lightbox is open.
@@ -484,18 +505,53 @@ body.lightbox-open {
   object-position: center top;
 }
 
+/* Ensure images with only `fullheight` (or fullheight + fullwidth) are
+   displayed edge-to-edge horizontally. Some editor choices set fullHeight
+   without also toggling fullWidth; this rule forces a full-bleed layout so
+   the image doesn't remain centered in a narrow column. */
+.post-body-figure.fullheight,
+.post-body-figure.fullwidth.fullheight {
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  width: 100vw;
+  padding-left: 0; /* remove inner gutters so image touches edges */
+  padding-right: 0;
+  box-sizing: border-box;
+}
+.post-body-figure.fullheight .post-body-image,
+.post-body-image.fullheight {
+  width: 100vw;
+  max-width: none;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  display: block;
+}
+
 /* Wide margins inset: give 10rem gutters on both sides while keeping image centered. */
 .post-body-figure.fullwidth.wide-margins {
-  /* Keep the figure full-bleed but provide inner gutters via padding.
-     The image will be nudged with negative margins so its visible edges
-     still reach the viewport while the content area respects the gutters. */
+  /* Keep the figure full-bleed while using the site gutter as the
+     inner visual gutter so the image lines up with other content. */
   width: 100vw;
   max-width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  padding: 0 10rem;
+  /* use the site-wide gutter so the inset matches other page elements */
+  padding: 0 var(--site-gutter);
   box-sizing: border-box;
   overflow: visible;
+}
+/* Ensure the image inside a wide-margins fullwidth figure is inset by the
+   figure's padding so the visual side gutters are respected. Use the site
+   gutter variable so alignment is consistent across the site. */
+.post-body-figure.fullwidth.wide-margins .post-body-image {
+  /* Make the image fill the padded content area of the figure so the
+    figure's padding (gutters) is the single source of horizontal spacing.
+    Remove any explicit margins on the image to avoid doubling the space. */
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  display: block;
+  box-sizing: border-box;
 }
 .post-body-image.fullwidth.wide-margins {
   /* Keep wide-margins full-bleed but maintain intrinsic height. We use
@@ -936,6 +992,134 @@ body.three-scene-active .site-footer {
 .multi-image-captions-text :where(p + p, p + ul, p + ol) {
   margin-top: 0.125rem; /* tighter gap between successive blocks */
 }
+
+/* Minimal carousel styles used by the new `carousel` block in PortableText */
+.post-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  gap: 1rem;
+  padding: 1rem var(--site-gutter);
+}
+.post-carousel-slide {
+  flex: 0 0 86%; /* slightly inset so next slide peeks */
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.post-carousel-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 0;
+}
+
+/* 3D Carousel container and progress UI */
+.post-carousel-wrap {
+  /* make the carousel full-bleed like other fullwidth figures but keep
+     the visible content inset by the site gutter */
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  box-sizing: border-box;
+  /* no side padding: carousel should be full-bleed; spacing between slides
+    is handled by the track gap calculated in JS */
+  padding-left: 0;
+  padding-right: 0;
+  position: relative;
+  overflow: hidden;
+}
+.post-carousel-progress {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem var(--site-gutter);
+  justify-content: center;
+}
+.post-carousel-progress-item {
+  flex: 1 1 auto;
+  height: 4px;
+  background: rgba(255,255,255,0.12);
+  overflow: hidden;
+  border-radius: 2px;
+}
+.post-carousel-progress-bar {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: #fff;
+}
+
+/* CSS 3D carousel visuals */
+.post-carousel-3d {
+  position: relative;
+  width: 100%;
+  height: 56vh;
+  overflow: hidden;
+}
+
+.post-carousel-track {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  /* no padding here either; JS controls visual centering and gap */
+  padding-left: 0;
+  padding-right: 0;
+}
+.post-carousel-slide-3d {
+  /* slide box used by the simple track layout */
+  box-sizing: border-box;
+}
+.post-carousel-track {
+  width: 100%;
+  height: 100%;
+}
+.post-carousel-slide-3d {
+  /* use site background so letterboxing matches the page */
+  background: var(--background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0; /* allow flex children to shrink properly */
+  overflow: hidden;
+  margin: 0;
+}
+.post-carousel-slide-3d img,
+.post-carousel-image {
+  /* size by height and contain so images fill vertical space without cropping */
+  height: 100%;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+.post-carousel-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.post-carousel-controls button {
+  pointer-events: auto;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+
+
 
 
 

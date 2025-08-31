@@ -67,5 +67,9 @@ export default defineType({
       type: 'multiImageSpread',
       options: { hotspot: false },
     }),
+    defineArrayMember({
+      type: 'carousel',
+      options: { hotspot: false },
+    }),
   ],
 })

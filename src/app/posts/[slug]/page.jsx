@@ -7,6 +7,7 @@ import { PortableText } from '@portabletext/react';
 import client from '@/lib/sanity';
 import gsap from 'gsap';
 import NavBar from '@/components/NavBar';
+import PostCarousel from '@/components/PostCarousel';
 
 export default function PostPage() {
   const params = useParams();
@@ -590,6 +591,24 @@ export default function PostPage() {
                         </div>
                       )}
                     </>
+                  );
+                },
+                carousel: ({ value }) => {
+                  if (!value || !Array.isArray(value.images) || value.images.length === 0) return null;
+                  const slides = value.images.map((img) => {
+                    const src = img?.asset?.url || (urlFor ? (() => { try { return urlFor(img).width(1200).url(); } catch (e) { return null; } })() : null);
+                    return { src, alt: img?.alt || '', caption: img?.caption || null };
+                  }).filter(s => s.src);
+
+                  return (
+                    <PostCarousel
+                      slides={slides}
+                      autoplay={Boolean(value.autoplay)}
+                      autoplayDelay={value.autoplayDelay || 4000}
+                      showControls={value.showControls !== false}
+                      openLightbox={(opts) => openLightbox(opts)}
+                      disableLightbox={true}
+                    />
                   );
                 },
               },
