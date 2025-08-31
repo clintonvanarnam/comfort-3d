@@ -4,12 +4,13 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
+import { createPortal } from 'react-dom';
 
 
 export default function PostCarousel({ slides = [] }) {
-  // Lightbox disabled
   const stripRef = useRef();
-  const speed = 5; // pixels per frame
+  const [lightbox, setLightbox] = useState(null);
+  const speed = 1; // pixels per frame
 
   // Marquee effect: auto-scroll the strip
   useEffect(() => {
@@ -26,7 +27,7 @@ export default function PostCarousel({ slides = [] }) {
     };
     rafId = requestAnimationFrame(step);
     return () => cancelAnimationFrame(rafId);
-  }, [stripRef]);
+  }, []);
 
   if (!slides || slides.length === 0) return null;
   return (
@@ -50,12 +51,23 @@ export default function PostCarousel({ slides = [] }) {
             key={i}
             src={s.src}
             alt={s.alt || ""}
-            style={{ height: "40vh", width: "auto", display: "inline-block", objectFit: "contain", margin: 0, padding: 0, cursor: "pointer" }}
-            // Lightbox disabled
+            className="post-carousel-img"
+            style={{ height: "50vh", width: "auto", display: "inline-block", objectFit: "contain", margin: 0, padding: 0, cursor: "pointer" }}
+            onClick={() => setLightbox(s)}
           />
         ))}
       </div>
-  {/* Lightbox disabled */}
+      {/* Lightbox portal */}
+      {lightbox && typeof document !== 'undefined' ? createPortal(
+        <div
+          className="post-lightbox-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setLightbox(null)}
+          style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.85)', zIndex: 10000 }}
+        >
+          <img src={lightbox.src} alt={lightbox.alt || ''} style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain' }} />
+        </div>, document.body) : null}
     </>
   );
 }

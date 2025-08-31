@@ -1,3 +1,9 @@
+
+@media (max-width: 640px) {
+  .post-carousel-img {
+    height: 40vh !important;
+  }
+}
 .post-lightbox-caption {
   color: #fff !important;
   margin-top: 0.75rem;
@@ -1205,6 +1211,12 @@ body.three-scene-active .site-footer {
 .post-carousel-slide.is-next,
 .post-carousel-slide.is-next img {
   cursor: url('/cursors/right.png') 24 24, url('/cursors/right.svg?v=2') 24 24, e-resize !important;
+}
+
+/* Show the plus/X cursor when hovering or focusing carousel images to indicate lightbox */
+.post-carousel-img:hover,
+.post-carousel-img:focus {
+  cursor: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect x='22' y='6' width='4' height='36' fill='white' transform='rotate(45 24 24)'/%3E%3Crect x='6' y='22' width='36' height='4' fill='white' transform='rotate(45 24 24)'/%3E%3C/svg%3E") 24 24, pointer !important;
 }
 
 
