@@ -746,7 +746,7 @@ body.lightbox-open {
 .related-title {
   font-size: 1.25rem; /* match .post-body */
   line-height: 1.2;
-  font-weight: 700; /* bold */
+  font-weight: 500; /* medium */
   color: inherit;
 }
 
