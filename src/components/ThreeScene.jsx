@@ -190,13 +190,22 @@ export default function ThreeScene() {
   // Create sprites in small batches to avoid blocking the main thread
   (function createSpritesInBatches() {
     const batchSize = 6; // tune to balance throughput vs responsiveness
+    // Use a shuffled copy of posts for placement so sprites don't appear
+    // in the same locations each load. Fisher-Yates shuffle for uniformity.
+    const placementPosts = posts.slice();
+    for (let s = placementPosts.length - 1; s > 0; s--) {
+      const r = Math.floor(Math.random() * (s + 1));
+      const tmp = placementPosts[s];
+      placementPosts[s] = placementPosts[r];
+      placementPosts[r] = tmp;
+    }
     let i = 0;
-    const total = posts.length;
+    const total = placementPosts.length;
 
     const processBatch = () => {
       const end = Math.min(i + batchSize, total);
       for (let idx = i; idx < end; idx++) {
-        const post = posts[idx];
+        const post = placementPosts[idx];
         if (!post || !post.image) continue;
         const key = post.slug?.current || post.slug || post._id || post.title;
         const preTex = preloadedTexturesRef.current[key];
@@ -333,12 +342,15 @@ export default function ThreeScene() {
             const dx = event.clientX - touchStartRef.current.x;
             const dy = event.clientY - touchStartRef.current.y;
             const dist = Math.hypot(dx, dy);
-            if (dist > 8) {
+            // require a larger movement on touch to begin dragging to avoid accidental rotation
+            if (dist > 18) {
               touchMovedRef.current = true;
               isDraggingRef.current = true;
-              // update rotation target based on movement
-              sphereRotationTargetRef.current.y += dx * 0.005;
-              sphereRotationTargetRef.current.x += dy * 0.003;
+              // dramatically reduce multipliers for touch so mobile rotation is much slower
+              const touchYFactor = 0.0008; // far slower than mouse
+              const touchXFactor = 0.0006;
+              sphereRotationTargetRef.current.y += dx * touchYFactor;
+              sphereRotationTargetRef.current.x += dy * touchXFactor;
               lastPointerRef.current.x = event.clientX;
               lastPointerRef.current.y = event.clientY;
             }
