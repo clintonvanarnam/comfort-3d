@@ -7,6 +7,7 @@ export async function getPosts() {
     _id,
     title,
     slug,
+  author-> { name },
     mainImage {
       asset->{
         _id,
@@ -23,6 +24,7 @@ export async function getPosts() {
     title: post.title || '',
     slug: post.slug?.current || (typeof post.slug === 'string' ? post.slug : ''),
     image: post.mainImage?.asset?.url || '',
+    author: post.author?.name || '',
   }));
 }
 
