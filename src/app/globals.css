@@ -302,20 +302,20 @@ img[role="button"] {
 /* Carousel side-image custom cursors (use public/cursors/*.svg)
    More specific selector targets interactive images and includes a compact inline
    fallback. The !important is applied to the property so it overrides other rules. */
-.post-carousel-slide-3d.is-prev img[role="button"] {
+.post-carousel-slide.is-prev img[role="button"] {
   /* use small 48x48 PNG cursor for reliable browser support; enforce with !important */
   cursor: url('/cursors/left-48.png') 24 24, url('/cursors/left.png') 24 24, url('/cursors/left.svg?v=2') 24 24, w-resize !important;
 }
-.post-carousel-slide-3d.is-next img[role="button"] {
+.post-carousel-slide.is-next img[role="button"] {
   /* use small 48x48 PNG cursor for reliable browser support; enforce with !important */
   cursor: url('/cursors/right-48.png') 24 24, url('/cursors/right.png') 24 24, url('/cursors/right.svg?v=2') 24 24, e-resize !important;
 }
 
 /* Also apply cursor to the slide container itself so hovering the side area (not only the image) shows the cursor */
-.post-carousel-slide-3d.is-prev {
+.post-carousel-slide.is-prev {
   cursor: url('/cursors/left-48.png') 24 24, url('/cursors/left.png') 24 24, url('/cursors/left.svg?v=2') 24 24, w-resize !important;
 }
-.post-carousel-slide-3d.is-next {
+.post-carousel-slide.is-next {
   cursor: url('/cursors/right-48.png') 24 24, url('/cursors/right.png') 24 24, url('/cursors/right.svg?v=2') 24 24, e-resize !important;
 }
 
@@ -1010,15 +1010,15 @@ body.three-scene-active .site-footer {
 
 /* Reduce carousel height on smaller viewports so more of the side images are visible */
 @media (max-width: 1024px) {
-  .post-carousel-3d { height: 44vh; }
+  .post-carousel { height: 44vh; }
 }
 @media (max-width: 640px) {
   /* smaller mobile height to show more of the left/right slides */
-  .post-carousel-3d { height: 18vh; }
+  .post-carousel { height: 18vh; }
 }
 @media (max-width: 420px) {
   /* very small screens (narrow phones) */
-  .post-carousel-3d { height: 16vh; }
+  .post-carousel { height: 16vh; }
 }
 }
 .post-carousel-image {
@@ -1064,8 +1064,8 @@ body.three-scene-active .site-footer {
   background: #fff;
 }
 
-/* CSS 3D carousel visuals */
-.post-carousel-3d {
+/* CSS carousel visuals */
+.post-carousel {
   position: relative;
   width: 100%;
   height: 56vh;
@@ -1076,19 +1076,12 @@ body.three-scene-active .site-footer {
   display: flex;
   align-items: center;
   height: 100%;
-  /* no padding here either; JS controls visual centering and gap */
-  padding-left: 0;
-  padding-right: 0;
-}
-.post-carousel-slide-3d {
-  /* slide box used by the simple track layout */
-  box-sizing: border-box;
-}
-.post-carousel-track {
   width: 100%;
-  height: 100%;
+  /* no padding here either; JS controls visual centering and gap */
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
-.post-carousel-slide-3d {
+.post-carousel-slide {
   /* use site background so letterboxing matches the page */
   background: var(--background);
   display: flex;
@@ -1101,7 +1094,7 @@ body.three-scene-active .site-footer {
 /* Embla variable-width helpers: let slides size to their content, not a fixed percent */
 .embla__container {
   display: flex;
-  gap: 0; /* ensure no gap between slides */
+  gap: 0 !important; /* ensure no gap between slides */
   align-items: center;
 }
 .embla__slide {
@@ -1110,12 +1103,14 @@ body.three-scene-active .site-footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0; /* ensure slides sit flush */
+  margin: 0 !important; /* ensure slides sit flush */
 }
 .embla__slide__img {
   height: 100%;
   width: auto;
   display: block;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 /* Mobile: slightly reduce center image size so side slides peek into view */
 @media (max-width: 640px) {
@@ -1124,21 +1119,23 @@ body.three-scene-active .site-footer {
     max-width: 82vw;
     height: auto;
   }
-  .post-carousel-3d {
+  .post-carousel {
     height: 28vh;
   }
   /* no margin between slides on mobile either */
-  .embla__slide { margin: 0; }
-  .embla__slide.post-carousel-slide-3d.is-prev img,
-  .embla__slide.post-carousel-slide-3d.is-next img { max-width: 70vw; }
+  .embla__slide { margin: 0 !important; }
+  .embla__slide.post-carousel-slide.is-prev img,
+  .embla__slide.post-carousel-slide.is-next img { max-width: 70vw; }
 }
-.post-carousel-slide-3d img,
+.post-carousel-slide img,
 .post-carousel-image {
   /* size by height and contain so images fill vertical space without cropping */
   height: 100%;
   width: auto;
   object-fit: contain;
   display: block;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 .post-carousel-controls {
   position: absolute;
@@ -1201,12 +1198,12 @@ body.three-scene-active .site-footer {
 }
 
 /* Also apply cursor to the slide container itself so hovering the side area shows the arrows */
-.post-carousel-slide-3d.is-prev,
-.post-carousel-slide-3d.is-prev img {
+.post-carousel-slide.is-prev,
+.post-carousel-slide.is-prev img {
   cursor: url('/cursors/left.png') 24 24, url('/cursors/left.svg?v=2') 24 24, w-resize !important;
 }
-.post-carousel-slide-3d.is-next,
-.post-carousel-slide-3d.is-next img {
+.post-carousel-slide.is-next,
+.post-carousel-slide.is-next img {
   cursor: url('/cursors/right.png') 24 24, url('/cursors/right.svg?v=2') 24 24, e-resize !important;
 }
 
