@@ -1216,7 +1216,7 @@ body.three-scene-active .site-footer {
 /* Show the plus/X cursor when hovering or focusing carousel images to indicate lightbox */
 .post-carousel-img:hover,
 .post-carousel-img:focus {
-  cursor: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect x='22' y='6' width='4' height='36' fill='white' transform='rotate(45 24 24)'/%3E%3Crect x='6' y='22' width='36' height='4' fill='white' transform='rotate(45 24 24)'/%3E%3C/svg%3E") 24 24, pointer !important;
+  cursor: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect x='22' y='6' width='4' height='36' fill='white'/%3E%3Crect x='6' y='22' width='36' height='4' fill='white'/%3E%3C/svg%3E") 24 24, pointer !important;
 }
 
 
