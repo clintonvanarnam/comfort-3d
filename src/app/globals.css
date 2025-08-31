@@ -702,6 +702,7 @@ body.lightbox-open {
   margin-left: auto;
   margin-right: auto;
   padding: 2rem var(--site-gutter);
+  margin-top: 5rem;
   margin-bottom: 5rem;
   box-sizing: border-box;
 }
