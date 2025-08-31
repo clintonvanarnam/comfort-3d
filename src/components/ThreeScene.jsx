@@ -432,6 +432,17 @@ export default function ThreeScene() {
             touchHoldTimerRef.current = null;
           }
 
+          // If the intro overlay hasn't been dismissed yet, ignore pointerup
+          // interactions so a tap used to reveal the scene doesn't also
+          // select a sprite underneath.
+          if (!introCompleteRef.current) {
+            // reset transient touch/drag state
+            touchMovedRef.current = false;
+            isDraggingRef.current = false;
+            touchHoldActiveRef.current = false;
+            return;
+          }
+
           if (e && e.pointerType === 'touch') {
             // If the hold became active, we were dragging; stop dragging and don't treat as a click
             if (touchHoldActiveRef.current) {
