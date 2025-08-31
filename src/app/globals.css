@@ -1003,10 +1003,23 @@ body.three-scene-active .site-footer {
 }
 .post-carousel-slide {
   flex: 0 0 86%; /* slightly inset so next slide peeks */
-  scroll-snap-align: center;
-  display: flex;
-  flex-direction: column;
+  position: relative;
+  width: 100%;
+  height: 56vh; /* desktop default */
   align-items: center;
+
+/* Reduce carousel height on smaller viewports so more of the side images are visible */
+@media (max-width: 1024px) {
+  .post-carousel-3d { height: 44vh; }
+}
+@media (max-width: 640px) {
+  /* smaller mobile height to show more of the left/right slides */
+  .post-carousel-3d { height: 18vh; }
+}
+@media (max-width: 420px) {
+  /* very small screens (narrow phones) */
+  .post-carousel-3d { height: 16vh; }
+}
 }
 .post-carousel-image {
   width: 100%;
@@ -1084,6 +1097,40 @@ body.three-scene-active .site-footer {
   min-width: 0; /* allow flex children to shrink properly */
   overflow: hidden;
   margin: 0;
+}
+/* Embla variable-width helpers: let slides size to their content, not a fixed percent */
+.embla__container {
+  display: flex;
+  gap: 0; /* ensure no gap between slides */
+  align-items: center;
+}
+.embla__slide {
+  /* important: allow natural image width to determine slide width */
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0; /* ensure slides sit flush */
+}
+.embla__slide__img {
+  height: 100%;
+  width: auto;
+  display: block;
+}
+/* Mobile: slightly reduce center image size so side slides peek into view */
+@media (max-width: 640px) {
+  .embla__slide__img {
+    /* constrain images so adjacent slides can peek into view */
+    max-width: 82vw;
+    height: auto;
+  }
+  .post-carousel-3d {
+    height: 28vh;
+  }
+  /* no margin between slides on mobile either */
+  .embla__slide { margin: 0; }
+  .embla__slide.post-carousel-slide-3d.is-prev img,
+  .embla__slide.post-carousel-slide-3d.is-next img { max-width: 70vw; }
 }
 .post-carousel-slide-3d img,
 .post-carousel-image {
