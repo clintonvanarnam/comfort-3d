@@ -746,7 +746,7 @@ body.lightbox-open {
 .related-title {
   font-size: 1.25rem; /* match .post-body */
   line-height: 1.2;
-  font-weight: 400;
+  font-weight: 700; /* bold */
   color: inherit;
 }
 
@@ -1039,7 +1039,7 @@ body.three-scene-active .site-footer {
   width: 2rem;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: start;
   text-align: right;
   height: auto;
   border-radius: 0;
@@ -1301,8 +1301,8 @@ body.three-scene-active .site-footer {
   }
   .multi-image-captions-list {
    max-width: 100%;
-   margin-left: var(--site-gutter);
-   margin-right: var(--site-gutter);
+   margin-left: 0;
+   margin-right: 0;
    padding: 0.5rem 0 1rem;
    /* Ensure the index column still aligns visually on mobile by reducing
      the left padding so numbers sit near the caption text */
