@@ -539,26 +539,7 @@ export default function PostCarousel({ slides = [], autoplay = false, autoplayDe
                   />
           {/* centered plus overlay (matches site lightbox +/X size: 48x48)
             Render only on side images (prev/next), not on the active center slide */}
-          {(isPrev || isNext) && (
-                    <div
-                      aria-hidden="true"
-                      className="post-carousel-image-overlay"
-                      style={{
-                        position: 'absolute',
-                        left: '50%',
-                        top: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: '48px',
-                        height: '48px',
-                        pointerEvents: 'none',
-                        backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'><rect x='22' y='6' width='4' height='36' fill='white'/><rect x='6' y='22' width='36' height='4' fill='white'/></svg>\")",
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'center',
-                        opacity: 0.95,
-                        mixBlendMode: 'normal'
-                      }}
-                    />
-                  )}
+                  {/* overlay removed: no plus/X glyph shown on slides */}
                 </div>
               );
             })

@@ -295,9 +295,7 @@ a {
 }
 
 /* show a plus cursor on clickable images (indicates image will open a lightbox) */
-
-/* Only apply plus cursor to images that open the lightbox, not carousel navigation images */
-.post-image-lightbox[role="button"], .post-main-image-lightbox[role="button"] {
+img[role="button"] {
   cursor: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect x='22' y='6' width='4' height='36' fill='white'/%3E%3Crect x='6' y='22' width='36' height='4' fill='white'/%3E%3C/svg%3E") 24 24, pointer;
 }
 
@@ -305,19 +303,20 @@ a {
    More specific selector targets interactive images and includes a compact inline
    fallback. The !important is applied to the property so it overrides other rules. */
 .post-carousel-slide-3d.is-prev img[role="button"] {
-  cursor: url('/cursors/left.svg') 24 24 !important;
+  /* use small 48x48 PNG cursor for reliable browser support; enforce with !important */
+  cursor: url('/cursors/left-48.png') 24 24, url('/cursors/left.png') 24 24, url('/cursors/left.svg?v=2') 24 24, w-resize !important;
 }
 .post-carousel-slide-3d.is-next img[role="button"] {
-  cursor: url('/cursors/right.svg') 24 24 !important;
+  /* use small 48x48 PNG cursor for reliable browser support; enforce with !important */
+  cursor: url('/cursors/right-48.png') 24 24, url('/cursors/right.png') 24 24, url('/cursors/right.svg?v=2') 24 24, e-resize !important;
 }
 
-/* Also apply the same cursor on the slide container so hovering areas outside the <img>
-   still show the custom cursor (some layout/overlays can cover the image). */
+/* Also apply cursor to the slide container itself so hovering the side area (not only the image) shows the cursor */
 .post-carousel-slide-3d.is-prev {
-  cursor: url('/cursors/left.svg') 24 24 !important;
+  cursor: url('/cursors/left-48.png') 24 24, url('/cursors/left.png') 24 24, url('/cursors/left.svg?v=2') 24 24, w-resize !important;
 }
 .post-carousel-slide-3d.is-next {
-  cursor: url('/cursors/right.svg') 24 24 !important;
+  cursor: url('/cursors/right-48.png') 24 24, url('/cursors/right.png') 24 24, url('/cursors/right.svg?v=2') 24 24, e-resize !important;
 }
 
 /* Visual plus overlay on image wrappers (figures) that rotates into an X when lightbox is open.
@@ -1116,6 +1115,52 @@ body.three-scene-active .site-footer {
   align-items: center;
   justify-content: center;
   font-size: 22px;
+}
+
+/* Use same PNG cursor for the control buttons as well */
+.post-carousel-prev {
+  /* prefer a small 48x48 PNG (more likely to be accepted by browsers); fall back to existing PNG/SVG */
+  cursor: url('/cursors/left-48.png') 24 24, url('/cursors/left.png') 24 24, url('/cursors/left.svg?v=2') 24 24, w-resize !important;
+}
+.post-carousel-next {
+  /* prefer a small 48x48 PNG (more likely to be accepted by browsers); fall back to existing PNG/SVG */
+  cursor: url('/cursors/right-48.png') 24 24, url('/cursors/right.png') 24 24, url('/cursors/right.svg?v=2') 24 24, e-resize !important;
+}
+.post-carousel-controls button,
+.post-carousel-prev,
+.post-carousel-next {
+  /* ensure the button text/characters use the red color */
+  color: #ff0000 !important;
+}
+
+/* Target any inline SVGs inside the prev/next buttons and force red fill/stroke */
+.post-carousel-controls button svg,
+.post-carousel-prev svg,
+.post-carousel-next svg {
+  width: 24px;
+  height: 24px;
+  fill: #ff0000 !important;
+  stroke: #ff0000 !important;
+  color: #ff0000 !important;
+}
+
+/* Also target images inside controls, if SVGs are rendered as <img src="..."> */
+.post-carousel-controls button img,
+.post-carousel-prev img,
+.post-carousel-next img {
+  filter: none !important;
+  /* as a fallback, tint via CSS if the image is an SVG respecting currentColor */
+  color: #ff0000 !important;
+}
+
+/* Also apply cursor to the slide container itself so hovering the side area shows the arrows */
+.post-carousel-slide-3d.is-prev,
+.post-carousel-slide-3d.is-prev img {
+  cursor: url('/cursors/left.png') 24 24, url('/cursors/left.svg?v=2') 24 24, w-resize !important;
+}
+.post-carousel-slide-3d.is-next,
+.post-carousel-slide-3d.is-next img {
+  cursor: url('/cursors/right.png') 24 24, url('/cursors/right.svg?v=2') 24 24, e-resize !important;
 }
 
 
