@@ -18,6 +18,7 @@ export default function PostCarousel({ slides = [], autoplay = false, autoplayDe
   const touchRef = useRef({ startX: 0, startY: 0, moving: false });
   const autoplayRef = useRef(null);
   const progressRefs = useRef([]);
+  const interactionResumeTimerRef = useRef(null);
   // slide percent is calculated from the browser width so the peek scales
   const [slidePercent, setSlidePercent] = useState(86);
   const [slideWidthPx, setSlideWidthPx] = useState(0);
@@ -27,19 +28,19 @@ export default function PostCarousel({ slides = [], autoplay = false, autoplayDe
   const pausedRef = useRef(false);
   const allowAutoplayStartRef = useRef(true);
   // Toggle this to true while debugging to fully disable autoplay
-  const DEBUG_DISABLE_AUTOPLAY = true;
+  const DEBUG_DISABLE_AUTOPLAY = false;
 
   useEffect(() => { indexRef.current = index; }, [index]);
 
   // guarded setter: prevent index changes while lightbox is open or carousel is paused
-  function safeSetIndex(i) {
+  function safeSetIndex(i, force = false) {
     try {
       if (typeof document !== 'undefined' && document.body && document.body.classList.contains('lightbox-open')) {
         dbg('safeSetIndex blocked (lightbox open)', i);
         return;
       }
     } catch (e) {}
-    if (pausedRef.current) { dbg('safeSetIndex blocked (paused)', i); return; }
+    if (pausedRef.current && !force) { dbg('safeSetIndex blocked (paused)', i); return; }
     indexRef.current = i;
     setIndex(i);
   }
@@ -49,6 +50,36 @@ export default function PostCarousel({ slides = [], autoplay = false, autoplayDe
     try {
       if (typeof window !== 'undefined' && window.__CAROUSEL_DEBUG) console.log('[CAROUSEL]', ...args);
     } catch (e) { }
+  }
+
+  function clearInteractionTimer() {
+    if (interactionResumeTimerRef.current) {
+      clearTimeout(interactionResumeTimerRef.current);
+      interactionResumeTimerRef.current = null;
+    }
+  }
+
+  function pauseForInteraction(ms = Math.max(1200, autoplayDelay)) {
+    dbg('pauseForInteraction', ms);
+    // mark paused so other paths don't restart autoplay prematurely
+    pausedRef.current = true;
+    stopAutoplay();
+    clearInteractionTimer();
+    interactionResumeTimerRef.current = setTimeout(() => {
+      // don't resume if lightbox is open
+      try {
+        if (typeof document !== 'undefined' && document.body && document.body.classList.contains('lightbox-open')) {
+          dbg('pauseForInteraction: lightbox open, skipping resume');
+          pausedRef.current = true;
+          interactionResumeTimerRef.current = null;
+          return;
+        }
+      } catch (e) {}
+      pausedRef.current = false;
+      dbg('pauseForInteraction: resuming autoplay');
+      if (autoplay) startAutoplay(indexRef.current);
+      interactionResumeTimerRef.current = null;
+    }, ms);
   }
 
   useEffect(() => {
@@ -92,6 +123,12 @@ export default function PostCarousel({ slides = [], autoplay = false, autoplayDe
     }
     window.addEventListener('resize', onResize);
   return () => { window.removeEventListener('resize', onResize); if (raf) cancelAnimationFrame(raf); try { if (wrapRef.current) wrapRef.current.style.pointerEvents = ''; } catch (e) {} };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearInteractionTimer();
+    };
   }, []);
 
   // when slides count changes, reset virtual index to the middle block
@@ -298,23 +335,23 @@ export default function PostCarousel({ slides = [], autoplay = false, autoplayDe
     if (autoplay) animateProgressBar(index);
   }
 
-  function goNext() {
-  dbg('goNext start', { virtual: virtualIndexRef.current });
-  if (pausedRef.current) { dbg('goNext blocked (paused)'); return; }
+  function goNext(force = false) {
+  dbg('goNext start', { virtual: virtualIndexRef.current, force });
+  if (pausedRef.current && !force) { dbg('goNext blocked (paused)'); return; }
   try { if (typeof document !== 'undefined' && document.body && document.body.classList.contains('lightbox-open')) { dbg('goNext blocked by lightbox'); return; } } catch (e) {}
   virtualIndexRef.current = virtualIndexRef.current + 1;
   const newIndex = ((virtualIndexRef.current % slides.length) + slides.length) % slides.length;
   dbg('goNext ->', { virtual: virtualIndexRef.current, index: newIndex });
-  safeSetIndex(newIndex);
+  safeSetIndex(newIndex, force);
   }
-  function goPrev() {
-  dbg('goPrev start', { virtual: virtualIndexRef.current });
-  if (pausedRef.current) { dbg('goPrev blocked (paused)'); return; }
+  function goPrev(force = false) {
+  dbg('goPrev start', { virtual: virtualIndexRef.current, force });
+  if (pausedRef.current && !force) { dbg('goPrev blocked (paused)'); return; }
   try { if (typeof document !== 'undefined' && document.body && document.body.classList.contains('lightbox-open')) { dbg('goPrev blocked by lightbox'); return; } } catch (e) {}
   virtualIndexRef.current = virtualIndexRef.current - 1;
   const newIndex = ((virtualIndexRef.current % slides.length) + slides.length) % slides.length;
   dbg('goPrev ->', { virtual: virtualIndexRef.current, index: newIndex });
-  safeSetIndex(newIndex);
+  safeSetIndex(newIndex, force);
   }
 
   // ensure virtual index stays within the middle clone; snap without transition when crossing
@@ -366,7 +403,10 @@ export default function PostCarousel({ slides = [], autoplay = false, autoplayDe
     if (e.currentTarget && e.currentTarget.setPointerCapture) {
       try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) { }
     }
-    if (autoplay) stopAutoplay();
+    if (autoplay) {
+      stopAutoplay();
+      pauseForInteraction();
+    }
   }
 
   function onPointerMove(e) {
@@ -432,10 +472,14 @@ export default function PostCarousel({ slides = [], autoplay = false, autoplayDe
       <div
         className="post-carousel-3d"
         ref={wrapRef}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+    onPointerDown={onPointerDown}
+    onPointerMove={onPointerMove}
+    onPointerUp={onPointerUp}
+    onPointerCancel={onPointerUp}
+  onMouseEnter={(e) => { if (e && e.isTrusted) pauseForInteraction(); }}
+  onMouseLeave={(e) => { if (e && e.isTrusted) pauseForInteraction(500); }}
+  onFocus={(e) => { if (e && e.isTrusted) pauseForInteraction(); }}
+  onBlur={(e) => { if (e && e.isTrusted) pauseForInteraction(500); }}
         style={{ height: '56vh' }}
       >
         {/* simple horizontal track with clones for looping */}
@@ -520,19 +564,21 @@ export default function PostCarousel({ slides = [], autoplay = false, autoplayDe
                     onClick={(e) => {
                       e.stopPropagation();
                       // side images navigate; center opens lightbox (unless disabled)
-                      if (isPrev) { goPrev(); }
-                      else if (isNext) { goNext(); }
+                      if (isPrev) { goPrev(true); }
+                      else if (isNext) { goNext(true); }
                       else if (openLightbox && !disableLightbox) { openLightbox({ src: s.src, alt: s.alt || '', caption: s.caption || null }); }
                     }}
                     onKeyDown={(e) => {
                       if (!interactive) return;
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        if (isPrev) { goPrev(); }
-                        else if (isNext) { goNext(); }
+                          if (isPrev) { goPrev(true); }
+                          else if (isNext) { goNext(true); }
                         else if (openLightbox && !disableLightbox) { openLightbox({ src: s.src, alt: s.alt || '', caption: s.caption || null }); }
                       }
                     }}
+                    onMouseEnter={(e) => { if (e && e.isTrusted) pauseForInteraction(); }}
+                    onMouseLeave={(e) => { if (e && e.isTrusted) pauseForInteraction(500); }}
                     onPointerDown={(e) => { e.stopPropagation(); }}
                     onPointerMove={(e) => { e.stopPropagation(); }}
                     onPointerUp={(e) => { e.stopPropagation(); }}
@@ -558,9 +604,9 @@ export default function PostCarousel({ slides = [], autoplay = false, autoplayDe
         ))}
       </div>
       {showControls && (
-        <div className="post-carousel-controls">
-          <button className="post-carousel-prev" onClick={() => { goPrev(); if (autoplay) startAutoplay(indexRef.current); }} aria-label="Previous">‹</button>
-          <button className="post-carousel-next" onClick={() => { goNext(); if (autoplay) startAutoplay(indexRef.current); }} aria-label="Next">›</button>
+        <div className="post-carousel-controls" style={{ pointerEvents: 'auto', zIndex: 9999 }}>
+          <button className="post-carousel-prev" onClick={() => { goPrev(true); if (autoplay) startAutoplay(indexRef.current); }} aria-label="Previous">‹</button>
+          <button className="post-carousel-next" onClick={() => { goNext(true); if (autoplay) startAutoplay(indexRef.current); }} aria-label="Next">›</button>
         </div>
       )}
     </div>
