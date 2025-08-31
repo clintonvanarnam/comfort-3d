@@ -36,6 +36,7 @@ export default function RelatedContent({ currentSlug = '' }) {
             </div>
             <div className="related-meta">
               <div className="related-title">{r.title}</div>
+              {r.author && <div className="related-author">{r.author}</div>}
             </div>
           </a>
         ))}

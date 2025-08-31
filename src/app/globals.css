@@ -740,6 +740,14 @@ body.lightbox-open {
   padding: 0.5rem 0 0 0;
 }
 
+.related-author {
+  color: #6b6b6b;
+  font-size: 1.25rem; /* match related title */
+  line-height: 1.2;
+  font-weight: 500; /* match related title weight */
+  margin-top: 0;
+}
+
 /* Match related content text/titles to post body typography */
 .related-grid-outer h3,
 .related-meta,
@@ -748,6 +756,20 @@ body.lightbox-open {
   line-height: 1.2;
   font-weight: 500; /* medium */
   color: inherit;
+}
+
+/* Blinking animation for the Related Content header (user requested) */
+@keyframes related-blink {
+  0%, 49.999% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.related-grid-outer h3 {
+  animation: related-blink .5s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .related-grid-outer h3 { animation: none !important; }
 }
 
 @media (max-width: 1024px) {
