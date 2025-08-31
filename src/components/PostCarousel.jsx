@@ -9,7 +9,7 @@ import useEmblaCarousel from "embla-carousel-react";
 export default function PostCarousel({ slides = [] }) {
   // Lightbox disabled
   const stripRef = useRef();
-  const speed = 0.4; // pixels per frame (reduced to 80%)
+  const speed = 5; // pixels per frame
 
   // Marquee effect: auto-scroll the strip
   useEffect(() => {
