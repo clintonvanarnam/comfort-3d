@@ -538,7 +538,8 @@ export default function PostPage() {
                           ['--gutter']: `${gutter}px`,
                           ['--pad-top']: padTopVar,
                           ['--pad-bottom']: padBottomVar,
-                          ...(value.stackOnMobile ? {} : { paddingTop: padTopVar, paddingBottom: padBottomVar }),
+                          // apply paddingBottom on the wrapper only when there are no captions
+                          ...(value.stackOnMobile ? {} : { paddingTop: padTopVar, ...(hasCaptions ? {} : { paddingBottom: padBottomVar }) }),
                           ...(isGrid ? { gridTemplateColumns: `repeat(${cols}, 1fr)` } : {}),
                         }}
                       >
@@ -581,7 +582,7 @@ export default function PostPage() {
 
                       {/* stacked numbered captions that correspond left-to-right with images */}
                       {isGrid && hasCaptions && (
-                        <div className="multi-image-captions-list">
+                        <div className="multi-image-captions-list" style={{ paddingBottom: padBottomVar }}>
                           {captions.map((cap, idx) => {
                             const num = String(idx + 1).padStart(2, '0');
                             return (
