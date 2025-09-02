@@ -75,6 +75,33 @@ export default function PostPage() {
           document.head.appendChild(ogDescTag);
         }
         ogDescTag.content = ogDesc;
+
+        // Twitter meta tags (mirror Open Graph)
+        let twTitle = document.querySelector('meta[name="twitter:title"]');
+        if (!twTitle) {
+          twTitle = document.createElement('meta');
+          twTitle.name = 'twitter:title';
+          document.head.appendChild(twTitle);
+        }
+        twTitle.content = ogTitle;
+
+        let twDesc = document.querySelector('meta[name="twitter:description"]');
+        if (!twDesc) {
+          twDesc = document.createElement('meta');
+          twDesc.name = 'twitter:description';
+          document.head.appendChild(twDesc);
+        }
+        twDesc.content = ogDesc;
+
+        if (og) {
+          let twImg = document.querySelector('meta[name="twitter:image"]');
+          if (!twImg) {
+            twImg = document.createElement('meta');
+            twImg.name = 'twitter:image';
+            document.head.appendChild(twImg);
+          }
+          twImg.content = og;
+        }
       } catch (e) {
         // noop
       }
