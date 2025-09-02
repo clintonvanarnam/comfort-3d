@@ -27,7 +27,8 @@ export default function PostPage() {
       try {
         const siteName = 'COMFORT';
         if (fetched?.title) {
-          document.title = `${fetched.title} — ${siteName}`;
+          // Use a vertical bar separator instead of an em dash
+          document.title = `${fetched.title} | ${siteName}`;
         }
         // description: try to extract a short excerpt from the first block
         let desc = '';
@@ -537,14 +538,27 @@ export default function PostPage() {
 
                   return (
                     <>
+                      {/**
+                       * Wrapper layout for multi-image spreads.
+                       * Always expose the padding CSS variables so downstream
+                       * layout can reference them. Use explicit paddingTop on
+                       * the wrapper and only omit paddingBottom when captions
+                       * exist for a grid (the captions block will provide the
+                       * bottom spacing). This ensures spreads without captions
+                       * keep their bottom spacing even when `stackOnMobile` is set.
+                       */}
                       <div
                         className={`multi-image-spread ${isGrid ? 'auto-columns' : 'vertical-stack'} ${value.stackOnMobile ? 'stack-on-mobile' : ''}`}
                         style={{
                           ['--gutter']: `${gutter}px`,
                           ['--pad-top']: padTopVar,
                           ['--pad-bottom']: padBottomVar,
-                          // apply paddingBottom on the wrapper only when there are no captions
-                          ...(value.stackOnMobile ? {} : { paddingTop: padTopVar, ...(hasCaptions ? {} : { paddingBottom: padBottomVar }) }),
+                          paddingTop: padTopVar,
+                          // If captions exist and we're rendering a grid, the
+                          // captions list will carry the bottom padding. Otherwise
+                          // ensure the wrapper provides bottom padding so the
+                          // spread never collapses against following content.
+                          ...(hasCaptions && isGrid ? {} : { paddingBottom: padBottomVar }),
                           ...(isGrid ? { gridTemplateColumns: `repeat(${cols}, 1fr)` } : {}),
                         }}
                       >
@@ -609,15 +623,36 @@ export default function PostPage() {
                     return { src, alt: img?.alt || '', caption: img?.caption || null };
                   }).filter(s => s.src);
 
+                  // respect Sanity padding tokens for top/bottom spacing by
+                  // wrapping the carousel in a full-bleed container. This keeps
+                  // the carousel logic unchanged while honoring editor-controlled spacing.
+                  const padTopToken = value.paddingTopToken || 'space-md';
+                  const padBottomToken = value.paddingBottomToken || 'space-md';
+                  const padTopVar = `var(--${padTopToken})`;
+                  const padBottomVar = `var(--${padBottomToken})`;
+
                   return (
-                    <PostCarousel
-                      slides={slides}
-                      autoplay={Boolean(value.autoplay)}
-                      autoplayDelay={value.autoplayDelay || 4000}
-                      showControls={value.showControls !== false}
-                      openLightbox={(opts) => openLightbox(opts)}
-                      disableLightbox={true}
-                    />
+                    <div
+                      className="post-carousel-bleed"
+                      style={{
+                        width: '100vw',
+                        maxWidth: '100vw',
+                        overflowX: 'hidden',
+                        marginLeft: 'calc(50% - 50vw)',
+                        marginRight: 'calc(50% - 50vw)',
+                        paddingTop: padTopVar,
+                        paddingBottom: padBottomVar,
+                      }}
+                    >
+                      <PostCarousel
+                        slides={slides}
+                        autoplay={Boolean(value.autoplay)}
+                        autoplayDelay={value.autoplayDelay || 4000}
+                        showControls={value.showControls !== false}
+                        openLightbox={(opts) => openLightbox(opts)}
+                        disableLightbox={true}
+                      />
+                    </div>
                   );
                 },
               },
