@@ -1,27 +1,29 @@
-
 "use client";
 
-
 import React, { useEffect, useRef, useState } from "react";
-import useEmblaCarousel from "embla-carousel-react";
 import { createPortal } from 'react-dom';
+import { PortableText } from '@portabletext/react';
+
+const DEFAULT_SPEED = 1; // pixels per frame (stable constant to avoid changing deps)
 
 
-export default function PostCarousel({ slides = [] }) {
+export default function PostCarousel({ slides = [], openLightbox: externalOpen, disableLightbox = false }) {
   const stripRef = useRef();
   const [lightbox, setLightbox] = useState(null);
-  const speed = 1; // pixels per frame
 
-  // Marquee effect: auto-scroll the strip
+  // Marquee effect: auto-scroll the strip. Render slides twice and when
+  // we've scrolled past the first copy, subtract half the scrollWidth to loop
+  // seamlessly without a visible jump.
   useEffect(() => {
     const el = stripRef.current;
     if (!el) return;
     let rafId;
     const step = () => {
-      el.scrollLeft += speed;
-      // Loop: if reached end, jump back to start
-      if (el.scrollLeft >= el.scrollWidth - el.clientWidth) {
-        el.scrollLeft = 0;
+      el.scrollLeft += DEFAULT_SPEED;
+      const half = el.scrollWidth / 2;
+      if (half > 0 && el.scrollLeft >= half) {
+        // subtract the width of one copy to continue seamlessly
+        el.scrollLeft -= half;
       }
       rafId = requestAnimationFrame(step);
     };
@@ -46,16 +48,24 @@ export default function PostCarousel({ slides = [] }) {
           gap: 0,
         }}
       >
-        {slides.map((s, i) => (
+        {/* Render two copies of the slides so the marquee can loop smoothly */}
+        {slides.concat(slides).map((s, i) => (
           <img
-            key={i}
+            key={`slide-${i}`}
             src={s.src}
             alt={s.alt || ""}
             className="post-carousel-image embla__slide__img"
             style={{ height: "50vh", width: "auto", display: "inline-block", objectFit: "contain", margin: 0, padding: 0 }}
             role="button"
             tabIndex={0}
-            onClick={() => setLightbox(s)}
+            onClick={() => {
+              if (externalOpen && disableLightbox) {
+                // prefer the page-level lightbox when requested
+                externalOpen(s);
+                return;
+              }
+              setLightbox(s);
+            }}
           />
         ))}
       </div>
@@ -68,7 +78,14 @@ export default function PostCarousel({ slides = [] }) {
           onClick={() => setLightbox(null)}
           style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.85)', zIndex: 10000 }}
         >
-          <img src={lightbox.src} alt={lightbox.alt || ''} style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain' }} />
+          <div style={{ maxWidth: '90vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+            <img src={lightbox.src} alt={lightbox.alt || ''} style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain' }} />
+            {lightbox.caption ? (
+              <div className="post-lightbox-caption" style={{ color: 'white', maxWidth: '90vw' }}>
+                <PortableText value={lightbox.caption} />
+              </div>
+            ) : null}
+          </div>
         </div>, document.body) : null}
     </>
   );
