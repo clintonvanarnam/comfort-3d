@@ -25,7 +25,7 @@ export default function PostPage() {
       // Update the browser title and meta description on the client so the
       // tab shows the article title immediately even if server metadata isn't applied.
       try {
-  const siteName = 'Comfort Magazine';
+        const siteName = 'COMFORT';
         if (fetched?.title) {
           // Use a vertical bar separator instead of an em dash
           document.title = `${fetched.title} | ${siteName}`;
@@ -45,7 +45,7 @@ export default function PostPage() {
           }
           meta.content = desc;
         }
-        // Open Graph image
+        // Open Graph tags: image, title, description
         const og = fetched?.mainImage?.asset?.url || null;
         if (og) {
           let ogTag = document.querySelector('meta[property="og:image"]');
@@ -56,6 +56,25 @@ export default function PostPage() {
           }
           ogTag.content = og;
         }
+
+        // Set OG title and description to match server preference
+        const ogTitle = fetched?.title ? `${fetched.title} | COMFORT` : 'COMFORT';
+        let ogTitleTag = document.querySelector('meta[property="og:title"]');
+        if (!ogTitleTag) {
+          ogTitleTag = document.createElement('meta');
+          ogTitleTag.setAttribute('property', 'og:title');
+          document.head.appendChild(ogTitleTag);
+        }
+        ogTitleTag.content = ogTitle;
+
+        const ogDesc = 'COMFORT ideas for a better tomorrow.';
+        let ogDescTag = document.querySelector('meta[property="og:description"]');
+        if (!ogDescTag) {
+          ogDescTag = document.createElement('meta');
+          ogDescTag.setAttribute('property', 'og:description');
+          document.head.appendChild(ogDescTag);
+        }
+        ogDescTag.content = ogDesc;
       } catch (e) {
         // noop
       }

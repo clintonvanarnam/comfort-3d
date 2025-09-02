@@ -9,7 +9,7 @@ export async function generateMetadata({ params }) {
   if (!slug) return {};
   try {
     const post = await getPostBySlug(slug);
-  const siteName = 'Comfort Magazine';
+  const siteName = 'COMFORT';
   const title = post?.title ? `${post.title} | ${siteName}` : siteName;
     // try to use a short excerpt/first block as description if available
     let description = '';
@@ -22,12 +22,15 @@ export async function generateMetadata({ params }) {
       }
     }
     const ogImage = post?.mainImage?.asset?.url || null;
+    // Force Open Graph description to brand message per request
+    const ogDescription = 'COMFORT ideas for a better tomorrow.';
+
     return {
       title,
       description: description || undefined,
       openGraph: {
         title,
-        description: description || undefined,
+        description: ogDescription,
         siteName,
         type: 'article',
         images: ogImage ? [{ url: ogImage, alt: post?.mainImage?.alt || post?.title || '' }] : undefined,
@@ -35,7 +38,7 @@ export async function generateMetadata({ params }) {
       twitter: {
         card: ogImage ? 'summary_large_image' : 'summary',
         title,
-        description: description || undefined,
+        description: ogDescription,
         images: ogImage ? [ogImage] : undefined,
       },
     };
