@@ -506,20 +506,25 @@ export default function PostPage() {
                   const padBottomVar = `var(--${padBottomToken})`;
 
                   // Render as either an auto grid (N columns) or a vertical stack for single image
+                  // Build captions but skip spacer items entirely so they don't get numbers/captions
                   const captions = value.images.map((img) => {
-                    if (!img) return '';
+                    if (!img) return null;
+                    if (img._type === 'spacer') return null; // explicit spacer: no caption or number
                     // prefer explicit caption rich text, fallback to credit or empty
                     if (img.caption) return img.caption;
                     if (img.credit) return [{ _type: 'block', children: [{ text: img.credit }] }];
                     return null;
                   });
 
-                  // only show the captions list if there is at least one non-empty caption
-                  const hasCaptions = captions.some((cap) => {
-                    if (!cap) return false;
-                    if (Array.isArray(cap)) return cap.length > 0;
-                    return true;
-                  });
+                  // only show the captions list if there is at least one non-empty caption (excluding spacers)
+                  const visibleCaptions = captions
+                    .map((cap, idx) => ({ cap, idx }))
+                    .filter((c) => {
+                      if (!c.cap) return false;
+                      if (Array.isArray(c.cap)) return c.cap.length > 0;
+                      return true;
+                    });
+                  const hasCaptions = visibleCaptions.length > 0;
 
                   // compute aspect ratios for images where possible so spacers can match
                   const aspectRatios = value.images.map((img) => {
@@ -583,15 +588,15 @@ export default function PostPage() {
                       {/* stacked numbered captions that correspond left-to-right with images */}
                       {isGrid && hasCaptions && (
                         <div className="multi-image-captions-list" style={{ paddingBottom: padBottomVar }}>
-                          {captions.map((cap, idx) => {
-                            const num = String(idx + 1).padStart(2, '0');
-                            return (
-                              <div key={idx} className="multi-image-captions-item">
-                                <span className="multi-image-captions-index">{num}</span>
-                                <span className="multi-image-captions-text">{cap ? <PortableText value={cap} /> : null}</span>
-                              </div>
-                            );
-                          })}
+                              {visibleCaptions.map((item, i) => {
+                                const num = String(i + 1).padStart(2, '0');
+                                return (
+                                  <div key={item.idx} className="multi-image-captions-item">
+                                    <span className="multi-image-captions-index">{num}</span>
+                                    <span className="multi-image-captions-text"><PortableText value={item.cap} /></span>
+                                  </div>
+                                );
+                              })}
                         </div>
                       )}
                     </>
