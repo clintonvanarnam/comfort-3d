@@ -25,7 +25,7 @@ export default function PostPage() {
       // Update the browser title and meta description on the client so the
       // tab shows the article title immediately even if server metadata isn't applied.
       try {
-        const siteName = 'COMFORT';
+  const siteName = 'Comfort Magazine';
         if (fetched?.title) {
           // Use a vertical bar separator instead of an em dash
           document.title = `${fetched.title} | ${siteName}`;

@@ -9,7 +9,7 @@ export async function generateMetadata({ params }) {
   if (!slug) return {};
   try {
     const post = await getPostBySlug(slug);
-  const siteName = 'COMFORT';
+  const siteName = 'Comfort Magazine';
   const title = post?.title ? `${post.title} | ${siteName}` : siteName;
     // try to use a short excerpt/first block as description if available
     let description = '';
