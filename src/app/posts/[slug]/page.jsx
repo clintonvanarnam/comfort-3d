@@ -17,6 +17,10 @@ export default function PostPage() {
   const [transitionDone, setTransitionDone] = useState(false);
   const transitionImageRef = useRef();
   const contentRef = useRef();
+  const [floatingVisible, setFloatingVisible] = useState(false);
+  const headerRef = useRef(null);
+  const [headerOut, setHeaderOut] = useState(false);
+  const [relatedInView, setRelatedInView] = useState(false);
 
   useEffect(() => {
     async function loadPost() {
@@ -205,6 +209,61 @@ export default function PostPage() {
     return () => ctx.revert();
   }, [transitionDone, post]);
 
+  // Show floating side labels only after the header/main image has scrolled out of view
+  // and hide them again once the related-content section is reached.
+  useEffect(() => {
+    if (!post) return;
+
+    const headerNode = document.querySelector('.post-main-image');
+    const relatedNode = document.querySelector('.related-content-outer');
+
+    // If there's no header image, consider it already scrolled out so labels can appear
+    if (!headerNode) {
+      setHeaderOut(true);
+    }
+
+    let headerObserver = null;
+    let relatedObserver = null;
+
+    if (headerNode) {
+      headerObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            // headerOut = true when header is mostly out of view
+            const out = !entry.isIntersecting || entry.intersectionRatio < 0.25;
+            setHeaderOut(out);
+          });
+        },
+        { root: null, threshold: [0, 0.25, 0.5, 1] }
+      );
+      headerObserver.observe(headerNode);
+    }
+
+    if (relatedNode) {
+      relatedObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            // relatedInView is true when any part of the related content enters the viewport
+            setRelatedInView(entry.isIntersecting && entry.intersectionRatio > 0);
+          });
+        },
+        { root: null, threshold: [0, 0.01, 0.25] }
+      );
+      relatedObserver.observe(relatedNode);
+    }
+
+    return () => {
+      try { headerObserver && headerObserver.disconnect(); } catch (e) {}
+      try { relatedObserver && relatedObserver.disconnect(); } catch (e) {}
+    };
+  }, [post]);
+
+  // derive the visible state from headerOut and relatedInView so labels hide
+  // once related content appears.
+  useEffect(() => {
+    setFloatingVisible(Boolean(headerOut && !relatedInView));
+  }, [headerOut, relatedInView]);
+
   // animate multi-image items on scroll using GSAP ScrollTrigger
   useEffect(() => {
     if (!post) return;
@@ -376,8 +435,11 @@ export default function PostPage() {
 
   return (
     <>
-      <div className="post-page">
-      <NavBar />
+  <div className="post-page">
+  <NavBar />
+  {/* Desktop-only floating side labels: left = title, right = author */}
+  <div aria-hidden className={`floating-side floating-title-left ${floatingVisible ? 'visible' : 'hidden'}`}>{post.title}</div>
+  <div aria-hidden className={`floating-side floating-author-right ${floatingVisible ? 'visible' : 'hidden'}`}>{post.author}</div>
       {/* Floating image transition layer */}
       <img
         ref={transitionImageRef}

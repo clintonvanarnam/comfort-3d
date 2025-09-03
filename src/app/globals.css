@@ -23,6 +23,16 @@ body.lightbox-open * {
   --site-gutter: 2rem;
 }
 
+/* Highlight/selection color: black background with white text */
+::selection {
+  background: #000000;
+  color: #ffffff;
+}
+::-moz-selection {
+  background: #000000;
+  color: #ffffff;
+}
+
 /* Mobile override: smaller gutters on narrow viewports */
 @media (max-width: 640px) {
   :root {
@@ -155,6 +165,43 @@ a {
   margin-left: calc(50% - 50vw);
   margin-bottom: 2rem;
 }
+
+/* Floating side labels: visible on desktop, centered vertically at the viewport edges */
+.floating-side {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 99999;
+  pointer-events: none;
+  font-family: var(--font-monument);
+  font-weight: 400;
+  font-size: 1rem;
+  opacity: 0.9;
+  /* match NavBar: white text using difference blend mode so it reads over varied backgrounds */
+  color: #ffffff;
+  mix-blend-mode: difference;
+  -webkit-mix-blend-mode: difference;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  transition: opacity 0.28s ease, transform 0.36s ease;
+}
+.floating-title-left {
+  left: calc(var(--site-gutter));
+  text-align: left;
+}
+.floating-author-right {
+  right: calc(var(--site-gutter));
+  text-align: right;
+}
+
+@media (max-width: 1024px) {
+  .floating-side { display: none; }
+}
+
+/* Visible/hidden states controlled from JS */
+.floating-side.hidden { opacity: 0; transform: translateY(-50%) translateX(0.15rem) scale(0.98); }
+.floating-side.visible { opacity: 1; transform: translateY(-50%) translateX(0) scale(1); }
 
 .post-meta-row {
   display: flex;
