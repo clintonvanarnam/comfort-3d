@@ -9,8 +9,9 @@ export async function generateMetadata({ params }) {
   if (!slug) return {};
   try {
     const post = await getPostBySlug(slug);
-  const siteName = 'COMFORT';
-  const title = post?.title ? `${post.title} | ${siteName}` : siteName;
+  const siteSuffix = 'COMFORT';
+  // Prefer author for the page title (Author | Comfort). Fall back to post title, then site suffix.
+  const title = post?.author ? `${post.author} | ${siteSuffix}` : (post?.title ? `${post.title} | ${siteSuffix}` : siteSuffix);
     // try to use a short excerpt/first block as description if available
     let description = '';
     if (post?.body && Array.isArray(post.body)) {
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }) {
       openGraph: {
         title,
         description: ogDescription,
-        siteName,
+        siteName: 'COMFORT',
         type: 'article',
         images: ogImage ? [{ url: ogImage, alt: post?.mainImage?.alt || post?.title || '' }] : undefined,
       },

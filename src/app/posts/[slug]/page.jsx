@@ -25,11 +25,10 @@ export default function PostPage() {
       // Update the browser title and meta description on the client so the
       // tab shows the article title immediately even if server metadata isn't applied.
       try {
-        const siteName = 'COMFORT';
-        if (fetched?.title) {
-          // Use a vertical bar separator instead of an em dash
-          document.title = `${fetched.title} | ${siteName}`;
-        }
+  const siteSuffix = 'COMFORT';
+  // Prefer author for the page title (Author | Comfort), fall back to fetched title, then siteSuffix
+  const pageTitle = fetched?.author ? `${fetched.author} | ${siteSuffix}` : (fetched?.title ? `${fetched.title} | ${siteSuffix}` : siteSuffix);
+  document.title = pageTitle;
         // description: try to extract a short excerpt from the first block
         let desc = '';
         if (fetched?.body && Array.isArray(fetched.body)) {
@@ -57,8 +56,8 @@ export default function PostPage() {
           ogTag.content = og;
         }
 
-        // Set OG title and description to match server preference
-        const ogTitle = fetched?.title ? `${fetched.title} | COMFORT` : 'COMFORT';
+  // Set OG title and description to match server preference (use author when available)
+  const ogTitle = pageTitle;
         let ogTitleTag = document.querySelector('meta[property="og:title"]');
         if (!ogTitleTag) {
           ogTitleTag = document.createElement('meta');
