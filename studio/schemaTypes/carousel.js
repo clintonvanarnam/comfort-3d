@@ -23,23 +23,11 @@ export default defineType({
       validation: (Rule) => Rule.required().min(1),
     },
     {
-      name: 'autoplay',
-      title: 'Autoplay',
-      type: 'boolean',
-      initialValue: false,
-    },
-    {
-      name: 'autoplayDelay',
-      title: 'Autoplay delay (ms)',
+      name: 'speed',
+      title: 'Speed (px/frame)',
       type: 'number',
-      initialValue: 4000,
-      description: 'Delay between slides when autoplay is enabled.',
-    },
-    {
-      name: 'showControls',
-      title: 'Show controls',
-      type: 'boolean',
-      initialValue: true,
+      initialValue: 1,
+      description: 'Visual speed of the carousel in pixels per animation frame (recommended: 0.2–2).',
     },
     {
       name: 'paddingTopToken',

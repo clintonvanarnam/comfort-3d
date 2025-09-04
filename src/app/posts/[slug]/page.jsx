@@ -512,6 +512,8 @@ export default function PostPage() {
               )}
             </figure>
           )}
+
+          
         </div>
 
         <div className="post-body">
@@ -753,9 +755,7 @@ export default function PostPage() {
                     >
                       <PostCarousel
                         slides={slides}
-                        autoplay={Boolean(value.autoplay)}
-                        autoplayDelay={value.autoplayDelay || 4000}
-                        showControls={value.showControls !== false}
+                        speed={typeof value.speed === 'number' ? value.speed : 1}
                         openLightbox={(opts) => openLightbox(opts)}
                         disableLightbox={true}
                       />

@@ -28,7 +28,7 @@ export default defineType({
     defineField({
       name: 'mainImage',
       title: 'Main image',
-      type: 'imageWithCaption',
+  type: 'imageWithCaptionFull',
       options: {
         hotspot: true,
       },
