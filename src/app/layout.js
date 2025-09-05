@@ -2,6 +2,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AnimatedLayout from "../components/AnimatedLayout"; // we'll create this next
+import SetVh from '../components/SetVh'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,7 +22,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <AnimatedLayout>{children}</AnimatedLayout>
+  <SetVh />
+  <AnimatedLayout>{children}</AnimatedLayout>
       </body>
     </html>
   );
