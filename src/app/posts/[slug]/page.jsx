@@ -21,6 +21,7 @@ export default function PostPage() {
   const headerRef = useRef(null);
   const [headerOut, setHeaderOut] = useState(false);
   const [relatedInView, setRelatedInView] = useState(false);
+  const [isSafari, setIsSafari] = useState(false);
 
   useEffect(() => {
     async function loadPost() {
@@ -111,6 +112,15 @@ export default function PostPage() {
     }
     loadPost();
   }, [params.slug]);
+
+  // Safari detection for image stabilization
+  useEffect(() => {
+    const isSafariBrowser = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    setIsSafari(isSafariBrowser);
+    if (isSafariBrowser) {
+      document.body.classList.add('safari-browser');
+    }
+  }, []);
 
   useEffect(() => {
     const data = sessionStorage.getItem('transitionPost');
@@ -474,34 +484,57 @@ export default function PostPage() {
                       srcSet = widths
                         .map((w) => `${urlFor(post.mainImage).width(w).url()} ${w}w`)
                         .join(', ');
-                      // choose a sensible default src (medium size)
-                      src = urlFor(post.mainImage).width(1365).url();
+                      // choose a sensible default src (HD quality)
+                      src = urlFor(post.mainImage).width(1920).url();
                     } catch (e) {
                       srcSet = null;
                     }
                   }
 
                   const lqip = post.mainImage.asset?.metadata?.lqip || null;
+                  // Get dimensions for Safari stabilization
+                  const w = post.mainImage.asset?.metadata?.dimensions?.width || 1365;
+                  const h = post.mainImage.asset?.metadata?.dimensions?.height || 910;
 
                   return (
-                    <img
-                      src={src}
-                      {...(srcSet ? { srcSet } : {})}
-                      sizes="100vw"
-                      alt={post.mainImage.alt || post.title}
-                      className={`post-main-image flip-image ${heroLoaded ? 'is-loaded' : 'not-loaded'}`}
-                      loading="eager"
-                      fetchPriority="high"
-                      style={lqip ? { backgroundImage: `url(${lqip})`, backgroundSize: 'cover' } : undefined}
-                      onLoad={() => setHeroLoaded(true)}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const imgSrc = src;
-                        openLightbox({ src: imgSrc, alt: post.mainImage.alt || post.title, caption: post.mainImage.caption || null });
-                      }}
-                      role="button"
-                      tabIndex={0}
-                    />
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: `${w} / ${h}` }}>
+                      {/* Safari-specific placeholder */}
+                      {!heroLoaded && (
+                        <div style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: lqip ? `url(${lqip}) center/cover` : '#f0f0f0',
+                          filter: isSafari ? 'none' : (lqip ? 'blur(8px)' : 'none'),
+                          zIndex: 1,
+                        }} />
+                      )}
+                      <img
+                        src={src}
+                        {...(srcSet ? { srcSet } : {})}
+                        sizes="100vw"
+                        alt={post.mainImage.alt || post.title}
+                        className={`post-main-image flip-image ${heroLoaded ? 'is-loaded' : 'not-loaded'}`}
+                        loading="eager"
+                        fetchPriority="high"
+                        decoding={isSafari ? "sync" : "async"}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          height: 'auto',
+                          position: 'relative',
+                          zIndex: 2,
+                          background: lqip ? `url(${lqip}) center/cover` : undefined,
+                        }}
+                        onLoad={() => setHeroLoaded(true)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const imgSrc = src;
+                          openLightbox({ src: imgSrc, alt: post.mainImage.alt || post.title, caption: post.mainImage.caption || null });
+                        }}
+                        role="button"
+                        tabIndex={0}
+                      />
+                    </div>
                   );
                 })()}
               {/* caption (rich text) */}
@@ -527,7 +560,7 @@ export default function PostPage() {
                   let src = value.asset?.url || null;
                   if (!src && urlFor) {
                     try {
-                      src = urlFor(value).width(1200).url();
+                      src = urlFor(value).width(1920).url();
                     } catch (e) {
                       src = null;
                     }
@@ -541,8 +574,8 @@ export default function PostPage() {
                       className="post-body-image"
                       role="button"
                       tabIndex={0}
-                      loading="lazy"
-                      decoding="async"
+                      loading={isSafari ? "eager" : "lazy"}
+                      decoding={isSafari ? "sync" : "async"}
                       onClick={(e) => {
                         e.stopPropagation();
                         openLightbox({ src, alt });
@@ -556,7 +589,7 @@ export default function PostPage() {
                   let src = value.asset?.url || null;
                   if (!src && urlFor) {
                     try {
-                      src = urlFor(value).width(1200).url();
+                      src = urlFor(value).width(1920).url();
                     } catch (e) {
                       src = null;
                     }
@@ -566,21 +599,41 @@ export default function PostPage() {
                   const isFull = value.display === 'fullWidth';
                   const isFullHeight = Boolean(value.fullHeight);
                   const isWideMargins = Boolean(value.wideMargins);
+                  // Get dimensions for Safari stabilization
+                  const w = value.asset?.metadata?.dimensions?.width || 1200;
+                  const h = value.asset?.metadata?.dimensions?.height || 800;
+
                   return (
                     <figure className={`post-body-figure ${isFull ? 'fullwidth' : ''} ${isFullHeight ? 'fullheight' : ''} ${isWideMargins ? 'wide-margins' : ''}`}>
-                      <img
-                        src={src}
-                        alt={alt}
-                        className={`post-body-image ${isFull ? 'fullwidth' : ''} ${isFullHeight ? 'fullheight' : ''} ${isWideMargins ? 'wide-margins' : ''}`}
-                        role="button"
-                        tabIndex={0}
-                        loading="lazy"
-                        decoding="async"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openLightbox({ src, alt, caption: value.caption || null });
-                        }}
-                      />
+                      <div style={{ position: 'relative', width: '100%' }}>
+                        {/* Safari-specific placeholder */}
+                        <div style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: '#f0f0f0',
+                          zIndex: 1,
+                        }} />
+                        <img
+                          src={src}
+                          alt={alt}
+                          className={`post-body-image ${isFull ? 'fullwidth' : ''} ${isFullHeight ? 'fullheight' : ''} ${isWideMargins ? 'wide-margins' : ''}`}
+                          role="button"
+                          tabIndex={0}
+                          loading={isSafari ? "eager" : "lazy"}
+                          decoding={isSafari ? "sync" : "async"}
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            height: 'auto',
+                            position: 'relative',
+                            zIndex: 2,
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openLightbox({ src, alt, caption: value.caption || null });
+                          }}
+                        />
+                      </div>
                       {value.caption && (
                         <figcaption className="post-body-caption">
                           <PortableText value={value.caption} />
@@ -602,7 +655,7 @@ export default function PostPage() {
                     let src = img.asset?.url || null;
                     if (!src && urlFor) {
                       try {
-                        src = urlFor(img).width(1200).url();
+                        src = urlFor(img).width(1920).url();
                       } catch (e) {
                         src = null;
                       }
@@ -690,18 +743,38 @@ export default function PostPage() {
 
                           const src = buildSrc(img);
                           if (!src) return null;
+                          // Get dimensions for Safari stabilization
+                          const w = img?.asset?.metadata?.dimensions?.width || 1200;
+                          const h = img?.asset?.metadata?.dimensions?.height || 800;
+
                           return (
                             <figure key={i} className="multi-image-item">
+                              <div style={{ position: 'relative', width: '100%' }}>
+                                {/* Safari-specific placeholder */}
+                                <div style={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  background: '#f0f0f0',
+                                  zIndex: 1,
+                                }} />
                                 <img
                                   src={src}
                                   alt={img.alt || ''}
                                   className="multi-image-row"
-                                  loading="lazy"
-                                  decoding="async"
+                                  loading={isSafari ? "eager" : "lazy"}
+                                  decoding={isSafari ? "sync" : "async"}
+                                  style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    height: 'auto',
+                                    position: 'relative',
+                                    zIndex: 2,
+                                  }}
                                   onClick={(e) => { e.stopPropagation(); openLightbox({ src, alt: img.alt || '', caption: img.caption || null }); }}
                                   role="button"
                                   tabIndex={0}
                                 />
+                              </div>
                               {/* per-image captions removed — captions are shown in the stacked list below */}
                             </figure>
                           );

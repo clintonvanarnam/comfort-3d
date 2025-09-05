@@ -1411,3 +1411,68 @@ body.three-scene-active .site-footer {
   /* two-image spread styles removed */
 }
 
+/* Safari-specific fixes for image loading glitches */
+body.safari-browser img {
+  /* Force hardware acceleration off for Safari */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Prevent layout shifts by ensuring images don't change size on load */
+  image-rendering: -webkit-optimize-contrast;
+  /* Ensure images don't cause reflow */
+  will-change: auto;
+  /* Safari-specific image loading optimizations */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Safari-specific image stabilization */
+body.safari-browser .post-main-image,
+body.safari-browser .post-body-image,
+body.safari-browser .multi-image-row {
+  /* Reserve space explicitly */
+  min-width: 100%;
+  min-height: 200px;
+  /* Prevent Safari from recalculating layout */
+  contain: layout style paint;
+  /* Force GPU acceleration but prevent glitches */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Less aggressive Safari stabilization for related content thumbnails */
+body.safari-browser .related-thumb {
+  /* Only apply minimal stabilization to prevent layout shifts */
+  contain: layout;
+  /* Force GPU acceleration but prevent glitches */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Safari-specific carousel fixes */
+body.safari-browser .post-carousel-bleed img {
+  /* Prevent layout shifts in carousels */
+  contain: layout style;
+  will-change: transform;
+}
+
+/* Safari-specific lightbox fixes */
+body.safari-browser .post-lightbox-image {
+  /* Prevent Safari viewport jumps */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  contain: layout style paint;
+}
+
+/* Safari-specific mobile optimizations - reduce aggressive containment on smaller screens */
+@media (max-width: 768px) {
+  body.safari-browser .post-main-image,
+  body.safari-browser .post-body-image,
+  body.safari-browser .multi-image-row {
+    contain: layout style;
+  }
+  
+  body.safari-browser .related-thumb {
+    contain: layout;
+  }
+}
+

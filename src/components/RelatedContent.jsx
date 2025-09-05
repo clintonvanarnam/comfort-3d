@@ -5,8 +5,13 @@ import { getPosts } from '@/lib/getPosts';
 
 export default function RelatedContent({ currentSlug = '' }) {
   const [related, setRelated] = useState([]);
+  const [isSafari, setIsSafari] = useState(false);
 
   useEffect(() => {
+    // Detect Safari
+    const safariCheck = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    setIsSafari(safariCheck);
+
     let mounted = true;
     async function load() {
       const all = await getPosts();
@@ -32,7 +37,13 @@ export default function RelatedContent({ currentSlug = '' }) {
         {related.map((r) => (
           <a key={r._id || r.slug} href={`/posts/${r.slug}`} className="related-card">
             <div className="related-thumb-wrap">
-              <img src={r.image} alt={r.title} className="related-thumb" />
+              <img
+                src={r.image}
+                alt={r.title}
+                className="related-thumb"
+                loading={isSafari ? "eager" : "lazy"}
+                decoding={isSafari ? "sync" : "async"}
+              />
             </div>
             <div className="related-meta">
               <div className="related-title">{r.title}</div>
