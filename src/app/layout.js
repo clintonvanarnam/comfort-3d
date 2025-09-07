@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AnimatedLayout from "../components/AnimatedLayout"; // we'll create this next
 import SetVh from '../components/SetVh'
+import BodyClassSetter from '@/components/BodyClassSetter';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,9 +22,12 @@ export const metadata = siteMetadata;
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
-  <SetVh />
-  <AnimatedLayout>{children}</AnimatedLayout>
+      <body>
+        {/* Apply font variable classes on the client only to avoid hydration
+            mismatches caused by extension-injected body attributes */}
+        <BodyClassSetter classes={`${geistSans.variable} ${geistMono.variable}`} />
+        <SetVh />
+        <AnimatedLayout>{children}</AnimatedLayout>
       </body>
     </html>
   );

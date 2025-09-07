@@ -22,6 +22,11 @@ export default function PostPage() {
   const [headerOut, setHeaderOut] = useState(false);
   const [relatedInView, setRelatedInView] = useState(false);
   const [isSafari, setIsSafari] = useState(false);
+  // track whether the header has ever been observed in-view; this prevents
+  // immediately treating it as "out" on the first observer callback which
+  // may report ratio=0 when the page loads or when layout shifts happen.
+  const headerSeenRef = useRef(false);
+  const headerOutTimerRef = useRef(null);
 
   useEffect(() => {
     async function loadPost() {
@@ -227,33 +232,68 @@ export default function PostPage() {
     const headerNode = document.querySelector('.post-main-image');
     const relatedNode = document.querySelector('.related-content-outer');
 
+    // debug: report whether nodes are present when effect runs
+    try {
+      // use console.log so it's visible in devtools by default
+      console.log('floating-debug: effect init', { headerNode: Boolean(headerNode), relatedNode: Boolean(relatedNode) });
+    } catch (e) {}
+
     // If there's no header image, consider it already scrolled out so labels can appear
     if (!headerNode) {
-      setHeaderOut(true);
+  // If headerNode is unexpectedly missing, log for debugging and set headerOut
+  try { console.log('floating-debug: no headerNode found — setting headerOut=true'); } catch (e) {}
+  setHeaderOut(true);
     }
 
-    let headerObserver = null;
-    let relatedObserver = null;
+  // Use a conservative scroll/resize check to decide when the header has
+    // been fully scrolled past. This avoids noisy intersectionRatio changes
+    // that occur during fast scrolling and layout churn.
+  let rafId = null;
+  let relatedObserver = null;
+    const checkHeaderOut = () => {
+      rafId = null;
+      try {
+        const node = document.querySelector('.post-main-image');
+        if (!node) {
+          // No header image — consider it out
+          headerSeenRef.current = true;
+          setHeaderOut(true);
+          return;
+        }
+        const rect = node.getBoundingClientRect();
+        // header is considered 'out' when its bottom is at or above the
+        // top of the viewport (scrolled past)
+        const out = rect.bottom <= 0;
+        if (out) headerSeenRef.current = true;
+        // cancel any pending debounce timer and set headerOut directly
+        if (headerOutTimerRef.current) {
+          clearTimeout(headerOutTimerRef.current);
+          headerOutTimerRef.current = null;
+        }
+        setHeaderOut(out);
+        try { console.log('floating-debug: checkHeaderOut', { bottom: rect.bottom, out }); } catch (e) {}
+      } catch (e) {
+        // ignore
+      }
+    };
 
-    if (headerNode) {
-      headerObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            // headerOut = true when header is mostly out of view
-            const out = !entry.isIntersecting || entry.intersectionRatio < 0.25;
-            setHeaderOut(out);
-          });
-        },
-        { root: null, threshold: [0, 0.25, 0.5, 1] }
-      );
-      headerObserver.observe(headerNode);
-    }
+    const onScrollOrResize = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(checkHeaderOut);
+    };
+
+    // run once immediately to establish starting state
+    onScrollOrResize();
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize);
+    window.addEventListener('orientationchange', onScrollOrResize);
 
     if (relatedNode) {
       relatedObserver = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             // relatedInView is true when any part of the related content enters the viewport
+            try { console.log('floating-debug: relatedObserver', { isIntersecting: entry.isIntersecting, ratio: entry.intersectionRatio }); } catch (e) {}
             setRelatedInView(entry.isIntersecting && entry.intersectionRatio > 0);
           });
         },
@@ -263,15 +303,20 @@ export default function PostPage() {
     }
 
     return () => {
-      try { headerObserver && headerObserver.disconnect(); } catch (e) {}
-      try { relatedObserver && relatedObserver.disconnect(); } catch (e) {}
+      try { window.removeEventListener('scroll', onScrollOrResize); } catch (e) {}
+      try { window.removeEventListener('resize', onScrollOrResize); } catch (e) {}
+      try { window.removeEventListener('orientationchange', onScrollOrResize); } catch (e) {}
+      try { if (rafId) cancelAnimationFrame(rafId); } catch (e) {}
+      try { if (headerOutTimerRef.current) { clearTimeout(headerOutTimerRef.current); headerOutTimerRef.current = null; } } catch (e) {}
     };
   }, [post]);
 
   // derive the visible state from headerOut and relatedInView so labels hide
   // once related content appears.
   useEffect(() => {
-    setFloatingVisible(Boolean(headerOut && !relatedInView));
+  const visible = Boolean(headerOut && !relatedInView);
+  try { console.log('floating-debug: derived visible', { headerOut, relatedInView, visible }); } catch (e) {}
+  setFloatingVisible(visible);
   }, [headerOut, relatedInView]);
 
   // animate multi-image items on scroll using GSAP ScrollTrigger
@@ -497,7 +542,7 @@ export default function PostPage() {
                   const h = post.mainImage.asset?.metadata?.dimensions?.height || 910;
 
                   return (
-                    <div style={{ position: 'relative', width: '100%', aspectRatio: `${w} / ${h}` }}>
+                    <div style={{ position: 'relative', width: '100%' }}>
                       {/* Safari-specific placeholder */}
                       {!heroLoaded && (
                         <div style={{
