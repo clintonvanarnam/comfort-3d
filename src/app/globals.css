@@ -194,6 +194,71 @@ a {
   transition: opacity 0.28s ease, transform 0.36s ease, visibility 0s linear 0.36s;
   will-change: opacity, transform;
 }
+
+/* Simple shop styles */
+.shop-page {
+  padding: 48px 20px;
+}
+
+.shop-header {
+  max-width: 900px;
+  margin: 0 auto 24px;
+  text-align: center;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.shop-card {
+  background: var(--card-bg, #fff);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(12,12,14,0.06);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.shop-card h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.05rem;
+}
+
+.shop-card p {
+  margin: 0 0 12px 0;
+  color: var(--muted, #666);
+  font-size: 0.95rem;
+}
+
+.shop-embed {
+  /* container for Shopify Buy Button embed */
+  margin-top: auto;
+}
+
+.shop-instructions {
+  font-size: 0.9rem;
+  color: var(--muted, #666);
+  background: rgba(0,0,0,0.02);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 14px;
+  background: var(--accent, #111);
+  color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.btn:hover { opacity: 0.95; }
 .floating-title-left {
   left: calc(var(--site-gutter));
   text-align: left;
