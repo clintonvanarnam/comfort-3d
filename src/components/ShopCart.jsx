@@ -5,18 +5,92 @@ export default function ShopCart({ products }) {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
   const [checkoutResult, setCheckoutResult] = useState(null);
+  const [showCheckoutDetails, setShowCheckoutDetails] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState({});
+  const [checkingVariants, setCheckingVariants] = useState({});
 
   function addToCart(variantId) {
-    setCart((prev) => {
-      const found = prev.find((item) => item.variantId === variantId);
-      if (found) {
-        return prev.map((item) =>
-          item.variantId === variantId ? { ...item, quantity: item.quantity + 1 } : item
-        );
+    // Check inventory via Admin API (if available) before mutating local cart
+    // prevent concurrent checks for the same variant
+    if (checkingVariants[variantId]) return;
+    setCheckingVariants((s) => ({ ...s, [variantId]: true }));
+    (async () => {
+      try {
+        const res = await fetch('/api/shopify-inventory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ variantId }),
+        });
+        const info = await res.json();
+        // (dev) inventory info - removed in prod
+
+        // Find product and variant locally for availableForSale fallback
+        const product = products.find((p) => p.variants.some((v) => v.id === variantId));
+        const variant = product ? product.variants.find((v) => v.id === variantId) : null;
+
+        // If Admin API provided an inventoryQuantity, enforce numeric cap
+        const maxQty = info && typeof info.inventoryQuantity === 'number' ? info.inventoryQuantity : null;
+
+  setCart((prev) => {
+          // If variant not available for sale (and Admin didn't say different), block
+          if (variant && variant.availableForSale === false && maxQty === null) {
+            alert('This variant is currently unavailable');
+            return prev;
+          }
+
+          const found = prev.find((item) => item.variantId === variantId);
+
+          if (found) {
+            // If we have a max and adding would exceed it, block
+            if (maxQty !== null && found.quantity + 1 > maxQty) {
+              alert('Cannot add more than the available inventory for this variant');
+              return prev;
+            }
+            return prev.map((item) =>
+              item.variantId === variantId ? { ...item, quantity: item.quantity + 1 } : item
+            );
+          }
+
+          // If maxQty is 0, treat as sold out
+          if (maxQty !== null && maxQty <= 0) {
+            alert('This variant is out of stock');
+            return prev;
+          }
+
+          return [...prev, { variantId, quantity: 1 }];
+        });
+      } catch (err) {
+        // If inventory lookup fails, fall back to availableForSale boolean
+        const product = products.find((p) => p.variants.some((v) => v.id === variantId));
+        const variant = product ? product.variants.find((v) => v.id === variantId) : null;
+        if (variant && variant.availableForSale === false) {
+          alert('This variant is currently unavailable');
+          return;
+        }
+        setCart((prev) => {
+          // (dev) cart logging removed for production
+          const found = prev.find((item) => item.variantId === variantId);
+          if (found) {
+            const updated = prev.map((item) =>
+              item.variantId === variantId ? { ...item, quantity: item.quantity + 1 } : item
+            );
+            // (dev) cart after add - removed for production
+            return updated;
+          }
+          const updated = [...prev, { variantId, quantity: 1 }];
+          // (dev) cart after add - removed for production
+          return updated;
+        });
       }
-      return [...prev, { variantId, quantity: 1 }];
-    });
+      finally {
+        // release lock
+        setCheckingVariants((s) => {
+          const next = { ...s };
+          delete next[variantId];
+          return next;
+        });
+      }
+    })();
   }
 
   async function checkout() {
@@ -67,14 +141,22 @@ export default function ShopCart({ products }) {
                     ))}
                   </select>
                   <div style={{ marginTop: 8 }}>
-                    <button className="btn" onClick={() => addToCart(selectedVariants[p.id] || p.variants[0].id)}>
-                      Add to Cart
+                    <button
+                      className="btn"
+                      onClick={() => addToCart(selectedVariants[p.id] || p.variants[0].id)}
+                      disabled={checkingVariants[selectedVariants[p.id] || p.variants[0].id]}
+                    >
+                      {checkingVariants[selectedVariants[p.id] || p.variants[0].id] ? 'Checking...' : 'Add to Cart'}
                     </button>
                   </div>
                 </div>
               ) : p.variants && p.variants.length === 1 ? (
-                <button className="btn" onClick={() => addToCart(p.variants[0].id)}>
-                  Add to Cart
+                <button
+                  className="btn"
+                  onClick={() => addToCart(p.variants[0].id)}
+                  disabled={checkingVariants[p.variants[0].id]}
+                >
+                  {checkingVariants[p.variants[0].id] ? 'Checking...' : 'Add to Cart'}
                 </button>
               ) : (
                 <span style={{ color: "#888" }}>Out of stock</span>
@@ -107,29 +189,49 @@ export default function ShopCart({ products }) {
           {loading ? "Redirecting..." : "Checkout"}
         </button>
         {checkoutResult && (
-          <div style={{ marginTop: 12, padding: 12, border: '1px solid #eee', borderRadius: 8 }}>
-            <strong>Checkout response</strong>
-            <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{JSON.stringify(checkoutResult, null, 2)}</pre>
-            {checkoutResult.cartId && (
-              <div>
-                <button
-                  onClick={() => {
-                    try {
-                      navigator.clipboard.writeText(checkoutResult.cartId || '');
-                      alert('Cart id copied to clipboard');
-                    } catch (e) {
-                      // ignore
-                    }
-                  }}
-                  className="btn"
-                >
-                  Copy cart id
-                </button>
+          <div style={{ marginTop: 12 }}>
+            {checkoutResult.checkoutUrl ? (
+              <div style={{ padding: 12, background: '#e6ffed', border: '1px solid #c6f6d5', borderRadius: 8 }}>
+                Redirecting to checkout…
+                <div style={{ marginTop: 8 }}>
+                  <a href={checkoutResult.checkoutUrl} target="_blank" rel="noreferrer" className="btn">Open checkout</a>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: 12, background: '#fff3f3', border: '1px solid #ffd6d6', borderRadius: 8 }}>
+                <strong>Checkout failed</strong>
+                <div style={{ marginTop: 8 }}>
+                  There was a problem creating the checkout. You can view details below or try again.
+                </div>
               </div>
             )}
-            {checkoutResult.checkoutUrl && (
-              <div style={{ marginTop: 8 }}>
-                <a href={checkoutResult.checkoutUrl} target="_blank" rel="noreferrer" className="btn">Open checkout</a>
+
+            <div style={{ marginTop: 8 }}>
+              <button className="btn" onClick={() => setShowCheckoutDetails((s) => !s)}>
+                {showCheckoutDetails ? 'Hide details' : 'View details'}
+              </button>
+            </div>
+
+            {showCheckoutDetails && (
+              <div style={{ marginTop: 8, padding: 12, border: '1px solid #eee', borderRadius: 8 }}>
+                <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{JSON.stringify(checkoutResult, null, 2)}</pre>
+                {checkoutResult.cartId && (
+                  <div style={{ marginTop: 8 }}>
+                    <button
+                      onClick={() => {
+                        try {
+                          navigator.clipboard.writeText(checkoutResult.cartId || '');
+                          alert('Cart id copied to clipboard');
+                        } catch (e) {
+                          // ignore
+                        }
+                      }}
+                      className="btn"
+                    >
+                      Copy cart id
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

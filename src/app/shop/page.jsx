@@ -5,9 +5,14 @@ import ShopCartWrapper from "@/components/ShopCartWrapper";
 export default async function Page() {
   let products = [];
   try {
-    products = await fetchProducts({ first: 24 });
+    const result = await fetchProducts({ first: 24 });
+    // fetchProducts now returns { products, __errors }
+    products = Array.isArray(result) ? result : result.products || [];
+    if (result && result.__errors) {
+      console.warn('Shopify fetch returned errors:', result.__errors);
+    }
   } catch (err) {
-    console.error('shop-fetch-error', err);
+    console.warn('shop-fetch-error', err);
   }
 
   return (

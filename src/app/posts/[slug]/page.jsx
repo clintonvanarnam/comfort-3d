@@ -204,9 +204,11 @@ export default function PostPage() {
     // ensure we pass the actual DOM node as the scope
     const scope = contentRef.current || undefined;
     const ctx = gsap.context(() => {
-      // debugging: confirm the effect runs
-      // eslint-disable-next-line no-console
-      console.log('GSAP entrance animation triggered for', params?.slug || post?.slug);
+      // debugging: confirm the effect runs (dev-only)
+      if (process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        console.log('GSAP entrance animation triggered for', params?.slug || post?.slug);
+      }
 
       // ensure known start state so animations are visible even if CSS changed
   gsap.set(['.post-main-image'], { y: 24, opacity: 0 });
@@ -232,18 +234,22 @@ export default function PostPage() {
     const headerNode = document.querySelector('.post-main-image');
     const relatedNode = document.querySelector('.related-content-outer');
 
-    // debug: report whether nodes are present when effect runs
-    try {
-      // use console.log so it's visible in devtools by default
-      console.log('floating-debug: effect init', { headerNode: Boolean(headerNode), relatedNode: Boolean(relatedNode) });
-    } catch (e) {}
+    // debug: report whether nodes are present when effect runs (dev-only)
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        // use console.log so it's visible in devtools by default
+        console.log('floating-debug: effect init', { headerNode: Boolean(headerNode), relatedNode: Boolean(relatedNode) });
+      } catch (e) {}
+    }
 
     // If there's no header image, consider it already scrolled out so labels can appear
-    if (!headerNode) {
-  // If headerNode is unexpectedly missing, log for debugging and set headerOut
-  try { console.log('floating-debug: no headerNode found — setting headerOut=true'); } catch (e) {}
-  setHeaderOut(true);
-    }
+      if (!headerNode) {
+        // If headerNode is unexpectedly missing, log for debugging and set headerOut (dev-only)
+        if (process.env.NODE_ENV !== 'production') {
+          try { console.log('floating-debug: no headerNode found — setting headerOut=true'); } catch (e) {}
+        }
+        setHeaderOut(true);
+      }
 
   // Use a conservative scroll/resize check to decide when the header has
     // been fully scrolled past. This avoids noisy intersectionRatio changes
@@ -271,7 +277,9 @@ export default function PostPage() {
           headerOutTimerRef.current = null;
         }
         setHeaderOut(out);
-        try { console.log('floating-debug: checkHeaderOut', { bottom: rect.bottom, out }); } catch (e) {}
+        if (process.env.NODE_ENV !== 'production') {
+          try { console.log('floating-debug: checkHeaderOut', { bottom: rect.bottom, out }); } catch (e) {}
+        }
       } catch (e) {
         // ignore
       }
@@ -293,7 +301,9 @@ export default function PostPage() {
         (entries) => {
           entries.forEach((entry) => {
             // relatedInView is true when any part of the related content enters the viewport
-            try { console.log('floating-debug: relatedObserver', { isIntersecting: entry.isIntersecting, ratio: entry.intersectionRatio }); } catch (e) {}
+            if (process.env.NODE_ENV !== 'production') {
+              try { console.log('floating-debug: relatedObserver', { isIntersecting: entry.isIntersecting, ratio: entry.intersectionRatio }); } catch (e) {}
+            }
             setRelatedInView(entry.isIntersecting && entry.intersectionRatio > 0);
           });
         },
@@ -315,7 +325,9 @@ export default function PostPage() {
   // once related content appears.
   useEffect(() => {
   const visible = Boolean(headerOut && !relatedInView);
-  try { console.log('floating-debug: derived visible', { headerOut, relatedInView, visible }); } catch (e) {}
+  if (process.env.NODE_ENV !== 'production') {
+    try { console.log('floating-debug: derived visible', { headerOut, relatedInView, visible }); } catch (e) {}
+  }
   setFloatingVisible(visible);
   }, [headerOut, relatedInView]);
 

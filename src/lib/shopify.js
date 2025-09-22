@@ -53,14 +53,15 @@ export async function fetchProducts({ first = 20 } = {}) {
   }
 
   const json = await res.json();
-  if (json.errors) {
-    // surface errors to the server logs
-    console.error('Shopify API errors:', json.errors);
+  const apiErrors = json.errors || null;
+  if (apiErrors) {
+    // Use warn instead of error to avoid Next's overlay in dev.
+    console.warn('Shopify API returned errors (check response):', apiErrors);
   }
   if (json.data?.products?.edges?.length === 0) {
     console.warn('Shopify API: No products returned. Check product status and sales channel.');
   }
-  return (json.data?.products?.edges || []).map((e) => {
+  const products = (json.data?.products?.edges || []).map((e) => {
     const node = e.node;
     return {
       id: node.id,
@@ -77,4 +78,6 @@ export async function fetchProducts({ first = 20 } = {}) {
       })),
     };
   });
+  // Attach API errors to the returned object so callers can inspect without throwing.
+  return { products, __errors: apiErrors };
 }
