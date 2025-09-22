@@ -8,6 +8,7 @@ export default function NavBar() {
   const router = useRouter();
   const navRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   // nav no longer mounts the slide-over; it will dispatch an event to open it
   const pathname = usePathname();
   const useDifference = pathname !== '/';
@@ -35,6 +36,34 @@ export default function NavBar() {
     mq.addEventListener ? mq.addEventListener('change', update) : mq.addListener(update);
     return () => {
       mq.removeEventListener ? mq.removeEventListener('change', update) : mq.removeListener(update);
+    };
+  }, []);
+
+  // Track cart count from localStorage (persisted cart)
+  useEffect(() => {
+    const readCount = () => {
+      try {
+        const raw = localStorage.getItem('comfort_cart');
+        const arr = raw ? JSON.parse(raw) : [];
+        const count = Array.isArray(arr) ? arr.reduce((s, it) => s + (it.quantity || 0), 0) : 0;
+        setCartCount(count);
+      } catch (e) {
+        setCartCount(0);
+      }
+    };
+
+    readCount();
+
+    const onStorage = (e) => {
+      if (e.key && e.key !== 'comfort_cart') return;
+      readCount();
+    };
+    const onCartChanged = () => readCount();
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('cart:changed', onCartChanged);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('cart:changed', onCartChanged);
     };
   }, []);
 
@@ -182,13 +211,14 @@ export default function NavBar() {
               color: '#fff',
               fontFamily: 'var(--font-monument)',
               fontWeight: 700,
-              fontSize: '0.95rem',
+              fontSize: '0.9rem',
               cursor: 'pointer',
               padding: 0,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               height: '64px',
+              textDecoration: pathname && pathname.startsWith('/shop') ? 'underline' : 'none',
               mixBlendMode: useDifference ? 'difference' : 'normal',
               WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
             }}
@@ -197,7 +227,49 @@ export default function NavBar() {
             SHOP
           </button>
         )}
-    </div>
+        {/* Left-side cart button (only show when there are items) */}
+        {cartCount > 0 && (
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cart:open'));
+            }}
+            style={{
+              position: 'relative',
+              background: 'transparent',
+              border: 'none',
+              color: '#fff',
+              cursor: 'pointer',
+              padding: 0,
+              margin: 0,
+              fontFamily: 'var(--font-monument)',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            aria-label={`Cart with ${cartCount} items`}
+          >
+            CART
+            <span className="cart-badge" style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: 18,
+              height: 18,
+              padding: '0 6px',
+              borderRadius: 9,
+              background: '#ffffff',
+              color: '#000000',
+              fontSize: 12,
+              marginLeft: 8,
+              mixBlendMode: 'normal',
+              WebkitMixBlendMode: 'normal',
+              isolation: 'isolate',
+            }}>{cartCount}</span>
+          </button>
+        )}
+  </div>
 
     {/* Right action container (always positioned right) */}
       <div
@@ -221,13 +293,14 @@ export default function NavBar() {
               color: '#fff',
               fontFamily: 'var(--font-monument)',
               fontWeight: 700,
-              fontSize: '0.95rem',
+              fontSize: '0.9rem',
               cursor: 'pointer',
               padding: 0,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               height: '64px',
+              textDecoration: pathname && pathname.startsWith('/shop') ? 'underline' : 'none',
               mixBlendMode: useDifference ? 'difference' : 'normal',
               WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
             }}
@@ -236,6 +309,8 @@ export default function NavBar() {
             SHOP
           </button>
         )}
+
+        
 
         <button
           onClick={() => {
@@ -247,7 +322,7 @@ export default function NavBar() {
             color: '#fff',
             fontFamily: 'var(--font-monument)',
             fontWeight: 700,
-            fontSize: '0.95rem',
+            fontSize: '0.9rem',
             cursor: 'pointer',
             padding: 0,
             display: 'inline-flex',

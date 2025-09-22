@@ -2,6 +2,10 @@ import { fetchProducts } from "@/lib/shopify";
 import NavBar from "@/components/NavBar";
 import ShopCartWrapper from "@/components/ShopCartWrapper";
 
+export const metadata = {
+  title: 'COMFORT | SHOP',
+};
+
 export default async function Page() {
   let products = [];
   try {

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import dynamic from 'next/dynamic';
 import AboutSlideOver from './AboutSlideOver';
+const CartSlideOver = dynamic(() => import('./CartSlideOver'), { ssr: false });
 
 // Load Footer only on the client (prevents SSR flash/hydration issues)
 const FooterClient = dynamic(() => import('./Footer'), { ssr: false });
@@ -26,6 +27,7 @@ export default function AnimatedLayout({ children }) {
 
   const footerWrapperRef = useRef(null);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const [aboutPrefetchBody, setAboutPrefetchBody] = useState(null);
   const [aboutPrefetchStatus, setAboutPrefetchStatus] = useState('idle');
 
@@ -49,12 +51,18 @@ export default function AnimatedLayout({ children }) {
     // listen for nav intent to open About
     const onAboutOpen = () => setAboutOpen(true);
     const onAboutClose = () => setAboutOpen(false);
+    const onCartOpen = () => setCartOpen(true);
+    const onCartClose = () => setCartOpen(false);
     window.addEventListener('about:open', onAboutOpen);
     window.addEventListener('about:close', onAboutClose);
+    window.addEventListener('cart:open', onCartOpen);
+    window.addEventListener('cart:close', onCartClose);
     return () => {
       window.removeEventListener('page:ready', onReady);
       window.removeEventListener('about:open', onAboutOpen);
       window.removeEventListener('about:close', onAboutClose);
+      window.removeEventListener('cart:open', onCartOpen);
+      window.removeEventListener('cart:close', onCartClose);
     };
   }, []);
 
@@ -193,6 +201,15 @@ export default function AnimatedLayout({ children }) {
         // Treat an in-progress prefetch as 'idle' so the slide-over doesn't render
         // a loading UI when opened.
         initialStatus={aboutPrefetchStatus === 'loading' ? 'idle' : aboutPrefetchStatus}
+      />
+
+      {/* Global Cart slide-over mounted at app root */}
+      <CartSlideOver
+        open={cartOpen}
+        onClose={() => {
+          setCartOpen(false);
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cart:close'));
+        }}
       />
 
       {/* Only render once we decide it’s allowed to be visible */}
