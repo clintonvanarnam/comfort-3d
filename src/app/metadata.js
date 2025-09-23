@@ -2,6 +2,11 @@
 export const metadata = {
   title: 'COMFORT',
   description: 'COMFORT ideas for a better tomorrow.',
+  icons: {
+    icon: '/favicon.ico?v=3',
+    shortcut: '/favicon.ico?v=3',
+    apple: '/favicon.ico?v=3',
+  },
   openGraph: {
     title: 'COMFORT',
     description: 'COMFORT ideas for a better tomorrow.',
