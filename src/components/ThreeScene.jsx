@@ -158,15 +158,8 @@ export default function ThreeScene() {
   camera.aspect = initialWidth / initialHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(initialWidth, initialHeight, false);
-          if (containerRef.current) {
+        if (containerRef.current) {
           containerRef.current.appendChild(renderer.domElement);
-          // ensure canvas/container are behind the intro overlay
-          try {
-            renderer.domElement.style.zIndex = '-1';
-            containerRef.current.style.zIndex = '-1';
-          } catch (e) {
-            // ignore
-          }
           // avoid the browser's default touch gestures interfering with pointer events
           renderer.domElement.style.touchAction = 'none';
           // ensure the canvas exactly covers the container and has no extra offset
@@ -662,21 +655,19 @@ export default function ThreeScene() {
         }}
         onTouchEnd={() => setIntroCursor((s) => ({ ...s, visible: false }))}
         style={{
-          position: 'fixed',
-          inset: 0,
-          width: '100vw',
-          height: '100dvh',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: '-100px',
           display: introComplete ? 'none' : 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          background: '#000000',
+          background: 'black',
           color: 'white',
           fontFamily: 'monospace',
           fontSize: '24px',
           cursor: 'none',
-          pointerEvents: 'auto',
-          mixBlendMode: 'normal',
-          WebkitMixBlendMode: 'normal',
           zIndex: 2147483647,
           transition: 'opacity 0.4s',
           opacity: introFading ? 0 : 1,
@@ -724,7 +715,7 @@ export default function ThreeScene() {
             fontFamily: 'var(--font-monument)',
             color: '#fff',
             background: 'transparent',
-            zIndex: 2147483646,
+            zIndex: 99999999999,
             pointerEvents: 'none',
             padding: '1rem 0',
           }}
