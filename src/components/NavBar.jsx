@@ -6,32 +6,25 @@ import gsap from 'gsap';
 
 export default function NavBar() {
   const router = useRouter();
+  const pathname = usePathname();
   const navRef = useRef(null);
   const maskRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [cartCount, setCartCount] = useState(0);
-  // nav no longer mounts the slide-over; it will dispatch an event to open it
-  const pathname = usePathname();
   const useDifference = pathname !== '/';
-  const [isHidden, setIsHidden] = useState(false);
-  const lastScrollY = useRef(0);
-  const scrollThreshold = 10; // Minimum scroll distance before hiding/showing
 
+  // Entrance animation
   useEffect(() => {
     const el = navRef.current;
     if (!el) return;
-    const tween = gsap.fromTo(
-      el,
-      { y: -300, opacity: 0 },
-      { y: 0, opacity: 1, duration: .6, ease: 'power2.out' }
-    );
+    const tween = gsap.fromTo(el, { y: -300, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' });
     return () => {
       tween.kill();
       gsap.killTweensOf(el);
     };
   }, []);
 
-  // Track small viewport to adjust nav layout (shop left, about right on mobile)
+  // Mobile detection
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const mq = window.matchMedia('(max-width: 640px)');
@@ -43,7 +36,7 @@ export default function NavBar() {
     };
   }, []);
 
-  // Track cart count from localStorage (persisted cart)
+  // Cart count from localStorage
   useEffect(() => {
     const readCount = () => {
       try {
@@ -55,9 +48,7 @@ export default function NavBar() {
         setCartCount(0);
       }
     };
-
     readCount();
-
     const onStorage = (e) => {
       if (e.key && e.key !== 'comfort_cart') return;
       readCount();
@@ -71,71 +62,39 @@ export default function NavBar() {
     };
   }, []);
 
-  // Hide nav when scrolling down, show when scrolling up.
+  // Hide on scroll (desktop only). Keep nav fixed and visible on mobile.
   useEffect(() => {
     const el = navRef.current;
+    const maskEl = maskRef.current;
     if (!el) return;
 
-    // Initial values
-    let lastY = typeof window !== 'undefined' ? window.scrollY : 0;
+    // If mobile, reset and keep visible
+    if (isMobile) {
+      gsap.killTweensOf(el);
+      if (maskEl) {
+        gsap.killTweensOf(maskEl);
+        maskEl.style.opacity = '0';
+        maskEl.style.display = 'none';
+      }
+      el.style.transform = 'translateY(0)';
+      el.style.opacity = '1';
+      el.style.pointerEvents = 'auto';
+      return;
+    }
+
+    let lastY = window.scrollY || 0;
     let ticking = false;
 
     const showNav = () => {
-      const maskEl = maskRef.current;
-      if (isMobile) {
-        // fade mask out first, then bring nav back
-        if (maskEl) gsap.to(maskEl, { opacity: 0, duration: 0.28, ease: 'power2.out' });
-        gsap.to(el, {
-          y: 0,
-          opacity: 1,
-          duration: 0.38,
-          ease: 'power2.out',
-          onComplete: () => {
-            el.style.pointerEvents = 'auto';
-          }
-        });
-      } else {
-        el.style.transform = 'translateY(0)';
-        el.style.opacity = '1';
-        el.style.pointerEvents = 'auto';
-      }
+      gsap.to(el, { y: 0, opacity: 1, duration: 0.38, ease: 'power2.out', onComplete: () => { el.style.pointerEvents = 'auto'; } });
+      if (maskEl) gsap.to(maskEl, { opacity: 0, duration: 0.28, ease: 'power2.out', onComplete: () => { maskEl.style.display = 'none'; } });
     };
 
     const hideNav = () => {
-      if (isMobile) {
-        const maskEl = maskRef.current;
-        // compute a large pixel value that guarantees the nav is fully off-screen across devices
-        const rect = el.getBoundingClientRect();
-        const navHeight = rect.height || 64;
-        const viewportHeight = window.innerHeight || (window.visualViewport && window.visualViewport.height) || 800;
-        // include visualViewport offsetTop if present and a generous buffer
-        const safeTop = (window.visualViewport && typeof window.visualViewport.offsetTop === 'number') ? window.visualViewport.offsetTop : 0;
-        const buffer = 120; // larger buffer to ensure it's not visible
-        const hideY = -Math.ceil(viewportHeight + navHeight + safeTop + buffer);
-
-        // ensure mask is visible and above the nav
-        if (maskEl) {
-          maskEl.style.display = 'block';
-          maskEl.style.willChange = 'opacity';
-          gsap.to(maskEl, { opacity: 1, duration: 0.28, ease: 'power2.in' });
-        }
-
-        // animate nav well off screen
-        el.style.willChange = 'transform, opacity';
-        gsap.to(el, {
-          y: hideY,
-          opacity: 0,
-          duration: 0.42,
-          ease: 'power2.in',
-          onComplete: () => {
-            el.style.pointerEvents = 'none';
-            el.style.willChange = '';
-          }
-        });
-      } else {
-        el.style.transform = 'translateY(calc(-100% - env(safe-area-inset-top) - 20px))';
-        el.style.opacity = '1';
-        el.style.pointerEvents = 'none';
+      gsap.to(el, { y: '-110%', opacity: 0, duration: 0.38, ease: 'power2.in', onComplete: () => { el.style.pointerEvents = 'none'; } });
+      if (maskEl) {
+        maskEl.style.display = 'block';
+        gsap.to(maskEl, { opacity: 1, duration: 0.28, ease: 'power2.in' });
       }
     };
 
@@ -145,47 +104,39 @@ export default function NavBar() {
       requestAnimationFrame(() => {
         const currentY = window.scrollY;
         const delta = currentY - lastY;
-
-        // small threshold to avoid jitter
         if (Math.abs(delta) > 6) {
-          if (delta > 0 && currentY > 60) {
-            // scrolling down
-            hideNav();
-          } else {
-            // scrolling up
-            showNav();
-          }
+          if (delta > 0 && currentY > 60) hideNav(); else showNav();
         }
-
         lastY = currentY;
         ticking = false;
       });
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
-
-    // ensure nav is visible initially
     showNav();
 
     return () => {
       window.removeEventListener('scroll', onScroll);
-      // reset styles
       if (el) {
         el.style.transform = '';
         el.style.pointerEvents = '';
+        el.style.opacity = '';
+      }
+      if (maskEl) {
+        maskEl.style.display = 'none';
+        maskEl.style.opacity = '';
       }
     };
-  }, []);
+  }, [isMobile]);
 
   return (
-  <nav
+    <nav
       ref={navRef}
       style={{
         position: 'fixed',
         top: 0,
         left: 0,
         width: '100%',
-        height: 64,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -195,13 +146,11 @@ export default function NavBar() {
         transition: 'transform 360ms cubic-bezier(.22,1,.36,1), opacity 360ms cubic-bezier(.22,1,.36,1)',
         willChange: 'transform, opacity',
         opacity: 1,
-        // use difference blend mode only when not on the root 3D page
         mixBlendMode: useDifference ? 'difference' : 'normal',
         WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
       }}
       aria-label="Main navigation"
     >
-      {/* mobile mask that covers the top area when nav hides */}
       <div
         ref={maskRef}
         style={{
@@ -217,201 +166,197 @@ export default function NavBar() {
           opacity: 0,
         }}
       />
-    <div
-      style={{
-        position: 'relative',
-        width: '100%',
-        margin: '0 auto',
-        padding: `0 var(--site-gutter)`,
-        boxSizing: 'border-box',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-    <button
-        onClick={() => router.push('/')}
+
+      <div
         style={{
-          background: 'transparent',
-          border: 'none',
-          padding: 0,
-          margin: 0,
-          cursor: 'pointer',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '64px',
-      alignSelf: 'center',
+          position: 'relative',
+          width: '100%',
+          margin: '0 auto',
+          padding: '0 var(--site-gutter)',
+          boxSizing: 'border-box',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
-        aria-label="Home"
       >
-        <img
-          src="/COMFORT_MAG_LOGO_WHITE.svg"
-          alt="COMFORT Home"
+        {/* Left actions */}
+        <div
           style={{
-            height: 20,
-            display: 'block',
-            userSelect: 'none',
-            pointerEvents: 'none',
-            mixBlendMode: useDifference ? 'difference' : 'normal',
-            WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            display: 'flex',
+            gap: '1.5rem',
+            alignItems: 'center',
+            height: '64px',
+            marginLeft: 'var(--site-gutter)',
           }}
-        />
-      </button>
-      {/* Left action container (always positioned left) */}
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          display: 'flex',
-          gap: '1.5rem',
-          alignItems: 'center',
-          height: '64px',
-          marginLeft: 'var(--site-gutter)',
-        }}
-      >
-        {isMobile && (
-          <button
-            onClick={() => router.push('/shop')}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#fff',
-              fontFamily: 'var(--font-monument)',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              padding: 0,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '64px',
-              textDecoration: pathname && pathname.startsWith('/shop') ? 'underline' : 'none',
-              mixBlendMode: useDifference ? 'difference' : 'normal',
-              WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
-            }}
-            aria-label="Shop"
-          >
-            SHOP
-          </button>
-        )}
+        >
+          {isMobile && (
+            <button
+              onClick={() => router.push('/shop')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#fff',
+                fontFamily: 'var(--font-monument)',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                padding: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '64px',
+                textDecoration: pathname && pathname.startsWith('/shop') ? 'underline' : 'none',
+                mixBlendMode: useDifference ? 'difference' : 'normal',
+                WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
+              }}
+              aria-label="Shop"
+            >
+              SHOP
+            </button>
+          )}
 
-        {/* Cart button - on left margin for desktop, absolutely positioned below SHOP on mobile */}
-        {cartCount > 0 && (
-          <button
-            onClick={() => {
-              if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cart:open'));
-            }}
-            style={{
-              position: isMobile ? 'absolute' : 'relative',
-              left: isMobile ? 0 : 'auto',
-              top: isMobile ? '25px' : 'auto',
-              background: 'transparent',
-              border: 'none',
-              color: '#fff',
-              cursor: 'pointer',
-              padding: 0,
-              margin: 0,
-              fontFamily: 'var(--font-monument)',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '64px',
-              zIndex: isMobile ? 2147483648 : 'auto',
-            }}
-            aria-label={`Cart with ${cartCount} items`}
-          >
-            CART
-            <span className="cart-badge" style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minWidth: 18,
-              height: 18,
-              padding: '0 6px',
-              borderRadius: 9,
-              background: '#ffffff',
-              color: '#000000',
-              fontSize: 12,
-              marginLeft: 8,
-              mixBlendMode: 'normal',
-              WebkitMixBlendMode: 'normal',
-              isolation: 'isolate',
-            }}>{cartCount}</span>
-          </button>
-        )}
-      </div>
+          {cartCount > 0 && (
+            <button
+              onClick={() => { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cart:open')); }}
+              style={{
+                position: isMobile ? 'absolute' : 'relative',
+                left: isMobile ? 0 : 'auto',
+                top: isMobile ? 25 : 'auto',
+                background: 'transparent',
+                border: 'none',
+                color: '#fff',
+                cursor: 'pointer',
+                padding: 0,
+                margin: 0,
+                fontFamily: 'var(--font-monument)',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '64px',
+                zIndex: isMobile ? 2147483648 : 'auto',
+              }}
+              aria-label={`Cart with ${cartCount} items`}
+            >
+              CART
+              <span className="cart-badge" style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: 18,
+                height: 18,
+                padding: '0 6px',
+                borderRadius: 9,
+                background: '#ffffff',
+                color: '#000000',
+                fontSize: 12,
+                marginLeft: 8,
+                mixBlendMode: 'normal',
+                WebkitMixBlendMode: 'normal',
+                isolation: 'isolate',
+              }}>{cartCount}</span>
+            </button>
+          )}
+        </div>
 
-    {/* Right action container (always positioned right) */}
-      <div
-        style={{
-      position: 'absolute',
-      right: 0,
-      top: 0,
-          display: 'flex',
-          gap: '1.5rem',
-          alignItems: 'center',
-          height: '64px',
-          marginRight: 'var(--site-gutter)',
-        }}
-      >
-        {!isMobile && (
-          <button
-            onClick={() => router.push('/shop')}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#fff',
-              fontFamily: 'var(--font-monument)',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              padding: 0,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '64px',
-              textDecoration: pathname && pathname.startsWith('/shop') ? 'underline' : 'none',
-              mixBlendMode: useDifference ? 'difference' : 'normal',
-              WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
-            }}
-            aria-label="Shop"
-          >
-            SHOP
-          </button>
-        )}
-
-        
-
+        {/* Center logo */}
         <button
-          onClick={() => {
-            if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('about:open'));
-          }}
+          onClick={() => router.push('/')}
           style={{
             background: 'transparent',
             border: 'none',
-            color: '#fff',
-            fontFamily: 'var(--font-monument)',
-            fontWeight: 700,
-            fontSize: '0.9rem',
-            cursor: 'pointer',
             padding: 0,
+            margin: 0,
+            cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
             height: '64px',
-            mixBlendMode: useDifference ? 'difference' : 'normal',
-            WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
+            alignSelf: 'center',
           }}
-          aria-label="About"
+          aria-label="Home"
         >
-          ABOUT
+          <img
+            src="/COMFORT_MAG_LOGO_WHITE.svg"
+            alt="COMFORT Home"
+            style={{
+              height: 20,
+              display: 'block',
+              userSelect: 'none',
+              pointerEvents: 'none',
+              mixBlendMode: useDifference ? 'difference' : 'normal',
+              WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
+            }}
+          />
         </button>
+
+        {/* Right actions */}
+        <div
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            display: 'flex',
+            gap: '1.5rem',
+            alignItems: 'center',
+            height: '64px',
+            marginRight: 'var(--site-gutter)',
+          }}
+        >
+          {!isMobile && (
+            <button
+              onClick={() => router.push('/shop')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#fff',
+                fontFamily: 'var(--font-monument)',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                padding: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '64px',
+                textDecoration: pathname && pathname.startsWith('/shop') ? 'underline' : 'none',
+                mixBlendMode: useDifference ? 'difference' : 'normal',
+                WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
+              }}
+              aria-label="Shop"
+            >
+              SHOP
+            </button>
+          )}
+
+          <button
+            onClick={() => { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('about:open')); }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#fff',
+              fontFamily: 'var(--font-monument)',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              padding: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '64px',
+              mixBlendMode: useDifference ? 'difference' : 'normal',
+              WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
+            }}
+            aria-label="About"
+          >
+            ABOUT
+          </button>
+        </div>
       </div>
-    </div>
     </nav>
   );
 
