@@ -162,8 +162,8 @@ export default function ThreeScene() {
           containerRef.current.appendChild(renderer.domElement);
           // ensure canvas/container are behind the intro overlay
           try {
-            renderer.domElement.style.zIndex = '0';
-            containerRef.current.style.zIndex = '0';
+            renderer.domElement.style.zIndex = '-1';
+            containerRef.current.style.zIndex = '-1';
           } catch (e) {
             // ignore
           }
@@ -663,10 +663,9 @@ export default function ThreeScene() {
         onTouchEnd={() => setIntroCursor((s) => ({ ...s, visible: false }))}
         style={{
           position: 'fixed',
-          top: 0,
-          left: 0,
+          inset: 0,
           width: '100vw',
-          height: "calc(var(--vh, 1vh) * 100 + env(safe-area-inset-bottom))",
+          height: '100dvh',
           display: introComplete ? 'none' : 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -678,7 +677,7 @@ export default function ThreeScene() {
           pointerEvents: 'auto',
           mixBlendMode: 'normal',
           WebkitMixBlendMode: 'normal',
-          zIndex: 100000000000,
+          zIndex: 2147483647,
           transition: 'opacity 0.4s',
           opacity: introFading ? 0 : 1,
         }}
