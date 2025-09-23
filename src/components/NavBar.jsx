@@ -81,12 +81,14 @@ export default function NavBar() {
 
     const showNav = () => {
       el.style.transform = 'translateY(0)';
+      el.style.opacity = '1';
       el.style.pointerEvents = 'auto';
     };
 
     const hideNav = () => {
       // Move navbar completely off-screen, accounting for iOS safe area
       el.style.transform = 'translateY(calc(-100% - env(safe-area-inset-top) - 20px))';
+      el.style.opacity = isMobile ? '0' : '1';
       // while hidden, avoid accidental clicks
       el.style.pointerEvents = 'none';
     };
@@ -138,14 +140,15 @@ export default function NavBar() {
         left: 0,
         width: '100%',
         height: 64,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         pointerEvents: 'auto',
         zIndex: 2147483647,
         background: 'transparent',
-        transition: 'transform 360ms cubic-bezier(.22,1,.36,1)',
-        willChange: 'transform',
+        transition: 'transform 360ms cubic-bezier(.22,1,.36,1), opacity 360ms cubic-bezier(.22,1,.36,1)',
+        willChange: 'transform, opacity',
+        opacity: 1,
         // use difference blend mode only when not on the root 3D page
         mixBlendMode: useDifference ? 'difference' : 'normal',
         WebkitMixBlendMode: useDifference ? 'difference' : 'normal',
