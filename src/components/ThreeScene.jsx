@@ -656,7 +656,7 @@ export default function ThreeScene() {
         onTouchEnd={() => setIntroCursor((s) => ({ ...s, visible: false }))}
         style={{
           position: 'absolute',
-          top: 0,
+          top: '-100px',
           left: 0,
           right: 0,
           bottom: '-100px',
