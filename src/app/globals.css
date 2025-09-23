@@ -399,6 +399,32 @@ select.size-select option:disabled {
   .floating-side { display: none; }
 }
 
+/* Intro overlay used by the home ThreeScene opening screen. Keeps the overlay
+   full-bleed, black, and extends past iOS safe-area insets so there are no
+   visible gaps on modern iPhones. This class is intentionally specific so it
+   doesn't affect other pages. */
+.intro-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* push the bottom beyond the viewport to cover home indicator areas */
+  bottom: -120px;
+  background: #000000;
+  z-index: 2147483647; /* ensure this sits on top of canvas and nav */
+  /* ensure it paints over the Three.js canvas */
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* When the site activates the three-scene, force the document background to black
+   to avoid flashes on route transitions on iOS devices. */
+body.three-scene-active {
+  background: #000 !important;
+}
+
 @media (max-width: 900px) {
   .shop-grid {
     grid-template-columns: repeat(3, 1fr);
