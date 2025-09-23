@@ -13,8 +13,7 @@ const FooterClient = dynamic(() => import('./Footer'), { ssr: false });
 
 // Optional: routes that should *not* delay the footer (empty to always delay)
 const BYPASS_DELAY_ON_ROUTES = new Set([
-  // '/',             // uncomment if you want the home page to show footer immediately
-  // '/about',
+  '/shop',
 ]);
 
 export default function AnimatedLayout({ children }) {
@@ -150,7 +149,7 @@ export default function AnimatedLayout({ children }) {
 
   // Decide when the footer can become visible
   useEffect(() => {
-    const bypass = BYPASS_DELAY_ON_ROUTES.has(pathname);
+    const bypass = BYPASS_DELAY_ON_ROUTES.has(pathname) || pathname.startsWith('/shop/');
     // If bypassing, only wait for mount + paint; otherwise require pageReady too.
     const canShow = mounted && contentPainted && (bypass ? true : pageReady);
     setFooterVisible(canShow);

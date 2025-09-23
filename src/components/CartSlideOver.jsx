@@ -91,7 +91,30 @@ export default function CartSlideOver({ open, onClose }) {
   }, [open]);
 
   // Helpers to update quantities/remove items
-  function updateQuantity(variantId, delta) {
+  async function updateQuantity(variantId, delta) {
+    if (delta > 0) {
+      // Check inventory before increasing
+      try {
+        const res = await fetch('/api/shopify-inventory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ variantId }),
+        });
+        const info = await res.json();
+        const maxQty = info && typeof info.inventoryQuantity === 'number' ? info.inventoryQuantity : null;
+        if (maxQty !== null) {
+          const currentQty = cart.find(it => it.variantId === variantId)?.quantity || 0;
+          if (currentQty + delta > maxQty) {
+            alert('Cannot add more than available inventory');
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to check inventory', err);
+        // Proceed anyway if check fails
+      }
+    }
+
     try {
       const raw = localStorage.getItem('comfort_cart');
       const arr = raw ? JSON.parse(raw) : [];
@@ -233,7 +256,7 @@ export default function CartSlideOver({ open, onClose }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                         <button aria-label={`Decrease quantity for ${item.title}`} onClick={() => updateQuantity(item.variantId, -1)} style={{ border: '1px solid #ddd', background: 'transparent', padding: '4px 8px', cursor: 'pointer' }}>−</button>
                         <div style={{ minWidth: 28, textAlign: 'center' }}>{item.quantity}</div>
-                        <button aria-label={`Increase quantity for ${item.title}`} onClick={() => updateQuantity(item.variantId, 1)} style={{ border: '1px solid #ddd', background: 'transparent', padding: '4px 8px', cursor: 'pointer' }}>+</button>
+                        <button aria-label={`Increase quantity for ${item.title}`} onClick={async () => await updateQuantity(item.variantId, 1)} style={{ border: '1px solid #ddd', background: 'transparent', padding: '4px 8px', cursor: 'pointer' }}>+</button>
                       </div>
                       <button aria-label={`Remove ${item.title}`} onClick={() => removeItem(item.variantId)} style={{ border: 'none', background: 'transparent', color: '#900', cursor: 'pointer', marginLeft: 8 }}>Remove</button>
                     </div>
