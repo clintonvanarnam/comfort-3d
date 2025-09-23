@@ -80,17 +80,39 @@ export default function NavBar() {
     let ticking = false;
 
     const showNav = () => {
-      el.style.transform = 'translateY(0)';
-      el.style.opacity = '1';
-      el.style.pointerEvents = 'auto';
+      if (isMobile) {
+        gsap.to(el, {
+          y: 0,
+          opacity: 1,
+          duration: 0.4,
+          ease: 'power2.out',
+          onComplete: () => {
+            el.style.pointerEvents = 'auto';
+          }
+        });
+      } else {
+        el.style.transform = 'translateY(0)';
+        el.style.opacity = '1';
+        el.style.pointerEvents = 'auto';
+      }
     };
 
     const hideNav = () => {
-      // Move navbar completely off-screen, accounting for iOS safe area
-      el.style.transform = 'translateY(calc(-100% - env(safe-area-inset-top) - 20px))';
-      el.style.opacity = isMobile ? '0' : '1';
-      // while hidden, avoid accidental clicks
-      el.style.pointerEvents = 'none';
+      if (isMobile) {
+        gsap.to(el, {
+          y: '-100%',
+          opacity: 0,
+          duration: 0.4,
+          ease: 'power2.in',
+          onComplete: () => {
+            el.style.pointerEvents = 'none';
+          }
+        });
+      } else {
+        el.style.transform = 'translateY(calc(-100% - env(safe-area-inset-top) - 20px))';
+        el.style.opacity = '1';
+        el.style.pointerEvents = 'none';
+      }
     };
 
     const onScroll = () => {
