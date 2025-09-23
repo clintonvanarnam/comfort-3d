@@ -1366,6 +1366,11 @@ body.three-scene-active .site-footer {
   opacity: 0 !important;
 }
 
+/* Ensure black background during Three.js scene */
+body.three-scene-active {
+  background: black !important;
+}
+
 /* Two-image spread: 12-column grid for offsets and spans */
 .two-image-spread {
   display: grid;
