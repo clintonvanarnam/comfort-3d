@@ -50,9 +50,6 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  /* iOS safe area support */
-  padding-bottom: env(safe-area-inset-bottom);
-  background-color: var(--background);
 }
 
 body {
@@ -61,8 +58,6 @@ body {
   font-family: var(--font-monument);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Ensure background extends to safe area */
-  background-attachment: fixed;
 }
 
 /* Ensure headings don't inherit bold weight from the font - keep them normal */

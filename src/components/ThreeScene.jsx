@@ -633,7 +633,7 @@ export default function ThreeScene() {
         ref={containerRef}
         style={{ 
           width: '100vw', 
-          height: 'calc(100vh + env(safe-area-inset-bottom))', 
+          height: 'calc(100vh + env(safe-area-inset-bottom) + 100px)', 
           overflow: 'hidden', 
           background: 'black', 
           position: 'relative'
@@ -656,7 +656,7 @@ export default function ThreeScene() {
         onTouchEnd={() => setIntroCursor((s) => ({ ...s, visible: false }))}
         style={{
           width: '100vw',
-          height: 'calc(100vh + env(safe-area-inset-bottom))',
+          height: 'calc(100vh + env(safe-area-inset-bottom) + 100px)',
           display: introComplete ? 'none' : 'flex',
           justifyContent: 'center',
           alignItems: 'center',
