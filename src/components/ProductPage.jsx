@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function ProductPage({ product }) {
   // When multiple variants exist, start with no selection so the user must choose
@@ -8,6 +8,16 @@ export default function ProductPage({ product }) {
   );
   const [checking, setChecking] = useState(false);
   const [message, setMessage] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    if (product.images && product.images.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [product.images]);
 
   async function addToCart(variantId) {
     if (!variantId) return;
@@ -77,8 +87,13 @@ export default function ProductPage({ product }) {
       </div>
 
       <div className="product-image">
-        {product.images[0] && (
-          <img src={product.images[0].url} alt={product.images[0].altText || product.title} />
+        {product.images && product.images.length > 0 && (
+          <div className="image-carousel">
+            <img 
+              src={product.images[currentImageIndex].url} 
+              alt={product.images[currentImageIndex].altText || product.title} 
+            />
+          </div>
         )}
       </div>
 
@@ -136,3 +151,17 @@ export default function ProductPage({ product }) {
     </div>
   );
 }
+
+<style jsx>{`
+  .image-carousel {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .image-carousel img {
+    max-width: 100%;
+    height: auto;
+  }
+`}</style>
