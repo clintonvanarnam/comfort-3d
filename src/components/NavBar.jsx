@@ -81,10 +81,11 @@ export default function NavBar() {
 
     const showNav = () => {
       if (isMobile) {
+        // animate back to visible using GSAP
         gsap.to(el, {
           y: 0,
           opacity: 1,
-          duration: 0.4,
+          duration: 0.38,
           ease: 'power2.out',
           onComplete: () => {
             el.style.pointerEvents = 'auto';
@@ -99,10 +100,18 @@ export default function NavBar() {
 
     const hideNav = () => {
       if (isMobile) {
+        // compute a pixel value that guarantees the nav is fully off-screen on iOS
+        const rect = el.getBoundingClientRect();
+        const navHeight = rect.height || 64;
+        const safeTop = (window.visualViewport && typeof window.visualViewport.offsetTop === 'number') ? window.visualViewport.offsetTop : 0;
+        // add a small buffer to ensure it's completely hidden
+        const buffer = 28;
+        const hideY = -Math.ceil(navHeight + safeTop + buffer);
+
         gsap.to(el, {
-          y: '-100%',
+          y: hideY,
           opacity: 0,
-          duration: 0.4,
+          duration: 0.38,
           ease: 'power2.in',
           onComplete: () => {
             el.style.pointerEvents = 'none';
