@@ -12,6 +12,9 @@ export default function NavBar() {
   // nav no longer mounts the slide-over; it will dispatch an event to open it
   const pathname = usePathname();
   const useDifference = pathname !== '/';
+  const [isHidden, setIsHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  const scrollThreshold = 10; // Minimum scroll distance before hiding/showing
 
   useEffect(() => {
     const el = navRef.current;
@@ -82,7 +85,8 @@ export default function NavBar() {
     };
 
     const hideNav = () => {
-      el.style.transform = 'translateY(-100%)';
+      // Move navbar completely off-screen, accounting for iOS safe area
+      el.style.transform = 'translateY(calc(-100% - env(safe-area-inset-top) - 20px))';
       // while hidden, avoid accidental clicks
       el.style.pointerEvents = 'none';
     };
