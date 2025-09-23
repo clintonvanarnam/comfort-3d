@@ -1,6 +1,8 @@
 "use client";
 import React from "react";
 import Link from 'next/link';
+import ShopCardImage from './ShopCardImage';
+
 export default function ShopCart({ products }) {
 
   return (
@@ -10,13 +12,7 @@ export default function ShopCart({ products }) {
           <article key={p.id} className="shop-card">
             <div className="shop-card-image">
               <Link href={`/shop/${p.handle}`}>
-                {p.images[0] ? (
-                  <img
-                    src={p.images[0].url}
-                    alt={p.images[0].altText || p.title}
-                    className="shop-card-img"
-                  />
-                ) : null}
+                <ShopCardImage images={p.images} title={p.title} />
               </Link>
             </div>
 

@@ -20,7 +20,7 @@ export async function fetchProducts({ first = 20 } = {}) {
           handle
           title
           descriptionHtml
-          images(first: 1) { edges { node { url altText } } }
+          images(first: 10) { edges { node { url altText } } }
           variants(first: 10) {
             edges {
               node {
