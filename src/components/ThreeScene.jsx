@@ -656,14 +656,10 @@ export default function ThreeScene() {
         onTouchEnd={() => setIntroCursor((s) => ({ ...s, visible: false }))}
         style={{
           position: 'fixed',
-          top: '0',
-          left: '0',
-          right: '0',
-          bottom: '0',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-          paddingTop: 'env(safe-area-inset-top)',
-          paddingLeft: 'env(safe-area-inset-left)',
-          paddingRight: 'env(safe-area-inset-right)',
+          top: 'calc(-1 * env(safe-area-inset-top))',
+          left: 'calc(-1 * env(safe-area-inset-left))',
+          right: 'calc(-1 * env(safe-area-inset-right))',
+          bottom: 'calc(-1 * env(safe-area-inset-bottom))',
           display: introComplete ? 'none' : 'flex',
           justifyContent: 'center',
           alignItems: 'center',
