@@ -22,6 +22,9 @@ export const metadata = siteMetadata;
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      </head>
       <body>
         {/* Apply font variable classes on the client only to avoid hydration
             mismatches caused by extension-injected body attributes */}

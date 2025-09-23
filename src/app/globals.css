@@ -50,6 +50,9 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  /* iOS safe area support */
+  padding-bottom: env(safe-area-inset-bottom);
+  background-color: var(--background);
 }
 
 body {
@@ -58,6 +61,8 @@ body {
   font-family: var(--font-monument);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Ensure background extends to safe area */
+  background-attachment: fixed;
 }
 
 /* Ensure headings don't inherit bold weight from the font - keep them normal */
@@ -521,18 +526,30 @@ select.size-select option:disabled {
   }
 }
 
-/* Mobile: single column */
+/* Mobile: single column with controls under image */
 @media (max-width: 480px) {
   .product-page-layout {
     grid-template-columns: 1fr;
-    grid-template-areas: "image" "content";
+    grid-template-areas:
+      "image"
+      "controls"
+      "description";
     gap: 16px;
     width: 100%;
     box-sizing: border-box;
   }
 
-  .product-description, .product-controls {
-    grid-area: content;
+  .product-image {
+    grid-area: image;
+  }
+
+  .product-controls {
+    grid-area: controls;
+    align-items: flex-start; /* left-align controls on mobile */
+  }
+
+  .product-description {
+    grid-area: description;
   }
 }
 

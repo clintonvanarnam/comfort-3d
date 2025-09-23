@@ -631,7 +631,13 @@ export default function ThreeScene() {
       {/* Canvas container - always mounted so scene can initialize and load assets */}
       <div
         ref={containerRef}
-        style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: 'black', position: 'relative' }}
+        style={{ 
+          width: '100vw', 
+          height: 'calc(100vh + env(safe-area-inset-bottom))', 
+          overflow: 'hidden', 
+          background: 'black', 
+          position: 'relative'
+        }}
       />
 
       {/* Intro overlay sits above the canvas and can be dismissed to reveal the scene */}
@@ -650,7 +656,7 @@ export default function ThreeScene() {
         onTouchEnd={() => setIntroCursor((s) => ({ ...s, visible: false }))}
         style={{
           width: '100vw',
-          height: '100vh',
+          height: 'calc(100vh + env(safe-area-inset-bottom))',
           display: introComplete ? 'none' : 'flex',
           justifyContent: 'center',
           alignItems: 'center',

@@ -227,49 +227,54 @@ export default function NavBar() {
             SHOP
           </button>
         )}
-        {/* Left-side cart button (only show when there are items) */}
-        {cartCount > 0 && (
-          <button
-            onClick={() => {
-              if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cart:open'));
-            }}
-            style={{
-              position: 'relative',
-              background: 'transparent',
-              border: 'none',
-              color: '#fff',
-              cursor: 'pointer',
-              padding: 0,
-              margin: 0,
-              fontFamily: 'var(--font-monument)',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            aria-label={`Cart with ${cartCount} items`}
-          >
-            CART
-            <span className="cart-badge" style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minWidth: 18,
-              height: 18,
-              padding: '0 6px',
-              borderRadius: 9,
-              background: '#ffffff',
-              color: '#000000',
-              fontSize: 12,
-              marginLeft: 8,
-              mixBlendMode: 'normal',
-              WebkitMixBlendMode: 'normal',
-              isolation: 'isolate',
-            }}>{cartCount}</span>
-          </button>
-        )}
-  </div>
+      </div>
+
+      {/* Cart button - absolutely positioned below SHOP on mobile */}
+      {cartCount > 0 && (
+        <button
+          onClick={() => {
+            if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cart:open'));
+          }}
+          style={{
+            position: isMobile ? 'absolute' : 'relative',
+            left: isMobile ? 0 : 'auto',
+            top: isMobile ? '44px' : 'auto',
+            background: 'transparent',
+            border: 'none',
+            color: '#fff',
+            cursor: 'pointer',
+            padding: 0,
+            margin: isMobile ? '0 0 0 var(--site-gutter)' : 0,
+            fontFamily: 'var(--font-monument)',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '64px',
+            zIndex: isMobile ? 2147483648 : 'auto',
+          }}
+          aria-label={`Cart with ${cartCount} items`}
+        >
+          CART
+          <span className="cart-badge" style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: 18,
+            height: 18,
+            padding: '0 6px',
+            borderRadius: 9,
+            background: '#ffffff',
+            color: '#000000',
+            fontSize: 12,
+            marginLeft: 8,
+            mixBlendMode: 'normal',
+            WebkitMixBlendMode: 'normal',
+            isolation: 'isolate',
+          }}>{cartCount}</span>
+        </button>
+      )}
 
     {/* Right action container (always positioned right) */}
       <div
