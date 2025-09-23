@@ -158,8 +158,15 @@ export default function ThreeScene() {
   camera.aspect = initialWidth / initialHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(initialWidth, initialHeight, false);
-        if (containerRef.current) {
+          if (containerRef.current) {
           containerRef.current.appendChild(renderer.domElement);
+          // ensure canvas/container are behind the intro overlay
+          try {
+            renderer.domElement.style.zIndex = '0';
+            containerRef.current.style.zIndex = '0';
+          } catch (e) {
+            // ignore
+          }
           // avoid the browser's default touch gestures interfering with pointer events
           renderer.domElement.style.touchAction = 'none';
           // ensure the canvas exactly covers the container and has no extra offset
@@ -656,19 +663,22 @@ export default function ThreeScene() {
         onTouchEnd={() => setIntroCursor((s) => ({ ...s, visible: false }))}
         style={{
           position: 'fixed',
-          top: 'calc(-1 * env(safe-area-inset-top))',
-          left: 'calc(-1 * env(safe-area-inset-left))',
-          right: 'calc(-1 * env(safe-area-inset-right))',
-          bottom: 'calc(-1 * env(safe-area-inset-bottom))',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: "calc(var(--vh, 1vh) * 100 + env(safe-area-inset-bottom))",
           display: introComplete ? 'none' : 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          background: 'black',
+          background: '#000000',
           color: 'white',
           fontFamily: 'monospace',
           fontSize: '24px',
           cursor: 'none',
-          zIndex: 2147483647,
+          pointerEvents: 'auto',
+          mixBlendMode: 'normal',
+          WebkitMixBlendMode: 'normal',
+          zIndex: 100000000000,
           transition: 'opacity 0.4s',
           opacity: introFading ? 0 : 1,
         }}
@@ -715,7 +725,7 @@ export default function ThreeScene() {
             fontFamily: 'var(--font-monument)',
             color: '#fff',
             background: 'transparent',
-            zIndex: 99999999999,
+            zIndex: 2147483646,
             pointerEvents: 'none',
             padding: '1rem 0',
           }}
