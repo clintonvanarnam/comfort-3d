@@ -100,21 +100,27 @@ export default function NavBar() {
 
     const hideNav = () => {
       if (isMobile) {
-        // compute a pixel value that guarantees the nav is fully off-screen on iOS
+        // compute a large pixel value that guarantees the nav is fully off-screen across devices
         const rect = el.getBoundingClientRect();
         const navHeight = rect.height || 64;
+        const viewportHeight = window.innerHeight || (window.visualViewport && window.visualViewport.height) || 800;
+        // include visualViewport offsetTop if present and a generous buffer
         const safeTop = (window.visualViewport && typeof window.visualViewport.offsetTop === 'number') ? window.visualViewport.offsetTop : 0;
-        // add a small buffer to ensure it's completely hidden
-        const buffer = 28;
-        const hideY = -Math.ceil(navHeight + safeTop + buffer);
+        const buffer = 120; // larger buffer to ensure it's not visible
+        const hideY = -Math.ceil(viewportHeight + navHeight + safeTop + buffer);
+
+        // Set will-change for smoother animation
+        el.style.willChange = 'transform, opacity';
 
         gsap.to(el, {
           y: hideY,
           opacity: 0,
-          duration: 0.38,
+          duration: 0.42,
           ease: 'power2.in',
           onComplete: () => {
             el.style.pointerEvents = 'none';
+            // clear will-change to avoid long-term paint costs
+            el.style.willChange = '';
           }
         });
       } else {
