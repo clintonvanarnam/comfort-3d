@@ -7,6 +7,7 @@ import gsap from 'gsap';
 export default function NavBar() {
   const router = useRouter();
   const navRef = useRef(null);
+  const maskRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   // nav no longer mounts the slide-over; it will dispatch an event to open it
@@ -80,8 +81,10 @@ export default function NavBar() {
     let ticking = false;
 
     const showNav = () => {
+      const maskEl = maskRef.current;
       if (isMobile) {
-        // animate back to visible using GSAP
+        // fade mask out first, then bring nav back
+        if (maskEl) gsap.to(maskEl, { opacity: 0, duration: 0.28, ease: 'power2.out' });
         gsap.to(el, {
           y: 0,
           opacity: 1,
@@ -100,6 +103,7 @@ export default function NavBar() {
 
     const hideNav = () => {
       if (isMobile) {
+        const maskEl = maskRef.current;
         // compute a large pixel value that guarantees the nav is fully off-screen across devices
         const rect = el.getBoundingClientRect();
         const navHeight = rect.height || 64;
@@ -109,9 +113,15 @@ export default function NavBar() {
         const buffer = 120; // larger buffer to ensure it's not visible
         const hideY = -Math.ceil(viewportHeight + navHeight + safeTop + buffer);
 
-        // Set will-change for smoother animation
-        el.style.willChange = 'transform, opacity';
+        // ensure mask is visible and above the nav
+        if (maskEl) {
+          maskEl.style.display = 'block';
+          maskEl.style.willChange = 'opacity';
+          gsap.to(maskEl, { opacity: 1, duration: 0.28, ease: 'power2.in' });
+        }
 
+        // animate nav well off screen
+        el.style.willChange = 'transform, opacity';
         gsap.to(el, {
           y: hideY,
           opacity: 0,
@@ -119,7 +129,6 @@ export default function NavBar() {
           ease: 'power2.in',
           onComplete: () => {
             el.style.pointerEvents = 'none';
-            // clear will-change to avoid long-term paint costs
             el.style.willChange = '';
           }
         });
@@ -192,6 +201,22 @@ export default function NavBar() {
       }}
       aria-label="Main navigation"
     >
+      {/* mobile mask that covers the top area when nav hides */}
+      <div
+        ref={maskRef}
+        style={{
+          display: 'none',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '120px',
+          background: '#000',
+          zIndex: 2147483650,
+          pointerEvents: 'none',
+          opacity: 0,
+        }}
+      />
     <div
       style={{
         position: 'relative',
