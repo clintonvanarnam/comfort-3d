@@ -24,6 +24,11 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="icon" type="image/png" href="/favicon.png?v=2" sizes="any" />
+  <link rel="icon" href="/fav.png?v=2" type="image/png" />
+  <link rel="shortcut icon" href="/favicon.png?v=2" type="image/png" />
+  <link rel="apple-touch-icon" href="/favicon.png?v=2" />
+  <link rel="icon" type="image/x-icon" href="data:," />
       </head>
       <body>
         {/* Apply font variable classes on the client only to avoid hydration
