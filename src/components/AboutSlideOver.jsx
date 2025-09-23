@@ -127,6 +127,7 @@ export default function AboutSlideOver({ open, onClose, initialBody = null, init
           fontSize: '1.25rem',
           overflow: 'hidden',
           zIndex: 2147483649,
+          paddingBottom: 'env(safe-area-inset-bottom)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -183,6 +184,7 @@ export default function AboutSlideOver({ open, onClose, initialBody = null, init
             display: 'flex',
             justifyContent: 'flex-start',
             alignItems: 'center',
+            paddingBottom: 'env(safe-area-inset-bottom)',
           }}
         >
           <img

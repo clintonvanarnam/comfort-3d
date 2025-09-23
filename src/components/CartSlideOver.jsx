@@ -179,7 +179,17 @@ export default function CartSlideOver({ open, onClose }) {
 
       <aside
         ref={panelRef}
-        style={{ position: 'relative', width: panelWidth, height: '100%', background: '#fff', color: '#000', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        style={{
+          position: 'relative',
+          width: panelWidth,
+          height: '100%',
+          background: '#fff',
+          color: '#000',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
@@ -239,7 +249,16 @@ export default function CartSlideOver({ open, onClose }) {
           )}
         </div>
 
-        <div style={{ flexShrink: 0, padding: '1rem', borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{
+          flexShrink: 0,
+          padding: '1rem',
+          borderTop: '1px solid rgba(0,0,0,0.06)',
+          display: 'flex',
+          gap: '0.5rem',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}>
           <div style={{ fontSize: '0.9rem' }}>{cart?.reduce((s, it) => s + (it.quantity || 0), 0)} items</div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="btn" onClick={startCheckout} disabled={loading || !cart || cart.length === 0}>
