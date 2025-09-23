@@ -201,7 +201,8 @@ a {
 
 /* Simple shop styles */
 .shop-page {
-  padding: 48px 20px;
+  /* Use site gutter variable for left/right padding to match layout */
+  padding: 48px var(--site-gutter);
 }
 
 /* Ensure the shop content sits below fixed nav; add top margin for breathing room */
@@ -220,9 +221,9 @@ a {
   display: grid;
   /* make the grid align with the site gutters so the first item is flush with the page margin */
   width: calc(100vw - (var(--site-gutter) * 2));
-  max-width: 1200px;
   /* 4 columns on large screens, 3 on medium, 2 on small, 1 on extra-small */
-  grid-template-columns: repeat(4, 1fr);
+  /* Desktop: 3 columns */
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 
@@ -427,13 +428,15 @@ body.three-scene-active {
 
 @media (max-width: 900px) {
   .shop-grid {
-    grid-template-columns: repeat(3, 1fr);
+    /* medium screens: two columns */
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 700px) {
   .shop-grid {
-    grid-template-columns: repeat(2, 1fr);
+    /* single column on narrow screens */
+    grid-template-columns: 1fr;
   }
 }
 
