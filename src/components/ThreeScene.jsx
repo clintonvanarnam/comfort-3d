@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -9,6 +9,8 @@ import NavBar from './NavBar';
 
 // Global WebGL context management for iOS
 let globalWebGLContextActive = false;
+
+import styles from './ThreeScene.module.css';
 
 export default function ThreeScene() {
   // Store sphereSeed in a ref so it's only generated on the client after mount
@@ -22,6 +24,9 @@ export default function ThreeScene() {
   const router = useRouter();
   const clickedRef = useRef(null);
   const preloadedTexturesRef = useRef({});
+  // Loading progress state (throttled updates)
+  const [loadProgress, setLoadProgress] = useState(0);
+  const [loadingDone, setLoadingDone] = useState(false);
   const preloadedPostsRef = useRef(null);
   const preloadedDoneRef = useRef(false);
   const introCompleteRef = useRef(false);
@@ -295,10 +300,10 @@ export default function ThreeScene() {
       return;
     }
 
-    const batchSize = 10; // Process 10 sprites at a time
+  const batchSize = 10; // Process 10 sprites at a time
     // Use a shuffled copy of posts for placement so sprites don't appear
     // in the same locations each load. Fisher-Yates shuffle for uniformity.
-    const placementPosts = posts.slice();
+  const placementPosts = posts.slice();
     for (let s = placementPosts.length - 1; s > 0; s--) {
       const r = Math.floor(Math.random() * (s + 1));
       const tmp = placementPosts[s];
@@ -307,15 +312,19 @@ export default function ThreeScene() {
     }
     let i = 0;
     const total = placementPosts.length;
+    // loading counters
+    const totalToLoad = placementPosts.filter(p => p && p.image).length;
+    let loadedCount = 0;
+    const lastSetRef = { time: 0 };
 
     const processBatch = () => {
       const end = Math.min(i + batchSize, total);
       for (let idx = i; idx < end; idx++) {
-        const post = placementPosts[idx];
+  const post = placementPosts[idx];
         if (!post || !post.image) continue;
-        const key = post.slug?.current || post.slug || p._id || p.title;
+  const key = post.slug?.current || post.slug || post._id || post.title;
         const preTex = preloadedTexturesRef.current[key];
-        const onTexture = (texture, wasPreloaded = false) => {
+  const onTexture = (texture, wasPreloaded = false) => {
           // Check if renderer is still valid before creating WebGL resources
           if (!rendererRef.current || !sceneRef.current) {
             console.log('Skipping sprite creation - WebGL context not ready');
@@ -392,6 +401,23 @@ export default function ThreeScene() {
               ease: 'back.out(1.1)'
             });
           }
+          // progress tracking
+          if (totalToLoad > 0) {
+            loadedCount += 1;
+            // throttle DOM updates to ~200ms to keep CPU use low
+            const now = Date.now();
+            if (now - lastSetRef.time > 180 || loadedCount === totalToLoad) {
+              setLoadProgress(Math.round((loadedCount / totalToLoad) * 100));
+              lastSetRef.time = now;
+            }
+            if (loadedCount === totalToLoad) {
+              // small delay to allow final textures to settle then hide loader
+              setTimeout(() => {
+                setLoadingDone(true);
+                setLoadProgress(100);
+              }, 220);
+            }
+          }
           } catch (error) {
             console.warn('Error creating sprite:', error);
           }
@@ -401,10 +427,24 @@ export default function ThreeScene() {
           onTexture(preTex, true);
         } else {
           // Images are pre-optimized by Sanity to max 500px
-          loader.load((post.image), (texture) => {
+          loader.load(post.image, (texture) => {
             // Apply Three.js optimizations for better performance
             optimizeTexture(texture);
             onTexture(texture, false);
+          }, undefined, (err) => {
+            // on error, still advance progress to avoid locking the loader
+            console.warn('Texture load failed for', post.image, err);
+            if (totalToLoad > 0) {
+              loadedCount += 1;
+              const now = Date.now();
+              if (now - lastSetRef.time > 180 || loadedCount === totalToLoad) {
+                setLoadProgress(Math.round((loadedCount / totalToLoad) * 100));
+                lastSetRef.time = now;
+              }
+              if (loadedCount === totalToLoad) {
+                setTimeout(() => { setLoadingDone(true); setLoadProgress(100); }, 220);
+              }
+            }
           });
         }
       }
@@ -886,6 +926,16 @@ export default function ThreeScene() {
         }}
       >
         <div ref={containerRef} className="absolute top-0 left-0 w-full h-full" />
+
+        {/* Loading overlay - very lightweight and throttled */}
+        <div className={loadingDone ? `${styles.overlay} ${styles.hidden}` : styles.overlay} aria-hidden={loadingDone}>
+          <div className={styles.loaderBox} role="status" aria-live="polite">
+            <div className={styles.progressText}>{loadingDone ? 'Loaded' : `Loading 3D scene — ${loadProgress}%`}</div>
+            <div className={styles.progressOuter}>
+              <div className={styles.progressInner} style={{ width: `${loadProgress}%` }} />
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );
