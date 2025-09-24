@@ -632,7 +632,7 @@ export default function ThreeScene() {
               if (slug && typeof slug === 'string' && slug.trim()) {
                 // Start sprite animation (position, scale, opacity)
                 gsap.to(clickedSprite.material, {
-                  opacity: 0.1, // Keep slightly visible instead of 0
+                  opacity: 0, // Fade to fully transparent
                   duration: 0.8,
                   ease: 'power1.in',
                 });
