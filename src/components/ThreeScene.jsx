@@ -27,6 +27,30 @@ export default function ThreeScene() {
   // Loading progress state (throttled updates)
   const [loadProgress, setLoadProgress] = useState(0);
   const [loadingDone, setLoadingDone] = useState(false);
+  const loadTargetRef = useRef(0);
+  const progressAnimatingRef = useRef(false);
+  // Smoothly animate displayed progress toward target to avoid jumps
+  function startProgressAnimator() {
+    if (progressAnimatingRef.current) return;
+    progressAnimatingRef.current = true;
+    const step = () => {
+      const current = loadProgress;
+      const target = loadTargetRef.current;
+      if (current >= 99 && target >= 100) {
+        setLoadProgress(100);
+        progressAnimatingRef.current = false;
+        return;
+      }
+      const delta = target - current;
+      if (Math.abs(delta) < 0.5) {
+        if (current !== target) setLoadProgress(target);
+      } else {
+        setLoadProgress(Math.round((current + delta * 0.25) * 100) / 100);
+      }
+      if (progressAnimatingRef.current) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
   const preloadedPostsRef = useRef(null);
   const preloadedDoneRef = useRef(false);
   const introCompleteRef = useRef(false);
@@ -226,7 +250,33 @@ export default function ThreeScene() {
     setTimeout(() => {
       async function init() {
         // prefer preloaded posts if available
-        const posts = preloadedPostsRef.current || (await getPosts());
+          const posts = preloadedPostsRef.current || (await getPosts());
+          // If we preloaded textures earlier, mark those URLs as loaded so progress starts correctly
+          try {
+            const preloaded = preloadedTexturesRef.current || {};
+            const preloadedUrlSet = new Set();
+            if (preloaded && Object.keys(preloaded).length > 0) {
+              for (const p of posts) {
+                const key = p.slug?.current || p.slug || p._id || p.title;
+                if (preloaded[key]) {
+                  if (p && p.image) preloadedUrlSet.add(p.image);
+                }
+              }
+              // mark loaded URLs
+              for (const url of preloadedUrlSet) {
+                try {
+                  if (url && !loadedUrls.has(url)) {
+                    loadedUrls.add(url);
+                    loadedCountRef.current += 1;
+                  }
+                } catch (e) {}
+              }
+              // schedule an initial progress update
+              scheduleProgressUpdate();
+            }
+          } catch (e) {
+            // ignore progress initialization errors
+          }
     const scene = new THREE.Scene();
     sceneRef.current = scene;
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -293,6 +343,27 @@ export default function ThreeScene() {
   const sphereSeed = sphereSeedRef.current ?? 0;
 
   // Create sprites in small batches to avoid blocking the main thread
+  // Prepare robust, URL-based loading counters so progress reflects unique textures
+  const uniqueImageUrls = Array.from(new Set((posts || []).map(p => p && p.image).filter(Boolean)));
+  const totalToLoad = uniqueImageUrls.length;
+  const loadedUrls = new Set();
+  const loadedCountRef = { current: 0 };
+  let rafScheduled = false;
+  function scheduleProgressUpdate() {
+    if (rafScheduled) return;
+    rafScheduled = true;
+    requestAnimationFrame(() => {
+      rafScheduled = false;
+      const pct = Math.round((loadedCountRef.current / Math.max(totalToLoad, 1)) * 100);
+      loadTargetRef.current = pct;
+      startProgressAnimator();
+      if (loadedCountRef.current >= totalToLoad && totalToLoad > 0) {
+        // minor delay so last textures settle visually, then finalize
+        setTimeout(() => { loadTargetRef.current = 100; startProgressAnimator(); setTimeout(() => { setLoadingDone(true); setLoadProgress(100); }, 220); }, 220);
+      }
+    });
+  }
+
   (function createSpritesInBatches() {
     // Check if component is still valid before starting sprite creation
     if (!rendererRef.current || !sceneRef.current) {
@@ -312,10 +383,6 @@ export default function ThreeScene() {
     }
     let i = 0;
     const total = placementPosts.length;
-    // loading counters
-    const totalToLoad = placementPosts.filter(p => p && p.image).length;
-    let loadedCount = 0;
-    const lastSetRef = { time: 0 };
 
     const processBatch = () => {
       const end = Math.min(i + batchSize, total);
@@ -401,22 +468,16 @@ export default function ThreeScene() {
               ease: 'back.out(1.1)'
             });
           }
-          // progress tracking
-          if (totalToLoad > 0) {
-            loadedCount += 1;
-            // throttle DOM updates to ~200ms to keep CPU use low
-            const now = Date.now();
-            if (now - lastSetRef.time > 180 || loadedCount === totalToLoad) {
-              setLoadProgress(Math.round((loadedCount / totalToLoad) * 100));
-              lastSetRef.time = now;
+          // progress tracking based on unique image URLs
+          try {
+            const url = post.image;
+            if (url && !loadedUrls.has(url)) {
+              loadedUrls.add(url);
+              loadedCountRef.current += 1;
+              scheduleProgressUpdate();
             }
-            if (loadedCount === totalToLoad) {
-              // small delay to allow final textures to settle then hide loader
-              setTimeout(() => {
-                setLoadingDone(true);
-                setLoadProgress(100);
-              }, 220);
-            }
+          } catch (e) {
+            // ignore progress tracking errors
           }
           } catch (error) {
             console.warn('Error creating sprite:', error);
@@ -427,24 +488,22 @@ export default function ThreeScene() {
           onTexture(preTex, true);
         } else {
           // Images are pre-optimized by Sanity to max 500px
-          loader.load(post.image, (texture) => {
+          // Use the post.image URL as the identity for progress tracking
+          const imgUrl = post.image;
+          loader.load(imgUrl, (texture) => {
             // Apply Three.js optimizations for better performance
             optimizeTexture(texture);
             onTexture(texture, false);
           }, undefined, (err) => {
-            // on error, still advance progress to avoid locking the loader
-            console.warn('Texture load failed for', post.image, err);
-            if (totalToLoad > 0) {
-              loadedCount += 1;
-              const now = Date.now();
-              if (now - lastSetRef.time > 180 || loadedCount === totalToLoad) {
-                setLoadProgress(Math.round((loadedCount / totalToLoad) * 100));
-                lastSetRef.time = now;
+            // on error, still mark URL as loaded so loader doesn't hang
+            console.warn('Texture load failed for', imgUrl, err);
+            try {
+              if (imgUrl && !loadedUrls.has(imgUrl)) {
+                loadedUrls.add(imgUrl);
+                loadedCountRef.current += 1;
+                scheduleProgressUpdate();
               }
-              if (loadedCount === totalToLoad) {
-                setTimeout(() => { setLoadingDone(true); setLoadProgress(100); }, 220);
-              }
-            }
+            } catch (e) {}
           });
         }
       }
@@ -925,7 +984,7 @@ export default function ThreeScene() {
           position: 'relative'
         }}
       >
-        <div ref={containerRef} className="absolute top-0 left-0 w-full h-full" />
+  <div className="absolute top-0 left-0 w-full h-full" />
 
         {/* Loading overlay - very lightweight and throttled */}
         <div className={loadingDone ? `${styles.overlay} ${styles.hidden}` : styles.overlay} aria-hidden={loadingDone}>
