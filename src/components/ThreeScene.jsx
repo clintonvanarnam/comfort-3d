@@ -8,6 +8,8 @@ import gsap from 'gsap';
 import NavBar from './NavBar';
 
 export default function ThreeScene() {
+  // Store sphereSeed in a ref so it's only generated on the client after mount
+  const sphereSeedRef = useRef(null);
   const [mounted, setMounted] = useState(false);
   const [introComplete, setIntroComplete] = useState(false);
   const [introFading, setIntroFading] = useState(false);
@@ -70,6 +72,10 @@ export default function ThreeScene() {
 
   useEffect(() => {
     setMounted(true);
+    // Only generate sphereSeed on the client after mount
+    if (sphereSeedRef.current === null) {
+      sphereSeedRef.current = Math.random() * Math.PI * 2;
+    }
     // add a body class so other parts of the UI (like the footer) can
     // respond to the 3D-scene being active and hide UI that shouldn't overlay.
     if (typeof document !== 'undefined') document.body.classList.add('three-scene-active');
@@ -140,10 +146,10 @@ export default function ThreeScene() {
       async function init() {
         // prefer preloaded posts if available
         const posts = preloadedPostsRef.current || (await getPosts());
-        const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  // Start the camera offset along +Z so the sphere (at origin) is centered in view
-  camera.position.set(0, 0, 8);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    // Start the camera offset along +Z so the sphere (at origin) is centered in view
+    camera.position.set(0, 0, 10);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -184,8 +190,8 @@ export default function ThreeScene() {
   const sphereGroup = new THREE.Group();
   sphereGroupRef.current = sphereGroup;
   scene.add(sphereGroup);
-  // random seed so sphere distribution isn't identical every load
-  const sphereSeed = Math.random() * Math.PI * 2;
+  // Use sphereSeed from ref so it's only generated on the client
+  const sphereSeed = sphereSeedRef.current ?? 0;
 
   // Create sprites in small batches to avoid blocking the main thread
   (function createSpritesInBatches() {
@@ -568,7 +574,7 @@ export default function ThreeScene() {
           const t = clock.getElapsedTime();
 
           // Orbital camera: full rotation around the sphere based on mouse
-          const radius = 8;
+          const radius = 10;
           if (!clickedRef.current) {
             // map mouse (-1..1) to spherical coordinates
             const azimuth = mouse.x * Math.PI; // -PI..PI
