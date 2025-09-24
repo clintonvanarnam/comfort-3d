@@ -133,8 +133,23 @@ export default function ThreeScene() {
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.NoToneMapping;
         renderer.setClearColor(0x000000, 1); // Set background to black
-        // Respect devicePixelRatio for crisper rendering but clamp for perf
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        // Respect devicePixelRatio for crisper rendering but clamp for perf.
+        // Lower the cap on low-memory or slow-network devices to reduce CPU/GPU work.
+        const dpr = window.devicePixelRatio || 1;
+        let dprCap = 2;
+        try {
+          const nav = navigator;
+          const connection = nav && nav.connection;
+          const effectiveType = connection && connection.effectiveType;
+          const saveData = connection && connection.saveData;
+          const deviceMemory = nav.deviceMemory || 4;
+          if (saveData || (effectiveType && /2g|slow-2g/.test(effectiveType))) dprCap = 1;
+          if (deviceMemory <= 1) dprCap = Math.min(dprCap, 1);
+          if (typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 2) dprCap = Math.min(dprCap, 1.25);
+        } catch (e) {
+          // ignore
+        }
+        renderer.setPixelRatio(Math.min(dpr, dprCap));
   // Use actual container size so mouse/touch coordinates map correctly
   const initialWidth = containerRef.current ? containerRef.current.clientWidth : window.innerWidth;
   const initialHeight = containerRef.current ? containerRef.current.clientHeight : window.innerHeight;
