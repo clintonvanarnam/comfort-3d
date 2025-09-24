@@ -7,6 +7,9 @@ import { getPosts } from '@/lib/getPosts';
 import gsap from 'gsap';
 import NavBar from './NavBar';
 
+// Global WebGL context management for iOS
+let globalWebGLContextActive = false;
+
 export default function ThreeScene() {
   // Store sphereSeed in a ref so it's only generated on the client after mount
   const sphereSeedRef = useRef(null);
@@ -59,16 +62,36 @@ export default function ThreeScene() {
 
     // Reset initialization flag
     isInitializingRef.current = false;
+    
+    // Reset global WebGL context flag
+    if (isIOS) {
+      globalWebGLContextActive = false;
+    }
 
-    // On iOS, be extremely conservative - never dispose WebGL to prevent context conflicts
-    if (isIOS && isUnmounting) {
-      console.log('Cleanup: iOS unmounting - stopping animation only, no disposal');
-      // Just stop the animation loop, let WebGL context die naturally with page unload
-      await new Promise(resolve => setTimeout(resolve, 50));
-    } else if (isIOS) {
-      console.log('Cleanup: iOS navigation - stopping animation and waiting');
-      // Longer delay for navigation cleanup to ensure animation loop is fully stopped
-      await new Promise(resolve => setTimeout(resolve, 300));
+    // On iOS, dispose everything but with longer delays to prevent context conflicts
+    if (isIOS) {
+      console.log('Cleanup: iOS - disposing renderer with long delay');
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current = null;
+      }
+      if (sceneRef.current) {
+        console.log('Cleanup: iOS - disposing scene resources');
+        sceneRef.current.traverse((object) => {
+          if (object.geometry) object.geometry.dispose();
+          if (object.material) {
+            if (Array.isArray(object.material)) {
+              object.material.forEach((mat) => mat.dispose());
+            } else {
+              object.material.dispose();
+            }
+          }
+        });
+        sceneRef.current = null;
+      }
+      cameraRef.current = null;
+      // Much longer delay on iOS to ensure WebGL context is fully released
+      await new Promise(resolve => setTimeout(resolve, 1000));
       return;
     }
 
@@ -181,14 +204,32 @@ export default function ThreeScene() {
 
     // Small delay on iOS to ensure stability when remounting
     const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const initDelay = isIOS ? 2000 : 0;
+    const initDelay = isIOS ? 3000 : 0;
 
     // Prevent rapid remounting that can cause WebGL conflicts
     if (isInitializingRef.current) {
       console.log('ThreeScene: Already initializing, skipping...');
       return;
     }
+    
+    // On iOS, check for existing WebGL context
+    if (isIOS && globalWebGLContextActive) {
+      console.log('ThreeScene: WebGL context already active on iOS, waiting...');
+      const waitForContextRelease = () => {
+        if (!globalWebGLContextActive) {
+          initializeScene();
+        } else {
+          setTimeout(waitForContextRelease, 200);
+        }
+      };
+      waitForContextRelease();
+      return;
+    }
+    
     isInitializingRef.current = true;
+    if (isIOS) {
+      globalWebGLContextActive = true;
+    }
 
     // Initialize the 3D scene as soon as the component mounts so sprites/textures
     // can be created and animated behind the intro overlay. We still keep the
