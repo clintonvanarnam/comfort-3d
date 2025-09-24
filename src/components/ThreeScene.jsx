@@ -47,6 +47,8 @@ export default function ThreeScene() {
     // Detect iOS for more conservative cleanup
     const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
+    console.log('Cleanup: Starting Three.js cleanup, isIOS:', isIOS);
+
     if (animateIdRef.current) {
       cancelAnimationFrame(animateIdRef.current);
       animateIdRef.current = null;
@@ -55,12 +57,16 @@ export default function ThreeScene() {
     if (rendererRef.current) {
       // On iOS, be more conservative with renderer disposal to avoid context issues
       if (!isIOS) {
+        console.log('Cleanup: Disposing renderer');
         rendererRef.current.dispose();
+      } else {
+        console.log('Cleanup: Skipping renderer disposal on iOS');
       }
       rendererRef.current = null;
     }
 
     if (sceneRef.current) {
+      console.log('Cleanup: Disposing scene resources');
       // Dispose geometries and materials
       sceneRef.current.traverse((object) => {
         if (object.geometry) object.geometry.dispose();
@@ -75,6 +81,7 @@ export default function ThreeScene() {
       sceneRef.current = null;
     }
     cameraRef.current = null;
+    console.log('Cleanup: Three.js cleanup complete');
   };
 
   useEffect(() => {
@@ -601,47 +608,33 @@ export default function ThreeScene() {
             gsap.to(clickedSprite.position, { x: 0, y: 0, z: 2, duration: 1, ease: 'power2.out' });
             gsap.to(clickedSprite.scale, { x: targetWidth, y: targetHeight, duration: 1, ease: 'power2.out' });
 
-            // On iOS, use immediate navigation to avoid memory issues
+            // Use shorter animation on iOS to reduce memory pressure
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const animationDelay = isIOS ? 0.5 : 2;
+            const animationDuration = isIOS ? 0.3 : 0.5;
 
-            if (isIOS) {
-              // Immediate navigation for iOS
-              gsap.to(clickedSprite.material, {
-                opacity: 0,
-                duration: 0.3,
-                ease: 'power1.in',
-                onComplete: () => {
-                  cleanupThreeJS();
-                  if (slug && typeof slug === 'string' && slug.trim()) {
-                    try {
-                      router.push(`/posts/${slug}`);
-                    } catch (e) {
-                      console.error('iOS Navigation failed', e);
-                      window.location.href = `/posts/${slug}`;
-                    }
+            gsap.to(clickedSprite.material, {
+              opacity: 0,
+              delay: animationDelay,
+              duration: animationDuration,
+              ease: 'power1.in',
+              onComplete: () => {
+                console.log('Navigation: Starting cleanup and navigation for', slug);
+                cleanupThreeJS();
+                if (slug && typeof slug === 'string' && slug.trim()) {
+                  try {
+                    console.log('Navigation: Attempting router.push');
+                    router.push(`/posts/${slug}`);
+                  } catch (e) {
+                    console.error('Navigation failed', e);
+                    console.log('Navigation: Falling back to window.location');
+                    window.location.href = `/posts/${slug}`;
                   }
-                },
-              });
-            } else {
-              // Full animation for other platforms
-              gsap.to(clickedSprite.material, {
-                opacity: 0,
-                delay: 2,
-                duration: 0.5,
-                ease: 'power1.in',
-                onComplete: () => {
-                  cleanupThreeJS();
-                  if (slug && typeof slug === 'string' && slug.trim()) {
-                    try {
-                      router.push(`/posts/${slug}`);
-                    } catch (e) {
-                      console.error('Navigation failed', e);
-                      window.location.href = `/posts/${slug}`;
-                    }
-                  }
-                },
-              });
-            }
+                } else {
+                  console.warn('Invalid slug for navigation', slug);
+                }
+              },
+            });
           }
         }
 

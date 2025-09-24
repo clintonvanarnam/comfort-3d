@@ -37,9 +37,11 @@ export default function PostPage() {
         headerOutTimerRef.current = null;
       }
 
-      // Kill any GSAP animations
+      // Kill GSAP animations more selectively
       if (typeof gsap !== 'undefined') {
-        gsap.killTweensOf('*');
+        // Kill animations on elements that might be in this component
+        gsap.killTweensOf('.floating-nav');
+        gsap.killTweensOf('[data-post-client]');
       }
 
       // Clear speech synthesis if active
