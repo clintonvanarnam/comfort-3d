@@ -15,8 +15,8 @@ export function getOptimizedImageUrl(source, maxSize = 500) {
   
   return builder
     .image(source)
-    .width(maxSize)
-    .height(maxSize)
+    .maxWidth(maxSize) // Use maxWidth instead of width
+    .maxHeight(maxSize) // Use maxHeight instead of height
     .fit('max') // Ensures image fits within bounds while maintaining aspect ratio
     .auto('format') // Automatically choose best format (WebP, JPEG, etc.)
     .quality(85) // Good balance between quality and file size
@@ -41,8 +41,8 @@ export function getOptimizedImageUrlFromAssetUrl(assetUrl, maxSize = 500) {
   
   return builder
     .image({ _ref: assetId })
-    .width(maxSize)
-    .height(maxSize)
+    .maxWidth(maxSize) // Use maxWidth instead of width
+    .maxHeight(maxSize) // Use maxHeight instead of height
     .fit('max')
     .auto('format')
     .quality(85)
