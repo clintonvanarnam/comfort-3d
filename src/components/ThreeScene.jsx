@@ -62,36 +62,12 @@ export default function ThreeScene() {
 
     // Reset initialization flag
     isInitializingRef.current = false;
-    
-    // Reset global WebGL context flag
-    if (isIOS) {
-      globalWebGLContextActive = false;
-    }
 
-    // On iOS, dispose everything but with longer delays to prevent context conflicts
+    // On iOS, be extremely conservative - never dispose WebGL to prevent context conflicts
     if (isIOS) {
-      console.log('Cleanup: iOS - disposing renderer with long delay');
-      if (rendererRef.current) {
-        rendererRef.current.dispose();
-        rendererRef.current = null;
-      }
-      if (sceneRef.current) {
-        console.log('Cleanup: iOS - disposing scene resources');
-        sceneRef.current.traverse((object) => {
-          if (object.geometry) object.geometry.dispose();
-          if (object.material) {
-            if (Array.isArray(object.material)) {
-              object.material.forEach((mat) => mat.dispose());
-            } else {
-              object.material.dispose();
-            }
-          }
-        });
-        sceneRef.current = null;
-      }
-      cameraRef.current = null;
-      // Much longer delay on iOS to ensure WebGL context is fully released
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Cleanup: iOS - stopping animation only, no disposal');
+      // Just stop the animation loop, let WebGL context die naturally with page unload
+      await new Promise(resolve => setTimeout(resolve, 100));
       return;
     }
 
@@ -204,32 +180,14 @@ export default function ThreeScene() {
 
     // Small delay on iOS to ensure stability when remounting
     const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const initDelay = isIOS ? 3000 : 0;
+    const initDelay = isIOS ? 1000 : 0;
 
     // Prevent rapid remounting that can cause WebGL conflicts
     if (isInitializingRef.current) {
       console.log('ThreeScene: Already initializing, skipping...');
       return;
     }
-    
-    // On iOS, check for existing WebGL context
-    if (isIOS && globalWebGLContextActive) {
-      console.log('ThreeScene: WebGL context already active on iOS, waiting...');
-      const waitForContextRelease = () => {
-        if (!globalWebGLContextActive) {
-          initializeScene();
-        } else {
-          setTimeout(waitForContextRelease, 200);
-        }
-      };
-      waitForContextRelease();
-      return;
-    }
-    
     isInitializingRef.current = true;
-    if (isIOS) {
-      globalWebGLContextActive = true;
-    }
 
     // Initialize the 3D scene as soon as the component mounts so sprites/textures
     // can be created and animated behind the intro overlay. We still keep the
