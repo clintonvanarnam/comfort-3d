@@ -651,7 +651,7 @@ export default function ThreeScene() {
                     // Still try to navigate even if cleanup fails
                     window.location.replace(`/posts/${slug}`);
                   });
-                }, 1200); // Wait for 1.2 seconds (longer than animation duration)
+                }, 1000); // Wait for 1 second (after animation completes)
               }
             } else {
               // Non-iOS: use the original animation with cleanup

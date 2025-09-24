@@ -275,7 +275,7 @@ export default function NavBar() {
               // Delay to allow cleanup and show loading screen
               setTimeout(() => {
                 window.location.href = '/';
-              }, 500);
+              }, 1000);
             } else {
               router.push('/');
             }
