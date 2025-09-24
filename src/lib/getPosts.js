@@ -1,5 +1,6 @@
 // src/lib/getPosts.js
 import client from './sanity';
+import { getOptimizedImageUrl } from './imageUtils';
 
 // Get all posts for homepage / 3D view
 export async function getPosts() {
@@ -21,16 +22,16 @@ export async function getPosts() {
     const data = await client.fetch(query);
     console.log('getPosts: Successfully fetched', data.length, 'posts from Sanity');
 
-    // Format for 3D sprite usage
+    // Format for 3D sprite usage with optimized images
     const formatted = data.map(post => ({
       _id: post._id,
       title: post.title || '',
       slug: post.slug?.current || (typeof post.slug === 'string' ? post.slug : ''),
-      image: post.mainImage?.asset?.url || '',
+      image: post.mainImage ? getOptimizedImageUrl(post.mainImage, 500) : '',
       author: post.author?.name || '',
     }));
 
-    console.log('getPosts: Formatted', formatted.length, 'posts');
+    console.log('getPosts: Formatted', formatted.length, 'posts with optimized images');
     return formatted;
   } catch (error) {
     console.error('getPosts: Error fetching from Sanity:', error);

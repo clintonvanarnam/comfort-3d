@@ -141,7 +141,15 @@ export default function ThreeScene() {
 
         const loadTexturePromise = (url) => new Promise((resolve, reject) => {
           try {
-            loader.load(url, (tex) => resolve(tex), undefined, () => reject(new Error('load error')));
+            // Images are pre-optimized by Sanity to max 500px, so no need for client-side resizing
+            loader.load(url, (tex) => {
+              // Set basic texture properties for Three.js
+              tex.colorSpace = THREE.SRGBColorSpace;
+              tex.generateMipmaps = true;
+              tex.minFilter = THREE.LinearMipmapLinearFilter;
+              tex.magFilter = THREE.LinearFilter;
+              resolve(tex);
+            }, undefined, () => reject(new Error('load error')));
           } catch (e) {
             reject(e);
           }
@@ -357,7 +365,15 @@ export default function ThreeScene() {
         if (preTex) {
           onTexture(preTex, true);
         } else {
-          loader.load((post.image), (texture) => onTexture(texture, false));
+          // Images are pre-optimized by Sanity to max 500px
+          loader.load((post.image), (texture) => {
+            // Set basic texture properties for Three.js
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.generateMipmaps = true;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            onTexture(texture, false);
+          });
         }
       }
       i = end;
