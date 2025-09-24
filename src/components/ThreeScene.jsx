@@ -47,6 +47,7 @@ export default function ThreeScene() {
   const animateIdRef = useRef(null);
 
   const isInitializingRef = useRef(false);
+  const lastNavigationTime = useRef(0);
 
   // Cleanup function to dispose Three.js resources and stop animation
   const cleanupThreeJS = async (isUnmounting = false) => {
@@ -595,6 +596,14 @@ export default function ThreeScene() {
   window.addEventListener('pointercancel', onPointerCancel);
 
         function handleInteraction() {
+          // Prevent rapid navigation that can cause WebGL context issues
+          const now = Date.now();
+          const timeSinceLastNav = now - lastNavigationTime.current;
+          if (timeSinceLastNav < 2000) {
+            console.log('Sprite navigation blocked - too soon since last navigation');
+            return;
+          }
+
           raycaster.setFromCamera(mouse, camera);
           const intersects = raycaster.intersectObjects(sprites);
 
@@ -652,6 +661,7 @@ export default function ThreeScene() {
 
             // Navigate with proper cleanup on iOS to prevent crashes
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+            lastNavigationTime.current = Date.now();
 
             if (isIOS) {
               // On iOS, wait for sprite animation to complete, then show loading screen

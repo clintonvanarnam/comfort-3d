@@ -13,6 +13,7 @@ export default function NavBar() {
   const [cartCount, setCartCount] = useState(0);
   const [isNavigatingHome, setIsNavigatingHome] = useState(false);
   const useDifference = pathname !== '/';
+  const lastNavigationTime = useRef(0);
 
   // Entrance animation
   useEffect(() => {
@@ -267,6 +268,15 @@ export default function NavBar() {
         {/* Center logo */}
         <button
           onClick={() => {
+            // Prevent rapid navigation that can cause WebGL context issues
+            const now = Date.now();
+            const timeSinceLastNav = now - lastNavigationTime.current;
+            if (timeSinceLastNav < 2000) {
+              console.log('Navigation blocked - too soon since last navigation');
+              return;
+            }
+            lastNavigationTime.current = now;
+
             // Use router.push on iOS to avoid forced reloads that corrupt WebGL context
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
             if (isIOS) {
