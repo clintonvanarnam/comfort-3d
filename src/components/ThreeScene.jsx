@@ -55,15 +55,11 @@ export default function ThreeScene() {
       animateIdRef.current = null;
     }
 
-    // On iOS, be more aggressive when unmounting to prevent context conflicts on return
+    // On iOS, be extremely conservative - never dispose WebGL to prevent context conflicts
     if (isIOS && isUnmounting) {
-      console.log('Cleanup: iOS unmounting - disposing renderer to prevent conflicts');
-      if (rendererRef.current) {
-        rendererRef.current.dispose();
-        rendererRef.current = null;
-      }
-      // Longer delay for unmounting cleanup
-      await new Promise(resolve => setTimeout(resolve, 200));
+      console.log('Cleanup: iOS unmounting - stopping animation only, no disposal');
+      // Just stop the animation loop, let WebGL context die naturally with page unload
+      await new Promise(resolve => setTimeout(resolve, 50));
     } else if (isIOS) {
       console.log('Cleanup: iOS navigation - stopping animation and waiting');
       // Longer delay for navigation cleanup to ensure animation loop is fully stopped

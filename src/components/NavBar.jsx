@@ -266,12 +266,12 @@ export default function NavBar() {
         {/* Center logo */}
         <button
           onClick={() => {
-            // Use router.push on iOS with delay to allow cleanup
+            // Use location.href on iOS with delay to allow cleanup
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
             if (isIOS) {
               // Small delay to allow any post page cleanup to complete
               setTimeout(() => {
-                router.push('/');
+                window.location.href = '/';
               }, 100);
             } else {
               router.push('/');
