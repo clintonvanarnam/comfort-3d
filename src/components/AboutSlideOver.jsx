@@ -89,6 +89,7 @@ export default function AboutSlideOver({ open, onClose, initialBody = null, init
         zIndex: 2147483648,
         display: 'flex',
         justifyContent: 'flex-end',
+        height: 'calc(100vh + env(safe-area-inset-bottom))',
       }}
     >
       {/* Backdrop */}
