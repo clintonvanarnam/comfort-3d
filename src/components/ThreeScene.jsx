@@ -609,35 +609,37 @@ export default function ThreeScene() {
             gsap.to(clickedSprite.position, { x: 0, y: 0, z: 2, duration: 1, ease: 'power2.out' });
             gsap.to(clickedSprite.scale, { x: targetWidth, y: targetHeight, duration: 1, ease: 'power2.out' });
 
-            // Navigate immediately on iOS to prevent getting stuck
+            // Navigate with delay on iOS to allow transition to be visible before loading page
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
             if (isIOS) {
-              // On iOS, navigate immediately and fade sprite during transition
-              console.log('iOS Navigation: Starting immediate navigation for', slug);
-              if (slug && typeof slug === 'string' && slug.trim()) {
-                // Start navigation immediately
-                router.push(`/posts/${slug}`).catch((error) => {
-                  console.error('iOS Router push failed, trying location.assign', error);
-                  // If navigation fails, restore sprite visibility
-                  gsap.to(clickedSprite.material, { opacity: 1, duration: 0.3 });
-                  window.location.assign(`/posts/${slug}`);
-                });
-
-                // Fade sprite but don't make it completely invisible
-                gsap.to(clickedSprite.material, {
-                  opacity: 0.1, // Keep slightly visible instead of 0
-                  duration: 0.8,
-                  ease: 'power1.in',
-                  onComplete: () => {
-                    // Stop animation loop after navigation
-                    if (animateIdRef.current) {
-                      cancelAnimationFrame(animateIdRef.current);
-                      animateIdRef.current = null;
-                    }
-                  },
-                });
-              }
+              // On iOS, start animation first, then navigate after a short delay
+              console.log('iOS Navigation: Starting animation for', slug);
+              
+              // Fade sprite but don't make it completely invisible
+              gsap.to(clickedSprite.material, {
+                opacity: 0.1, // Keep slightly visible instead of 0
+                duration: 0.8,
+                ease: 'power1.in',
+                onComplete: () => {
+                  // After animation completes, navigate
+                  if (slug && typeof slug === 'string' && slug.trim()) {
+                    console.log('iOS Navigation: Animation complete, navigating to', slug);
+                    router.push(`/posts/${slug}`).catch((error) => {
+                      console.error('iOS Router push failed, trying location.assign', error);
+                      // If navigation fails, restore sprite visibility
+                      gsap.to(clickedSprite.material, { opacity: 1, duration: 0.3 });
+                      window.location.assign(`/posts/${slug}`);
+                    });
+                  }
+                  
+                  // Stop animation loop after navigation
+                  if (animateIdRef.current) {
+                    cancelAnimationFrame(animateIdRef.current);
+                    animateIdRef.current = null;
+                  }
+                },
+              });
             } else {
               // Non-iOS: use the original animation with cleanup
               gsap.to(clickedSprite.material, {
