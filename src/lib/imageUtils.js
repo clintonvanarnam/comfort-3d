@@ -12,14 +12,15 @@ const builder = imageUrlBuilder(client);
  */
 export function getOptimizedImageUrl(source, maxSize = 500) {
   if (!source) return '';
-  
+  // Downsize more aggressively for Three.js textures
+  const downsized = 128;
   return builder
     .image(source)
-    .maxWidth(maxSize) // Use maxWidth instead of width
-    .maxHeight(maxSize) // Use maxHeight instead of height
-    .fit('max') // Ensures image fits within bounds while maintaining aspect ratio
-    .auto('format') // Automatically choose best format (WebP, JPEG, etc.)
-    .quality(85) // Good balance between quality and file size
+    .maxWidth(downsized)
+    .maxHeight(downsized)
+    .fit('max')
+    .format('webp') // Force WebP for smallest size
+    .quality(60) // Lower quality for speed
     .url();
 }
 
@@ -31,20 +32,17 @@ export function getOptimizedImageUrl(source, maxSize = 500) {
  */
 export function getOptimizedImageUrlFromAssetUrl(assetUrl, maxSize = 500) {
   if (!assetUrl) return '';
-  
   // Extract asset ID from URL
-  // URL format: https://cdn.sanity.io/images/projectId/dataset/assetId-widthxheight.format
   const match = assetUrl.match(/\/images\/[^\/]+\/[^\/]+\/([^\/]+)/);
-  if (!match) return assetUrl; // Return original if can't parse
-  
+  if (!match) return assetUrl;
   const assetId = match[1];
-  
+  const downsized = 128;
   return builder
     .image({ _ref: assetId })
-    .maxWidth(maxSize) // Use maxWidth instead of width
-    .maxHeight(maxSize) // Use maxHeight instead of height
+    .maxWidth(downsized)
+    .maxHeight(downsized)
     .fit('max')
-    .auto('format')
-    .quality(85)
+    .format('webp')
+    .quality(60)
     .url();
 }
