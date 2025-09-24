@@ -1,11 +1,7 @@
 // app/page.js
 
-export const metadata = {
-  title: 'COMFORT',
-};
-
+"use client";
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
 
 // Dynamically import the heavy ThreeScene client component and disable SSR
 const ThreeScene = dynamic(() => import('@/components/ThreeScene'), {
