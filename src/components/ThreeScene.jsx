@@ -670,7 +670,9 @@ export default function ThreeScene() {
             if (clickedSprite.parent && clickedSprite.parent !== scene) {
               const worldPos = new THREE.Vector3();
               clickedSprite.getWorldPosition(worldPos);
-              clickedSprite.parent.remove(clickedSprite);
+              if (clickedSprite.parent) {
+                clickedSprite.parent.remove(clickedSprite);
+              }
               scene.add(clickedSprite);
               clickedSprite.position.copy(worldPos);
             }
@@ -751,10 +753,12 @@ export default function ThreeScene() {
 
                   if (slug && typeof slug === 'string' && slug.trim()) {
                     console.log('Navigation: Attempting router.push');
-                    router.push(`/posts/${slug}`).catch((error) => {
-                      console.error('Router push failed, trying location.assign', error);
-                      window.location.assign(`/posts/${slug}`);
-                    });
+                      try {
+                        router.push(`/posts/${slug}`);
+                      } catch (error) {
+                        console.error('Router push failed, trying location.assign', error);
+                        window.location.assign(`/posts/${slug}`);
+                      }
                   } else {
                     console.warn('Invalid slug for navigation', slug);
                   }
