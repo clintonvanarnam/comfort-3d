@@ -176,7 +176,7 @@ export default function ThreeScene() {
 
     // Small delay on iOS to ensure stability when remounting
     const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const initDelay = isIOS ? 500 : 0;
+    const initDelay = isIOS ? 1000 : 0;
 
     // Initialize the 3D scene as soon as the component mounts so sprites/textures
     // can be created and animated behind the intro overlay. We still keep the
@@ -620,7 +620,7 @@ export default function ThreeScene() {
             const targetHeight = 2;
             const targetWidth = targetHeight * imageAspect;
 
-            gsap.to(clickedSprite.position, { x: 0, y: 0, z: 2, duration: 1, ease: 'power2.out' });
+            gsap.to(clickedSprite.position, { x: 0, y: 0, z: 0, duration: 1, ease: 'power2.out' });
             gsap.to(clickedSprite.scale, { x: targetWidth, y: targetHeight, duration: 1, ease: 'power2.out' });
 
             // Navigate with proper cleanup on iOS to prevent crashes

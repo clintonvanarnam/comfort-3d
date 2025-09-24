@@ -267,14 +267,14 @@ export default function NavBar() {
         {/* Center logo */}
         <button
           onClick={() => {
-            // Use location.href on iOS with loading screen and delay
+            // Use router.push on iOS to avoid forced reloads that corrupt WebGL context
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
             if (isIOS) {
               // Show loading screen immediately
               setIsNavigatingHome(true);
-              // Delay to allow cleanup and show loading screen
+              // Delay to allow cleanup and show loading screen, then use router.push
               setTimeout(() => {
-                window.location.href = '/';
+                router.push('/');
               }, 1000);
             } else {
               router.push('/');
