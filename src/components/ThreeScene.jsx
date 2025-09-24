@@ -44,20 +44,26 @@ export default function ThreeScene() {
   const animateIdRef = useRef(null);
 
   // Cleanup function to dispose Three.js resources and stop animation
-  const cleanupThreeJS = async () => {
+  const cleanupThreeJS = async (isUnmounting = false) => {
     // Detect iOS for more conservative cleanup
     const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-    console.log('Cleanup: Starting Three.js cleanup, isIOS:', isIOS);
+    console.log('Cleanup: Starting Three.js cleanup, isIOS:', isIOS, 'isUnmounting:', isUnmounting);
 
     if (animateIdRef.current) {
       cancelAnimationFrame(animateIdRef.current);
       animateIdRef.current = null;
     }
 
-    // On iOS, be extremely conservative - don't dispose anything to prevent context issues
-    if (isIOS) {
-      console.log('Cleanup: iOS detected - skipping all disposal to prevent reloads');
+    // On iOS, be more aggressive when unmounting to prevent context conflicts on return
+    if (isIOS && isUnmounting) {
+      console.log('Cleanup: iOS unmounting - disposing renderer to prevent conflicts');
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current = null;
+      }
+    } else if (isIOS) {
+      console.log('Cleanup: iOS navigation - skipping disposal to prevent reloads');
       // Still wait a bit to ensure animation loop is stopped
       await new Promise(resolve => setTimeout(resolve, 100));
       return;
@@ -729,7 +735,7 @@ export default function ThreeScene() {
 
     // Cleanup Three.js resources when component unmounts or dependencies change
     return () => {
-      cleanupThreeJS();
+      cleanupThreeJS(true);
     };
   }, [mounted, router]);
 
