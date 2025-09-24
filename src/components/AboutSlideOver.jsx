@@ -127,7 +127,8 @@ export default function AboutSlideOver({ open, onClose, initialBody = null, init
           fontSize: '1.25rem',
           overflow: 'hidden',
           zIndex: 2147483649,
-          paddingBottom: 'env(safe-area-inset-bottom)',
+            // Ensure black bg covers safe area
+            paddingBottom: 'env(safe-area-inset-bottom)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -176,16 +177,19 @@ export default function AboutSlideOver({ open, onClose, initialBody = null, init
         {/* Logo (bottom of panel, outside scroll area) */}
         <style>{`@keyframes logoBlink{0%,49%{opacity:1}50%,100%{opacity:0}} @media (prefers-reduced-motion: reduce){ .logoBlink{animation:none !important;}}`}</style>
         <div
-          style={{
-            flexShrink: 0,
-            width: '100%',
-            background: '#000',
-            padding: '0 1rem 1rem', // aligns with body text and gives bottom spacing
-            display: 'flex',
-            justifyContent: 'flex-start',
-            alignItems: 'center',
-            paddingBottom: 'env(safe-area-inset-bottom)',
-          }}
+            style={{
+              flexShrink: 0,
+              width: '100%',
+              background: '#000',
+              // Ensure logo/footer bg covers safe area
+              paddingTop: 0,
+              paddingRight: '1rem',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+              paddingLeft: '1rem',
+              display: 'flex',
+              justifyContent: 'flex-start',
+              alignItems: 'center',
+            }}
         >
           <img
             src="/COMFORT_MAG_LOGO_WHITE.svg"
