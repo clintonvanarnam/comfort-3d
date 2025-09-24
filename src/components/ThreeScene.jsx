@@ -62,10 +62,12 @@ export default function ThreeScene() {
         rendererRef.current.dispose();
         rendererRef.current = null;
       }
+      // Longer delay for unmounting cleanup
+      await new Promise(resolve => setTimeout(resolve, 200));
     } else if (isIOS) {
-      console.log('Cleanup: iOS navigation - skipping disposal to prevent reloads');
-      // Still wait a bit to ensure animation loop is stopped
-      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('Cleanup: iOS navigation - stopping animation and waiting');
+      // Longer delay for navigation cleanup to ensure animation loop is fully stopped
+      await new Promise(resolve => setTimeout(resolve, 300));
       return;
     }
 
@@ -641,11 +643,12 @@ export default function ThreeScene() {
                 // Wait for cleanup to complete, then navigate
                 cleanupThreeJS().then(() => {
                   console.log('iOS Navigation: Cleanup complete, navigating to', slug);
-                  window.location.href = `/posts/${slug}`;
+                  // Use location.replace instead of href for cleaner navigation
+                  window.location.replace(`/posts/${slug}`);
                 }).catch((error) => {
                   console.error('iOS Navigation: Cleanup failed', error);
                   // Still try to navigate even if cleanup fails
-                  window.location.href = `/posts/${slug}`;
+                  window.location.replace(`/posts/${slug}`);
                 });
               }
             } else {
