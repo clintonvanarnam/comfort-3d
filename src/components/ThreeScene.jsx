@@ -36,6 +36,38 @@ export default function ThreeScene() {
   const pointerDownTimeRef = useRef(0);
   const sphereRotationTargetRef = useRef({ x: 0, y: 0 });
   const hoverEnabledRef = useRef(true);
+  // Refs for Three.js resources to enable cleanup
+  const sceneRef = useRef(null);
+  const cameraRef = useRef(null);
+  const rendererRef = useRef(null);
+  const animateIdRef = useRef(null);
+
+  // Cleanup function to dispose Three.js resources and stop animation
+  const cleanupThreeJS = () => {
+    if (animateIdRef.current) {
+      cancelAnimationFrame(animateIdRef.current);
+      animateIdRef.current = null;
+    }
+    if (rendererRef.current) {
+      rendererRef.current.dispose();
+      rendererRef.current = null;
+    }
+    if (sceneRef.current) {
+      // Dispose geometries and materials
+      sceneRef.current.traverse((object) => {
+        if (object.geometry) object.geometry.dispose();
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            object.material.forEach((mat) => mat.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
+      sceneRef.current = null;
+    }
+    cameraRef.current = null;
+  };
 
   useEffect(() => {
     // keep a ref in sync so event listeners inside the scene can check
@@ -125,11 +157,14 @@ export default function ThreeScene() {
         // prefer preloaded posts if available
         const posts = preloadedPostsRef.current || (await getPosts());
     const scene = new THREE.Scene();
+    sceneRef.current = scene;
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    cameraRef.current = camera;
     // Start the camera offset along +Z so the sphere (at origin) is centered in view
     camera.position.set(0, 0, 10);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
+        rendererRef.current = renderer;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.NoToneMapping;
         renderer.setClearColor(0x000000, 1); // Set background to black
@@ -563,14 +598,29 @@ export default function ThreeScene() {
               delay: 2,
               duration: 0.5,
               ease: 'power1.in',
-              onComplete: () => router.push(`/posts/${slug}`),
+              onComplete: () => {
+                // Cleanup Three.js resources before navigating to free memory
+                cleanupThreeJS();
+                // Validate slug before navigation
+                if (slug && typeof slug === 'string' && slug.trim()) {
+                  try {
+                    router.push(`/posts/${slug}`);
+                  } catch (e) {
+                    console.error('Navigation failed', e);
+                    // Fallback: reload the page if client-side navigation fails
+                    window.location.href = `/posts/${slug}`;
+                  }
+                } else {
+                  console.warn('Invalid slug for navigation', slug);
+                }
+              },
             });
           }
         }
 
         const clock = new THREE.Clock();
         function animate() {
-          requestAnimationFrame(animate);
+          animateIdRef.current = requestAnimationFrame(animate);
           const t = clock.getElapsedTime();
 
           // Orbital camera: full rotation around the sphere based on mouse
@@ -626,6 +676,11 @@ export default function ThreeScene() {
       }
       init();
     }, 0);
+
+    // Cleanup Three.js resources when component unmounts or dependencies change
+    return () => {
+      cleanupThreeJS();
+    };
   }, [mounted, router]);
 
   if (!mounted) return null;

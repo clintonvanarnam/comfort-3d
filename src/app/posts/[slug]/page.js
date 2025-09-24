@@ -1,11 +1,11 @@
 // Server wrapper for the client post page.
 // Exports generateMetadata so Next.js can set per-post <title> and meta description,
-// while delegating the interactive client UI to the existing `page.jsx` component.
+// while delegating the interactive client UI to the existing `PostClient` component.
 import { getPostBySlug } from '@/lib/getPosts';
-import PostClient from './page.jsx';
+import PostClient from './PostClient';
 
 export async function generateMetadata({ params }) {
-  const slug = params?.slug;
+  const { slug } = await params;
   if (!slug) return {};
   try {
     const post = await getPostBySlug(slug);
