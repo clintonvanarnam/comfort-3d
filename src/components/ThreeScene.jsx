@@ -346,101 +346,109 @@ export default function ThreeScene() {
           }
           
           // If height exceeds max, scale down proportionally  
-          // Display textures one at a time every 10ms
-          if (i >= total) return;
-          const showNext = () => {
-            const post = placementPosts[i];
-            if (!post || !post.image) {
-              i++;
-              if (i < total) setTimeout(showNext, 10);
-              return;
-            }
-            const key = post.slug?.current || post.slug || post._id || post.title;
-            const preTex = preloadedTexturesRef.current[key];
-            const onTexture = (texture, wasPreloaded = false) => {
-              if (!rendererRef.current || !sceneRef.current) {
-                console.log('Skipping sprite creation - WebGL context not ready');
-                return;
-              }
-              try {
-                texture.colorSpace = THREE.SRGBColorSpace;
-                const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 1 });
-                const sprite = new THREE.Sprite(material);
-                const baseHeight = 1.5;
-                const imageAspect = texture.image.width / texture.image.height;
-                const maxSpriteWidth = 3.0;
-                const maxSpriteHeight = 2.0;
-                let width = baseHeight * imageAspect;
-                let height = baseHeight;
-                if (width > maxSpriteWidth) {
-                  const scale = maxSpriteWidth / width;
-                  width = maxSpriteWidth;
-                  height = height * scale;
-                }
-                if (height > maxSpriteHeight) {
-                  const scale = maxSpriteHeight / height;
-                  height = maxSpriteHeight;
-                  width = width * scale;
-                }
-                sprite.scale.set(width, height, 1);
-                if (useSphereRef.current) {
-                  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-                  const y = 1 - (i / (total - 1 || 1)) * 2;
-                  const radiusAtY = Math.sqrt(1 - y * y);
-                  const theta = goldenAngle * i + sphereSeed;
-                  const x = Math.cos(theta) * radiusAtY;
-                  const z = Math.sin(theta) * radiusAtY;
-                  const sphereRadius = 4;
-                  sprite.position.set(x * sphereRadius, y * sphereRadius, z * sphereRadius);
-                  sphereGroup.add(sprite);
-                } else {
-                  sprite.position.set(Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * -2 + 2);
-                  scene.add(sprite);
-                }
-                sprite.userData = {
-                  slug: post.slug?.current || post.slug || '',
-                  title: typeof post.title === 'string' ? post.title : 'Untitled',
-                  author: post.author || '',
-                  imageUrl: post.image || '',
-                  floatPhase: Math.random() * Math.PI * 2,
-                  floatSpeed: 0.5 + Math.random(),
-                  floatAmplitude: 0.2 + Math.random() * 0.3,
-                  baseY: sprite.position.y,
-                  floating: true,
-                  imageAspect,
-                  preloaded: !!preTex,
-                  origScale: { x: sprite.scale.x, y: sprite.scale.y },
-                };
-                sprite.material.opacity = 0;
-                sprite.scale.set(0.001, 0.001, 0.001);
-                sprites.push(sprite);
-                if (wasPreloaded) preloadedSprites.push(sprite);
-                else lateSprites.push(sprite);
-                if (phase1Done && !wasPreloaded) {
-                  gsap.to(sprite.material, { opacity: 1, duration: 0.14, ease: 'power1.out' });
-                  gsap.to(sprite.scale, {
-                    x: sprite.userData.origScale.x,
-                    y: sprite.userData.origScale.y,
-                    duration: 0.14,
-                    ease: 'back.out(1.1)'
-                  });
-                }
-              } catch (error) {
-                console.warn('Error creating sprite:', error);
-              }
-              i++;
-              if (i < total) setTimeout(showNext, 10);
-            };
-            if (preTex) {
-              onTexture(preTex, true);
-            } else {
-              loader.load((post.image), (texture) => onTexture(texture, false));
-            }
+          if (height > maxSpriteHeight) {
+            const scale = maxSpriteHeight / height;
+            height = maxSpriteHeight;
+            width = width * scale;
+          }
+          
+          sprite.scale.set(width, height, 1);
+          if (useSphereRef.current) {
+            const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+            const y = 1 - (idx / (total - 1 || 1)) * 2; // from 1 to -1
+            const radiusAtY = Math.sqrt(1 - y * y);
+            const theta = goldenAngle * idx + sphereSeed;
+            const x = Math.cos(theta) * radiusAtY;
+            const z = Math.sin(theta) * radiusAtY;
+            const sphereRadius = 4;
+            sprite.position.set(x * sphereRadius, y * sphereRadius, z * sphereRadius);
+            sphereGroup.add(sprite);
+          } else {
+            sprite.position.set(Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * -2 + 2);
+            scene.add(sprite);
+          }
+          sprite.userData = {
+            slug: post.slug?.current || post.slug || '',
+            title: typeof post.title === 'string' ? post.title : 'Untitled',
+            author: post.author || '',
+            imageUrl: post.image || '',
+            floatPhase: Math.random() * Math.PI * 2,
+            floatSpeed: 0.5 + Math.random(),
+            floatAmplitude: 0.2 + Math.random() * 0.3,
+            baseY: sprite.position.y,
+            floating: true,
+            imageAspect,
+            preloaded: !!preTex,
+            origScale: { x: sprite.scale.x, y: sprite.scale.y },
           };
-          showNext();
+          sprite.material.opacity = 0;
+          sprite.scale.set(0.001, 0.001, 0.001);
+          sprites.push(sprite);
+          if (wasPreloaded) preloadedSprites.push(sprite);
+          else lateSprites.push(sprite);
+          if (phase1Done && !wasPreloaded) {
+            gsap.to(sprite.material, { opacity: 1, duration: 0.14, ease: 'power1.out' });
+            gsap.to(sprite.scale, {
+              x: sprite.userData.origScale.x,
+              y: sprite.userData.origScale.y,
+              duration: 0.14,
+              ease: 'back.out(1.1)'
+            });
+          }
+          } catch (error) {
+            console.warn('Error creating sprite:', error);
+          }
         };
 
-        processBatch();
+        if (preTex) {
+          onTexture(preTex, true);
+        } else {
+          // Images are pre-optimized by Sanity to max 500px
+          loader.load((post.image), (texture) => {
+            // Apply Three.js optimizations for better performance
+            optimizeTexture(texture);
+            onTexture(texture, false);
+          });
+        }
+      }
+      i = end;
+      if (i < total) {
+        // yield to the main thread briefly
+        setTimeout(processBatch, 30);
+      }
+    };
+
+    processBatch();
+  })();
+
+  // After all sprites have been added, run a quick two-phase staggered entrance
+        // Phase 1: animate preloaded sprites quickly
+        setTimeout(() => {
+          if (preloadedSprites.length > 0) {
+            const mats = preloadedSprites.map((s) => s.material);
+            const scales = preloadedSprites.map((s) => s.scale);
+            gsap.to(mats, { opacity: 1, duration: 0.18, ease: 'power1.out', stagger: 0.01 });
+            gsap.to(scales, {
+              x: (i, t) => preloadedSprites[i].userData.origScale.x,
+              y: (i, t) => preloadedSprites[i].userData.origScale.y,
+              duration: 0.18,
+              ease: 'back.out(1.1)',
+              stagger: 0.01,
+            });
+          }
+          phase1Done = true;
+
+          // Phase 2: shortly after phase 1, animate any currently-collected late sprites as a batch
+          setTimeout(() => {
+            if (lateSprites.length > 0) {
+              // filter out any sprites that don't have userData/origScale to avoid runtime errors
+              const validLate = lateSprites.filter((s) => s && s.userData && s.userData.origScale);
+              const mats2 = validLate.map((s) => s.material);
+              const scales2 = validLate.map((s) => s.scale);
+              const origScales = validLate.map((s) => s.userData.origScale);
+              if (mats2.length > 0) {
+                gsap.to(mats2, { opacity: 1, duration: 0.14, ease: 'power1.out', stagger: 0.03 });
+                gsap.to(scales2, {
                   x: (i, t) => origScales[i]?.x ?? t.x,
                   y: (i, t) => origScales[i]?.y ?? t.y,
                   duration: 0.14,
