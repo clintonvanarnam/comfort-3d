@@ -14,15 +14,13 @@ export default function ThreeScene() {
   // Store sphereSeed in a ref so it's only generated on the client after mount
   const sphereSeedRef = useRef(null);
   const [mounted, setMounted] = useState(false);
-  const [introComplete, setIntroComplete] = useState(false);
-  const [introFading, setIntroFading] = useState(false);
+  const [introComplete, setIntroComplete] = useState(true);
   const [selectedTitle, setSelectedTitle] = useState(null);
   const [hoveredInfo, setHoveredInfo] = useState(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const containerRef = useRef();
   const router = useRouter();
   const clickedRef = useRef(null);
-  const [introCursor, setIntroCursor] = useState({ x: 0, y: 0, visible: false });
   const preloadedTexturesRef = useRef({});
   const preloadedPostsRef = useRef(null);
   const preloadedDoneRef = useRef(false);
@@ -297,7 +295,7 @@ export default function ThreeScene() {
       return;
     }
 
-    const batchSize = 6; // tune to balance throughput vs responsiveness
+    const batchSize = 10; // Process 10 sprites at a time
     // Use a shuffled copy of posts for placement so sprites don't appear
     // in the same locations each load. Fisher-Yates shuffle for uniformity.
     const placementPosts = posts.slice();
@@ -315,7 +313,7 @@ export default function ThreeScene() {
       for (let idx = i; idx < end; idx++) {
         const post = placementPosts[idx];
         if (!post || !post.image) continue;
-        const key = post.slug?.current || post.slug || post._id || post.title;
+        const key = post.slug?.current || post.slug || p._id || p.title;
         const preTex = preloadedTexturesRef.current[key];
         const onTexture = (texture, wasPreloaded = false) => {
           // Check if renderer is still valid before creating WebGL resources
@@ -325,7 +323,6 @@ export default function ThreeScene() {
           }
 
           try {
-            texture.colorSpace = THREE.SRGBColorSpace;
             const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 1 });
             const sprite = new THREE.Sprite(material);
           const baseHeight = 1.5;
@@ -414,7 +411,7 @@ export default function ThreeScene() {
       i = end;
       if (i < total) {
         // yield to the main thread briefly
-        setTimeout(processBatch, 30);
+        setTimeout(processBatch, 10); // 10ms delay between batches
       }
     };
 
@@ -883,137 +880,9 @@ export default function ThreeScene() {
           background: 'black', 
           position: 'relative'
         }}
-      />
-
-      {/* Intro overlay sits above the canvas and can be dismissed to reveal the scene */}
-      <div
-        onClick={() => {
-          setIntroFading(true);
-          setTimeout(() => setIntroComplete(true), 400);
-        }}
-        onMouseMove={(e) => setIntroCursor({ x: e.clientX, y: e.clientY, visible: true })}
-        onMouseEnter={(e) => setIntroCursor({ x: e.clientX, y: e.clientY, visible: true })}
-        onMouseLeave={() => setIntroCursor((s) => ({ ...s, visible: false }))}
-        onTouchMove={(e) => {
-          const t = e.touches[0];
-          if (t) setIntroCursor({ x: t.clientX, y: t.clientY, visible: true });
-        }}
-        onTouchEnd={() => setIntroCursor((s) => ({ ...s, visible: false }))}
-        style={{
-          position: 'absolute',
-          top: '-100px',
-          left: 0,
-          right: 0,
-          bottom: '-100px',
-          display: introComplete ? 'none' : 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          background: 'black',
-          color: 'white',
-          fontFamily: 'monospace',
-          fontSize: '24px',
-          cursor: 'none',
-          zIndex: 2147483647,
-          transition: 'opacity 0.4s',
-          opacity: introFading ? 0 : 1,
-        }}
       >
-        <img
-          src="/COMFORT_MAG_LOGO_WHITE.svg"
-          alt="Comfort Logo"
-          style={{
-            maxWidth: '80%',
-            maxHeight: '50%',
-          }}
-        />
-        <div
-          style={{
-            position: 'fixed',
-            left: introCursor.x,
-            top: introCursor.y,
-            transform: 'translate(-50%, -50%)',
-            fontFamily: 'monospace',
-            fontSize: '15px',
-            color: '#fff',
-            pointerEvents: 'none',
-            zIndex: 2147483648,
-            display: introCursor.visible ? 'block' : 'none',
-            userSelect: 'none',
-            whiteSpace: 'nowrap',
-            mixBlendMode: 'difference',
-          }}
-        >
-          [CLICK]
-        </div>
+        <div ref={containerRef} className="absolute top-0 left-0 w-full h-full" />
       </div>
-
-      {/* sphere mode always on; hover info sits above the canvas */}
-      {hoveredInfo && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            width: '100%',
-            textAlign: 'center',
-            fontSize: '1rem',
-            fontFamily: 'var(--font-monument)',
-            color: '#fff',
-            background: 'transparent',
-            zIndex: 99999999999,
-            pointerEvents: 'none',
-            padding: '1rem 0',
-          }}
-        >
-          {hoveredInfo.title}
-          {hoveredInfo.author && (
-            <span style={{ marginLeft: '1rem', opacity: 0.7 }}>
-              {hoveredInfo.author}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Loading screen during navigation */}
-      {isNavigating && (
-        <>
-          <style>
-            {`
-              @keyframes blink {
-                0%, 50% { opacity: 1; }
-                51%, 100% { opacity: 0.3; }
-              }
-            `}
-          </style>
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              background: 'transparent',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 99999999999,
-              color: '#fff',
-              fontFamily: 'var(--font-monument)',
-            }}
-          >
-            <img
-              src="/COMFORT_MAG_LOGO_RED.svg"
-              alt="COMFORT"
-              style={{
-                width: '200px',
-                height: 'auto',
-                animation: 'blink 1s infinite',
-              }}
-            />
-          </div>
-        </>
-      )}
     </>
   );
 }
