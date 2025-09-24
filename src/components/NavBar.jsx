@@ -266,10 +266,13 @@ export default function NavBar() {
         {/* Center logo */}
         <button
           onClick={() => {
-            // Use location.assign on iOS to match navigation from 3D scene
+            // Use router.push on iOS with delay to allow cleanup
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
             if (isIOS) {
-              window.location.href = '/';
+              // Small delay to allow any post page cleanup to complete
+              setTimeout(() => {
+                router.push('/');
+              }, 100);
             } else {
               router.push('/');
             }
