@@ -75,6 +75,7 @@ export default function ThreeScene() {
   const animateIdRef = useRef(null);
 
   const isInitializingRef = useRef(false);
+  const preloadStartedRef = useRef(false);
   const lastNavigationTime = useRef(0);
 
   // Texture optimization function for performance
@@ -133,7 +134,7 @@ export default function ThreeScene() {
         console.log('Cleanup: Disposing renderer');
         // Attempt to lose the context to free GPU memory
         if (rendererRef.current.forceContextLoss) {
-          try { rendererRef.current.forceContextLoss(); } catch (e) {}
+          try { rendererRef.current.forceContextLoss(); console.log('Cleanup: Forced context loss attempted on iOS'); } catch (e) {}
         }
         rendererRef.current.dispose();
       } catch (e) {
@@ -201,6 +202,9 @@ export default function ThreeScene() {
     if (typeof document !== 'undefined') document.body.classList.add('three-scene-active');
     // start preloading posts and textures in the background with limited concurrency
     (async function preload() {
+      if (preloadStartedRef.current) return;
+      preloadStartedRef.current = true;
+      console.time('Preload textures');
       try {
         const posts = await getPosts();
         preloadedPostsRef.current = posts;
@@ -219,9 +223,11 @@ export default function ThreeScene() {
         let idx = 0;
 
         const loadTexturePromise = (url) => new Promise((resolve, reject) => {
+          console.time(`Preload texture: ${url}`);
           try {
             // Images are pre-optimized by Sanity to max 500px
             loader.load(url, (tex) => {
+              console.timeEnd(`Preload texture: ${url}`);
               // Apply Three.js optimizations for better performance
               optimizeTexture(tex);
               resolve(tex);
@@ -247,8 +253,10 @@ export default function ThreeScene() {
 
         await Promise.all(Array.from({ length: Math.min(maxConcurrent, items.length) }, () => worker()));
         preloadedDoneRef.current = true;
+        console.timeEnd('Preload textures');
       } catch (e) {
         console.warn('Preload failed', e);
+        console.timeEnd('Preload textures');
         preloadedDoneRef.current = true;
       }
     })();
@@ -323,7 +331,7 @@ export default function ThreeScene() {
         // Respect devicePixelRatio for crisper rendering but clamp for perf.
         // Lower the cap on low-memory or slow-network devices to reduce CPU/GPU work.
         const dpr = window.devicePixelRatio || 1;
-        let dprCap = 2;
+        let dprCap = 1; // Reduced from 2 to lower memory footprint
         try {
           const nav = navigator;
           const connection = nav && nav.connection;
@@ -396,9 +404,11 @@ export default function ThreeScene() {
   }
 
   (function createSpritesInBatches() {
+    console.time('Create sprites in batches');
     // Check if component is still valid before starting sprite creation
     if (!rendererRef.current || !sceneRef.current) {
       console.log('Skipping sprite batch creation - WebGL context not ready');
+      console.timeEnd('Create sprites in batches');
       return;
     }
 
@@ -417,6 +427,7 @@ export default function ThreeScene() {
 
     const processBatch = () => {
       const end = Math.min(i + batchSize, total);
+      console.log(`Processing sprite batch ${i + 1}-${end} of ${total}`);
       for (let idx = i; idx < end; idx++) {
   const post = placementPosts[idx];
         if (!post || !post.image) continue;
@@ -436,8 +447,8 @@ export default function ThreeScene() {
           const imageAspect = texture.image.width / texture.image.height;
           
           // Cap maximum sprite dimensions to prevent performance issues with extreme aspect ratios
-          const maxSpriteWidth = 3.0; // Maximum width in 3D units
-          const maxSpriteHeight = 2.0; // Maximum height in 3D units
+          const maxSpriteWidth = 2.0; // Maximum width in 3D units (reduced from 3.0)
+          const maxSpriteHeight = 1.5; // Maximum height in 3D units (reduced from 2.0)
           
           let width = baseHeight * imageAspect;
           let height = baseHeight;
@@ -521,11 +532,14 @@ export default function ThreeScene() {
           // Images are pre-optimized by Sanity to max 500px
           // Use the post.image URL as the identity for progress tracking
           const imgUrl = post.image;
+          console.time(`Load texture: ${imgUrl}`);
           loader.load(imgUrl, (texture) => {
+            console.timeEnd(`Load texture: ${imgUrl}`);
             // Apply Three.js optimizations for better performance
             optimizeTexture(texture);
             onTexture(texture, false);
           }, undefined, (err) => {
+            console.timeEnd(`Load texture: ${imgUrl}`);
             // on error, still mark URL as loaded so loader doesn't hang
             console.warn('Texture load failed for', imgUrl, err);
             try {
@@ -546,6 +560,7 @@ export default function ThreeScene() {
     };
 
     processBatch();
+    console.timeEnd('Create sprites in batches');
   })();
 
   // After all sprites have been added, run a quick two-phase staggered entrance
