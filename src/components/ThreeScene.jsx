@@ -609,37 +609,30 @@ export default function ThreeScene() {
             gsap.to(clickedSprite.position, { x: 0, y: 0, z: 2, duration: 1, ease: 'power2.out' });
             gsap.to(clickedSprite.scale, { x: targetWidth, y: targetHeight, duration: 1, ease: 'power2.out' });
 
-            // Navigate with delay on iOS to allow transition to be visible before loading page
+            // Navigate immediately on iOS using location.assign to avoid router conflicts
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
             if (isIOS) {
-              // On iOS, start animation first, then navigate after a short delay
-              console.log('iOS Navigation: Starting animation for', slug);
-              
-              // Fade sprite but don't make it completely invisible
-              gsap.to(clickedSprite.material, {
-                opacity: 0.1, // Keep slightly visible instead of 0
-                duration: 0.8,
-                ease: 'power1.in',
-                onComplete: () => {
-                  // After animation completes, navigate
-                  if (slug && typeof slug === 'string' && slug.trim()) {
-                    console.log('iOS Navigation: Animation complete, navigating to', slug);
-                    router.push(`/posts/${slug}`).catch((error) => {
-                      console.error('iOS Router push failed, trying location.assign', error);
-                      // If navigation fails, restore sprite visibility
-                      gsap.to(clickedSprite.material, { opacity: 1, duration: 0.3 });
-                      window.location.assign(`/posts/${slug}`);
-                    });
-                  }
-                  
-                  // Stop animation loop after navigation
-                  if (animateIdRef.current) {
-                    cancelAnimationFrame(animateIdRef.current);
-                    animateIdRef.current = null;
-                  }
-                },
-              });
+              // On iOS, navigate immediately with location.assign and let animation play
+              console.log('iOS Navigation: Starting immediate navigation for', slug);
+              if (slug && typeof slug === 'string' && slug.trim()) {
+                // Navigate immediately to avoid WebGL conflicts
+                window.location.assign(`/posts/${slug}`);
+                
+                // Start animation but don't wait for it - navigation happens first
+                gsap.to(clickedSprite.material, {
+                  opacity: 0.1, // Keep slightly visible instead of 0
+                  duration: 0.8,
+                  ease: 'power1.in',
+                  onComplete: () => {
+                    // Stop animation loop after navigation (though page will unload)
+                    if (animateIdRef.current) {
+                      cancelAnimationFrame(animateIdRef.current);
+                      animateIdRef.current = null;
+                    }
+                  },
+                });
+              }
             } else {
               // Non-iOS: use the original animation with cleanup
               gsap.to(clickedSprite.material, {
