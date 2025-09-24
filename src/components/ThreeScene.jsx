@@ -44,31 +44,9 @@ export default function ThreeScene() {
   }, [introComplete]);
 
   useEffect(() => {
-  let debounceTimer;
-    if (hoveredInfo && (hoveredInfo.title || hoveredInfo.author)) {
-      // skip hover-based speech if the user has clicked a sprite
-      if (!hoverEnabledRef.current) {
-        // don't speak, but still allow hover UI to update
-      } else if (typeof window !== 'undefined' && window.speechSynthesis && window.SpeechSynthesisUtterance) {
-        window.speechSynthesis.cancel();
-        debounceTimer = setTimeout(() => {
-          const utterance = new window.SpeechSynthesisUtterance();
-          utterance.text = hoveredInfo.author
-            ? `${hoveredInfo.title} by ${hoveredInfo.author}`
-            : hoveredInfo.title;
-          utterance.rate = 1.05;
-          utterance.pitch = 1.1;
-          window.speechSynthesis.speak(utterance);
-        }, 100);
-      }
-    }
-    return () => {
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-      if (debounceTimer) clearTimeout(debounceTimer);
-    };
-    }, [hoveredInfo]);
+  // Only update hoveredInfo UI, do not play speech on hover
+  // Speech is handled in the click/tap handler below
+  }, [hoveredInfo]);
 
   useEffect(() => {
     setMounted(true);
