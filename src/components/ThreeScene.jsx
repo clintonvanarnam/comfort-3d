@@ -866,13 +866,14 @@ export default function ThreeScene() {
                 setTimeout(() => {
                   setIsNavigating(true);
                   
-                  // Wait for cleanup to complete, then navigate
-                  cleanupThreeJS().then(() => {
-                    console.log('iOS Navigation: Cleanup complete, navigating to', slug);
+                  // Wait for forced cleanup to complete, then navigate. Use forceDispose
+                  // on iOS to attempt to free GPU memory before the page change.
+                  cleanupThreeJS(true, true).then(() => {
+                    console.log('iOS Navigation: Forced cleanup complete, navigating to', slug);
                     // Use location.replace instead of href for cleaner navigation
                     window.location.replace(`/posts/${slug}`);
                   }).catch((error) => {
-                    console.error('iOS Navigation: Cleanup failed', error);
+                    console.error('iOS Navigation: Forced cleanup failed', error);
                     // Still try to navigate even if cleanup fails
                     window.location.replace(`/posts/${slug}`);
                   });
