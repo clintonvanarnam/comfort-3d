@@ -49,6 +49,27 @@ export default function ThreeScene() {
   const isInitializingRef = useRef(false);
   const lastNavigationTime = useRef(0);
 
+  // Texture optimization function for performance
+  const optimizeTexture = (texture) => {
+    // Images are already downsized by Sanity to max 500px, but we still need these optimizations:
+    
+    // Enable mipmapping for better performance at distance
+    texture.generateMipmaps = true;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    
+    // Set color space
+    texture.colorSpace = THREE.SRGBColorSpace;
+    
+    // Keep default flipY behavior for proper image orientation
+    // texture.flipY = true; // This is the default, so we don't need to set it
+    
+    // Mark as needing update
+    texture.needsUpdate = true;
+    
+    return texture;
+  };
+
   // Cleanup function to dispose Three.js resources and stop animation
   const cleanupThreeJS = async (isUnmounting = false) => {
     // Detect iOS for more conservative cleanup
@@ -141,13 +162,10 @@ export default function ThreeScene() {
 
         const loadTexturePromise = (url) => new Promise((resolve, reject) => {
           try {
-            // Images are pre-optimized by Sanity to max 500px, so no need for client-side resizing
+            // Images are pre-optimized by Sanity to max 500px
             loader.load(url, (tex) => {
-              // Set basic texture properties for Three.js
-              tex.colorSpace = THREE.SRGBColorSpace;
-              tex.generateMipmaps = true;
-              tex.minFilter = THREE.LinearMipmapLinearFilter;
-              tex.magFilter = THREE.LinearFilter;
+              // Apply Three.js optimizations for better performance
+              optimizeTexture(tex);
               resolve(tex);
             }, undefined, () => reject(new Error('load error')));
           } catch (e) {
@@ -312,8 +330,28 @@ export default function ThreeScene() {
             const sprite = new THREE.Sprite(material);
           const baseHeight = 1.5;
           const imageAspect = texture.image.width / texture.image.height;
-          const width = baseHeight * imageAspect;
-          const height = baseHeight;
+          
+          // Cap maximum sprite dimensions to prevent performance issues with extreme aspect ratios
+          const maxSpriteWidth = 3.0; // Maximum width in 3D units
+          const maxSpriteHeight = 2.0; // Maximum height in 3D units
+          
+          let width = baseHeight * imageAspect;
+          let height = baseHeight;
+          
+          // If width exceeds max, scale down proportionally
+          if (width > maxSpriteWidth) {
+            const scale = maxSpriteWidth / width;
+            width = maxSpriteWidth;
+            height = height * scale;
+          }
+          
+          // If height exceeds max, scale down proportionally  
+          if (height > maxSpriteHeight) {
+            const scale = maxSpriteHeight / height;
+            height = maxSpriteHeight;
+            width = width * scale;
+          }
+          
           sprite.scale.set(width, height, 1);
           if (useSphereRef.current) {
             const goldenAngle = Math.PI * (3 - Math.sqrt(5));
@@ -367,11 +405,8 @@ export default function ThreeScene() {
         } else {
           // Images are pre-optimized by Sanity to max 500px
           loader.load((post.image), (texture) => {
-            // Set basic texture properties for Three.js
-            texture.colorSpace = THREE.SRGBColorSpace;
-            texture.generateMipmaps = true;
-            texture.minFilter = THREE.LinearMipmapLinearFilter;
-            texture.magFilter = THREE.LinearFilter;
+            // Apply Three.js optimizations for better performance
+            optimizeTexture(texture);
             onTexture(texture, false);
           });
         }
@@ -768,6 +803,41 @@ export default function ThreeScene() {
           // make all sprites face the camera
           sprites.forEach((s) => {
             if (s && s.lookAt) s.lookAt(camera.position);
+          });
+
+          // LOD (Level of Detail) and memory management for better performance
+          const cameraPosition = camera.position;
+          const unloadDistance = 15; // Distance at which to unload textures to save memory
+          
+          sprites.forEach((sprite) => {
+            if (!sprite || !sprite.position) return;
+            
+            const distance = cameraPosition.distanceTo(sprite.position);
+            
+            // Unload textures for distant sprites to save GPU memory
+            if (distance > unloadDistance && !sprite.userData.preloaded && sprite.material.map) {
+              // Store reference to reload later if needed
+              if (!sprite.userData.textureUrl) {
+                sprite.userData.textureUrl = sprite.userData.imageUrl;
+              }
+              // Dispose texture to free memory
+              sprite.material.map.dispose();
+              sprite.material.map = null;
+              sprite.material.needsUpdate = true;
+            }
+            
+            // Reload texture if sprite comes close again
+            if (distance < unloadDistance * 0.8 && !sprite.material.map && sprite.userData.textureUrl) {
+              // Reload texture for non-preloaded sprites that came back into view
+              const loader = new THREE.TextureLoader();
+              loader.load(sprite.userData.textureUrl, (texture) => {
+                if (sprite.material) { // Check if sprite still exists
+                  optimizeTexture(texture);
+                  sprite.material.map = texture;
+                  sprite.material.needsUpdate = true;
+                }
+              });
+            }
           });
 
           // rotate sphere group based on rotation target (drag to rotate) with a light auto-rotate
