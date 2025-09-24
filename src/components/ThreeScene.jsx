@@ -44,14 +44,22 @@ export default function ThreeScene() {
 
   // Cleanup function to dispose Three.js resources and stop animation
   const cleanupThreeJS = () => {
+    // Detect iOS for more conservative cleanup
+    const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+
     if (animateIdRef.current) {
       cancelAnimationFrame(animateIdRef.current);
       animateIdRef.current = null;
     }
+
     if (rendererRef.current) {
-      rendererRef.current.dispose();
+      // On iOS, be more conservative with renderer disposal to avoid context issues
+      if (!isIOS) {
+        rendererRef.current.dispose();
+      }
       rendererRef.current = null;
     }
+
     if (sceneRef.current) {
       // Dispose geometries and materials
       sceneRef.current.traverse((object) => {
@@ -593,28 +601,47 @@ export default function ThreeScene() {
             gsap.to(clickedSprite.position, { x: 0, y: 0, z: 2, duration: 1, ease: 'power2.out' });
             gsap.to(clickedSprite.scale, { x: targetWidth, y: targetHeight, duration: 1, ease: 'power2.out' });
 
-            gsap.to(clickedSprite.material, {
-              opacity: 0,
-              delay: 2,
-              duration: 0.5,
-              ease: 'power1.in',
-              onComplete: () => {
-                // Cleanup Three.js resources before navigating to free memory
-                cleanupThreeJS();
-                // Validate slug before navigation
-                if (slug && typeof slug === 'string' && slug.trim()) {
-                  try {
-                    router.push(`/posts/${slug}`);
-                  } catch (e) {
-                    console.error('Navigation failed', e);
-                    // Fallback: reload the page if client-side navigation fails
-                    window.location.href = `/posts/${slug}`;
+            // On iOS, use immediate navigation to avoid memory issues
+            const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+            if (isIOS) {
+              // Immediate navigation for iOS
+              gsap.to(clickedSprite.material, {
+                opacity: 0,
+                duration: 0.3,
+                ease: 'power1.in',
+                onComplete: () => {
+                  cleanupThreeJS();
+                  if (slug && typeof slug === 'string' && slug.trim()) {
+                    try {
+                      router.push(`/posts/${slug}`);
+                    } catch (e) {
+                      console.error('iOS Navigation failed', e);
+                      window.location.href = `/posts/${slug}`;
+                    }
                   }
-                } else {
-                  console.warn('Invalid slug for navigation', slug);
-                }
-              },
-            });
+                },
+              });
+            } else {
+              // Full animation for other platforms
+              gsap.to(clickedSprite.material, {
+                opacity: 0,
+                delay: 2,
+                duration: 0.5,
+                ease: 'power1.in',
+                onComplete: () => {
+                  cleanupThreeJS();
+                  if (slug && typeof slug === 'string' && slug.trim()) {
+                    try {
+                      router.push(`/posts/${slug}`);
+                    } catch (e) {
+                      console.error('Navigation failed', e);
+                      window.location.href = `/posts/${slug}`;
+                    }
+                  }
+                },
+              });
+            }
           }
         }
 
