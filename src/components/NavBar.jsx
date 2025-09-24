@@ -275,7 +275,7 @@ export default function NavBar() {
               // Delay to allow cleanup and show loading screen, then use router.push
               setTimeout(() => {
                 router.push('/');
-              }, 1500);
+              }, 800);
             } else {
               router.push('/');
             }
@@ -390,7 +390,7 @@ export default function NavBar() {
               left: 0,
               width: '100%',
               height: '100%',
-              background: 'transparent',
+              background: 'black',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
