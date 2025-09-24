@@ -28,6 +28,53 @@ export default function PostPage() {
   const headerSeenRef = useRef(false);
   const headerOutTimerRef = useRef(null);
 
+  // Cleanup effect for iOS memory management
+  useEffect(() => {
+    return () => {
+      // Clear any pending timers
+      if (headerOutTimerRef.current) {
+        clearTimeout(headerOutTimerRef.current);
+        headerOutTimerRef.current = null;
+      }
+
+      // Kill any GSAP animations
+      if (typeof gsap !== 'undefined') {
+        gsap.killTweensOf('*');
+      }
+
+      // Clear speech synthesis if active
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+
+      // Reset body cursor and classes
+      try {
+        document.body.classList.remove('lightbox-open');
+        document.body.style.cursor = '';
+      } catch (e) {}
+
+      // Clean up dynamically added meta tags (iOS memory optimization)
+      const metaTags = [
+        'meta[name="description"]',
+        'meta[property="og:image"]',
+        'meta[property="og:title"]',
+        'meta[property="og:description"]',
+        'meta[name="twitter:title"]',
+        'meta[name="twitter:description"]',
+        'meta[name="twitter:image"]'
+      ];
+
+      metaTags.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+          if (el && el.parentNode) {
+            el.parentNode.removeChild(el);
+          }
+        });
+      });
+    };
+  }, []);
+
   useEffect(() => {
     async function loadPost() {
       const fetched = await getPostBySlug(params.slug);
@@ -318,6 +365,7 @@ export default function PostPage() {
       try { window.removeEventListener('orientationchange', onScrollOrResize); } catch (e) {}
       try { if (rafId) cancelAnimationFrame(rafId); } catch (e) {}
       try { if (headerOutTimerRef.current) { clearTimeout(headerOutTimerRef.current); headerOutTimerRef.current = null; } } catch (e) {}
+      try { if (relatedObserver) relatedObserver.disconnect(); } catch (e) {}
     };
   }, [post]);
 
