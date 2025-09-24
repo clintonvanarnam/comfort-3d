@@ -374,26 +374,43 @@ export default function NavBar() {
 
       {/* Loading screen during home navigation on iOS */}
       {isNavigatingHome && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            background: 'rgba(0, 0, 0, 0.9)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 99999999999,
-            color: '#fff',
-            fontFamily: 'var(--font-monument)',
-          }}
-        >
-          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>COMFORT</div>
-          <div style={{ fontSize: '1rem', opacity: 0.7 }}>Loading...</div>
-        </div>
+        <>
+          <style>
+            {`
+              @keyframes blink {
+                0%, 50% { opacity: 1; }
+                51%, 100% { opacity: 0.3; }
+              }
+            `}
+          </style>
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'rgba(0, 0, 0, 0.9)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 99999999999,
+              color: '#fff',
+              fontFamily: 'var(--font-monument)',
+            }}
+          >
+            <img
+              src="/COMFORT_MAG_LOGO_RED.svg"
+              alt="COMFORT"
+              style={{
+                width: '200px',
+                height: 'auto',
+                animation: 'blink 1s infinite',
+              }}
+            />
+          </div>
+        </>
       )}
     </nav>
   );
