@@ -11,7 +11,6 @@ export default function NavBar() {
   const maskRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [cartCount, setCartCount] = useState(0);
-  const [isNavigatingHome, setIsNavigatingHome] = useState(false);
   const useDifference = pathname !== '/';
   const lastNavigationTime = useRef(0);
 
@@ -280,8 +279,6 @@ export default function NavBar() {
             // Use router.push on iOS to avoid forced reloads that corrupt WebGL context
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
             if (isIOS) {
-              // Show loading screen immediately
-              setIsNavigatingHome(true);
               // Reduced delay from 800ms to 300ms
               setTimeout(() => {
                 router.push('/');
@@ -381,47 +378,6 @@ export default function NavBar() {
           </button>
         </div>
       </div>
-
-      {/* Loading screen during home navigation on iOS */}
-      {isNavigatingHome && (
-        <>
-          <style>
-            {`
-              @keyframes blink {
-                0%, 50% { opacity: 1; }
-                51%, 100% { opacity: 0.3; }
-              }
-            `}
-          </style>
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              background: 'black',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 99999999999,
-              color: '#fff',
-              fontFamily: 'var(--font-monument)',
-            }}
-          >
-            <img
-              src="/COMFORT_MAG_LOGO_RED.svg"
-              alt="COMFORT"
-              style={{
-                width: '200px',
-                height: 'auto',
-                animation: 'blink 1s infinite',
-              }}
-            />
-          </div>
-        </>
-      )}
     </nav>
   );
 }
