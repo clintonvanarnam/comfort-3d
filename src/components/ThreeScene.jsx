@@ -54,14 +54,15 @@ export default function ThreeScene() {
       animateIdRef.current = null;
     }
 
+    // On iOS, be extremely conservative - don't dispose anything to prevent context issues
+    if (isIOS) {
+      console.log('Cleanup: iOS detected - skipping all disposal to prevent reloads');
+      return;
+    }
+
     if (rendererRef.current) {
-      // On iOS, be more conservative with renderer disposal to avoid context issues
-      if (!isIOS) {
-        console.log('Cleanup: Disposing renderer');
-        rendererRef.current.dispose();
-      } else {
-        console.log('Cleanup: Skipping renderer disposal on iOS');
-      }
+      console.log('Cleanup: Disposing renderer');
+      rendererRef.current.dispose();
       rendererRef.current = null;
     }
 
@@ -619,17 +620,28 @@ export default function ThreeScene() {
               duration: animationDuration,
               ease: 'power1.in',
               onComplete: () => {
-                console.log('Navigation: Starting cleanup and navigation for', slug);
-                cleanupThreeJS();
-                if (slug && typeof slug === 'string' && slug.trim()) {
-                  try {
-                    console.log('Navigation: Attempting router.push');
-                    router.push(`/posts/${slug}`);
-                  } catch (e) {
-                    console.error('Navigation failed', e);
-                    console.log('Navigation: Falling back to window.location');
-                    window.location.href = `/posts/${slug}`;
+                console.log('Navigation: Starting navigation for', slug);
+                // Skip cleanup on iOS to prevent reload issues
+                const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+                if (!isIOS) {
+                  cleanupThreeJS();
+                } else {
+                  console.log('Navigation: Skipping cleanup on iOS');
+                  // Just stop animation loop
+                  if (animateIdRef.current) {
+                    cancelAnimationFrame(animateIdRef.current);
+                    animateIdRef.current = null;
                   }
+                }
+
+                if (slug && typeof slug === 'string' && slug.trim()) {
+                  console.log('Navigation: Attempting router.push for iOS');
+                  // Use a more iOS-friendly approach
+                  router.push(`/posts/${slug}`).catch((error) => {
+                    console.error('Router push failed, trying location.assign', error);
+                    // Use assign instead of href for better SPA behavior
+                    window.location.assign(`/posts/${slug}`);
+                  });
                 } else {
                   console.warn('Invalid slug for navigation', slug);
                 }
