@@ -271,7 +271,7 @@ export default function NavBar() {
             // Prevent rapid navigation that can cause WebGL context issues
             const now = Date.now();
             const timeSinceLastNav = now - lastNavigationTime.current;
-            if (timeSinceLastNav < 2000) {
+            if (timeSinceLastNav < 500) { // Reduced from 2000ms to 500ms
               console.log('Navigation blocked - too soon since last navigation');
               return;
             }
@@ -282,10 +282,10 @@ export default function NavBar() {
             if (isIOS) {
               // Show loading screen immediately
               setIsNavigatingHome(true);
-              // Delay to allow cleanup and show loading screen, then use router.push
+              // Reduced delay from 800ms to 300ms
               setTimeout(() => {
                 router.push('/');
-              }, 800);
+              }, 300);
             } else {
               router.push('/');
             }
