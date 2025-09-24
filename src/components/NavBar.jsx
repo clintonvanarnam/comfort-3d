@@ -265,7 +265,15 @@ export default function NavBar() {
 
         {/* Center logo */}
         <button
-          onClick={() => router.push('/')}
+          onClick={() => {
+            // Use location.assign on iOS to match navigation from 3D scene
+            const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+            if (isIOS) {
+              window.location.href = '/';
+            } else {
+              router.push('/');
+            }
+          }}
           style={{
             background: 'transparent',
             border: 'none',

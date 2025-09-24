@@ -609,25 +609,17 @@ export default function ThreeScene() {
             gsap.to(clickedSprite.position, { x: 0, y: 0, z: 2, duration: 1, ease: 'power2.out' });
             gsap.to(clickedSprite.scale, { x: targetWidth, y: targetHeight, duration: 1, ease: 'power2.out' });
 
-            // Navigate immediately on iOS using router.push with animation loop stopped first
+            // Navigate immediately on iOS using location.assign to avoid router conflicts
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
             if (isIOS) {
-              // On iOS, stop animation loop first, then navigate with router.push
-              console.log('iOS Navigation: Stopping animation loop before navigation for', slug);
-              if (animateIdRef.current) {
-                cancelAnimationFrame(animateIdRef.current);
-                animateIdRef.current = null;
-              }
-
+              // On iOS, navigate immediately with location.assign and let animation play
+              console.log('iOS Navigation: Starting immediate navigation for', slug);
               if (slug && typeof slug === 'string' && slug.trim()) {
-                // Navigate with router.push after stopping animation
-                router.push(`/posts/${slug}`).catch((error) => {
-                  console.error('iOS Router push failed, trying location.assign', error);
-                  window.location.assign(`/posts/${slug}`);
-                });
-
-                // Start animation but don't wait for it
+                // Navigate immediately to avoid WebGL conflicts
+                window.location.href = `/posts/${slug}`;
+                
+                // Start animation but don't wait for it - navigation happens first
                 gsap.to(clickedSprite.material, {
                   opacity: 0.1, // Keep slightly visible instead of 0
                   duration: 0.8,
