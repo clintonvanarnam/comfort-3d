@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import styles from './ProductPage.module.css';
 
 export default function ProductPage({ product }) {
   // When multiple variants exist, start with no selection so the user must choose
@@ -88,7 +89,7 @@ export default function ProductPage({ product }) {
 
       <div className="product-image">
         {product.images && product.images.length > 0 && (
-          <div className="image-carousel">
+          <div className={styles.imageCarousel}>
             <img 
               src={product.images[currentImageIndex].url} 
               alt={product.images[currentImageIndex].altText || product.title} 
@@ -152,16 +153,4 @@ export default function ProductPage({ product }) {
   );
 }
 
-<style jsx>{`
-  .image-carousel {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
 
-  .image-carousel img {
-    max-width: 100%;
-    height: auto;
-  }
-`}</style>

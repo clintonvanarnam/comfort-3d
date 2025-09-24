@@ -1,0 +1,11 @@
+.image-carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-carousel img {
+  max-width: 100%;
+  height: auto;
+}
