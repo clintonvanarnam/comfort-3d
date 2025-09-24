@@ -923,8 +923,19 @@ export default function ThreeScene() {
         }
 
         const clock = new THREE.Clock();
-        function animate() {
+        let lastRenderTime = 0;
+        const targetFPS = 30; // Reduced from 60fps to improve performance on older devices
+        const frameInterval = 1000 / targetFPS; // ~33.33ms for 30fps
+        
+        function animate(currentTime = 0) {
           animateIdRef.current = requestAnimationFrame(animate);
+          
+          // Throttle to target FPS
+          if (currentTime - lastRenderTime < frameInterval) {
+            return; // Skip this frame
+          }
+          lastRenderTime = currentTime;
+          
           const t = clock.getElapsedTime();
 
           // Orbital camera: full rotation around the sphere based on mouse
