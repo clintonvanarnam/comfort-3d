@@ -176,7 +176,7 @@ export default function ThreeScene() {
 
     // Small delay on iOS to ensure stability when remounting
     const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const initDelay = isIOS ? 200 : 0;
+    const initDelay = isIOS ? 500 : 0;
 
     // Initialize the 3D scene as soon as the component mounts so sprites/textures
     // can be created and animated behind the intro overlay. We still keep the

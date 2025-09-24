@@ -11,6 +11,7 @@ export default function NavBar() {
   const maskRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [isNavigatingHome, setIsNavigatingHome] = useState(false);
   const useDifference = pathname !== '/';
 
   // Entrance animation
@@ -266,13 +267,15 @@ export default function NavBar() {
         {/* Center logo */}
         <button
           onClick={() => {
-            // Use location.href on iOS with delay to allow cleanup
+            // Use location.href on iOS with loading screen and delay
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
             if (isIOS) {
-              // Small delay to allow any post page cleanup to complete
+              // Show loading screen immediately
+              setIsNavigatingHome(true);
+              // Delay to allow cleanup and show loading screen
               setTimeout(() => {
                 window.location.href = '/';
-              }, 100);
+              }, 500);
             } else {
               router.push('/');
             }
@@ -368,7 +371,30 @@ export default function NavBar() {
           </button>
         </div>
       </div>
+
+      {/* Loading screen during home navigation on iOS */}
+      {isNavigatingHome && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999999999,
+            color: '#fff',
+            fontFamily: 'var(--font-monument)',
+          }}
+        >
+          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>COMFORT</div>
+          <div style={{ fontSize: '1rem', opacity: 0.7 }}>Loading...</div>
+        </div>
+      )}
     </nav>
   );
-
 }
