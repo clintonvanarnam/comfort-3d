@@ -43,6 +43,8 @@ export default function ThreeScene() {
   const rendererRef = useRef(null);
   const animateIdRef = useRef(null);
 
+  const isInitializingRef = useRef(false);
+
   // Cleanup function to dispose Three.js resources and stop animation
   const cleanupThreeJS = async (isUnmounting = false) => {
     // Detect iOS for more conservative cleanup
@@ -54,6 +56,9 @@ export default function ThreeScene() {
       cancelAnimationFrame(animateIdRef.current);
       animateIdRef.current = null;
     }
+
+    // Reset initialization flag
+    isInitializingRef.current = false;
 
     // On iOS, be extremely conservative - never dispose WebGL to prevent context conflicts
     if (isIOS && isUnmounting) {
@@ -176,7 +181,14 @@ export default function ThreeScene() {
 
     // Small delay on iOS to ensure stability when remounting
     const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const initDelay = isIOS ? 1000 : 0;
+    const initDelay = isIOS ? 2000 : 0;
+
+    // Prevent rapid remounting that can cause WebGL conflicts
+    if (isInitializingRef.current) {
+      console.log('ThreeScene: Already initializing, skipping...');
+      return;
+    }
+    isInitializingRef.current = true;
 
     // Initialize the 3D scene as soon as the component mounts so sprites/textures
     // can be created and animated behind the intro overlay. We still keep the

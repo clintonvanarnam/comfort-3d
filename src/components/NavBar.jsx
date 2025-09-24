@@ -275,7 +275,7 @@ export default function NavBar() {
               // Delay to allow cleanup and show loading screen, then use router.push
               setTimeout(() => {
                 router.push('/');
-              }, 1000);
+              }, 1500);
             } else {
               router.push('/');
             }
