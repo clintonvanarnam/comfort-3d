@@ -4,7 +4,7 @@ import NavBar from '@/components/NavBar';
 import ProductPage from '../../../../src/components/ProductPage';
 
 export async function generateMetadata({ params }) {
-  const { handle } = params;
+  const { handle } = await params;
   const { product } = await fetchProductByHandle(handle);
   const title = product ? `COMFORT | ${product.title}` : 'COMFORT | Product';
   return {
@@ -13,7 +13,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ProductDetailPage({ params }) {
-  const { handle } = params;
+  const { handle } = await params;
   const { product, __errors } = await fetchProductByHandle(handle);
   if (!product) {
     return <div style={{ padding: 40 }}>Product not found.</div>;

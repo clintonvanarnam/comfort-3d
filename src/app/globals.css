@@ -217,6 +217,19 @@ a {
   text-align: center;
 }
 
+.shop-controls {
+  max-width: 900px;
+  margin: 0 auto 24px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.sort-control {
+  display: flex;
+  align-items: center;
+}
+
 .shop-grid {
   display: grid;
   /* make the grid align with the site gutters so the first item is flush with the page margin */
