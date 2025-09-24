@@ -306,6 +306,12 @@ export default function ThreeScene() {
 
   // Create sprites in small batches to avoid blocking the main thread
   (function createSpritesInBatches() {
+    // Check if component is still valid before starting sprite creation
+    if (!rendererRef.current || !sceneRef.current) {
+      console.log('Skipping sprite batch creation - WebGL context not ready');
+      return;
+    }
+
     const batchSize = 6; // tune to balance throughput vs responsiveness
     // Use a shuffled copy of posts for placement so sprites don't appear
     // in the same locations each load. Fisher-Yates shuffle for uniformity.
@@ -327,9 +333,16 @@ export default function ThreeScene() {
         const key = post.slug?.current || post.slug || post._id || post.title;
         const preTex = preloadedTexturesRef.current[key];
         const onTexture = (texture, wasPreloaded = false) => {
-          texture.colorSpace = THREE.SRGBColorSpace;
-          const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 1 });
-          const sprite = new THREE.Sprite(material);
+          // Check if renderer is still valid before creating WebGL resources
+          if (!rendererRef.current || !sceneRef.current) {
+            console.log('Skipping sprite creation - WebGL context not ready');
+            return;
+          }
+
+          try {
+            texture.colorSpace = THREE.SRGBColorSpace;
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 1 });
+            const sprite = new THREE.Sprite(material);
           const baseHeight = 1.5;
           const imageAspect = texture.image.width / texture.image.height;
           const width = baseHeight * imageAspect;
@@ -376,6 +389,9 @@ export default function ThreeScene() {
               duration: 0.14,
               ease: 'back.out(1.1)'
             });
+          }
+          } catch (error) {
+            console.warn('Error creating sprite:', error);
           }
         };
 
