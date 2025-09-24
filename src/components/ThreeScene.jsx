@@ -27,6 +27,7 @@ export default function ThreeScene() {
   // Loading progress state (throttled updates)
   const [loadProgress, setLoadProgress] = useState(0);
   const [loadingDone, setLoadingDone] = useState(false);
+  const listenersRef = useRef([]);
   const loadTargetRef = useRef(0);
   const progressAnimatingRef = useRef(false);
   // Smoothly animate displayed progress toward target to avoid jumps
@@ -98,7 +99,7 @@ export default function ThreeScene() {
   };
 
   // Cleanup function to dispose Three.js resources and stop animation
-  const cleanupThreeJS = async (isUnmounting = false) => {
+  const cleanupThreeJS = async (isUnmounting = false, forceDispose = false) => {
     // Detect iOS for more conservative cleanup
     const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
@@ -112,8 +113,9 @@ export default function ThreeScene() {
     // Reset initialization flag
     isInitializingRef.current = false;
 
-    // On iOS, be extremely conservative - never dispose WebGL to prevent context conflicts
-    if (isIOS) {
+    // On iOS, be conservative by default to avoid context loss issues, but allow
+    // a forced disposal when navigation requires releasing memory (forceDispose)
+    if (isIOS && !forceDispose) {
       console.log('Cleanup: iOS - stopping animation only, no disposal');
       // Just stop the animation loop, let WebGL context die naturally with page unload
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -121,27 +123,56 @@ export default function ThreeScene() {
     }
 
     if (rendererRef.current) {
-      console.log('Cleanup: Disposing renderer');
-      rendererRef.current.dispose();
+      try {
+        console.log('Cleanup: Forcibly removing canvas from DOM');
+        const canvas = rendererRef.current.domElement;
+        if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
+      } catch (e) {}
+
+      try {
+        console.log('Cleanup: Disposing renderer');
+        // Attempt to lose the context to free GPU memory
+        if (rendererRef.current.forceContextLoss) {
+          try { rendererRef.current.forceContextLoss(); } catch (e) {}
+        }
+        rendererRef.current.dispose();
+      } catch (e) {
+        console.warn('Cleanup: Error disposing renderer', e);
+      }
       rendererRef.current = null;
     }
 
     if (sceneRef.current) {
       console.log('Cleanup: Disposing scene resources');
-      // Dispose geometries and materials
+      // Dispose geometries and materials and textures
       sceneRef.current.traverse((object) => {
-        if (object.geometry) object.geometry.dispose();
+        try {
+          if (object.geometry) object.geometry.dispose();
+        } catch (e) {}
         if (object.material) {
-          if (Array.isArray(object.material)) {
-            object.material.forEach((mat) => mat.dispose());
-          } else {
-            object.material.dispose();
-          }
+          const mats = Array.isArray(object.material) ? object.material : [object.material];
+          mats.forEach((mat) => {
+            try {
+              if (mat.map) {
+                try { mat.map.dispose(); } catch (e) {}
+                mat.map = null;
+              }
+              if (mat.dispose) mat.dispose();
+            } catch (e) {}
+          });
         }
       });
       sceneRef.current = null;
     }
     cameraRef.current = null;
+
+    // Remove any tracked global event listeners
+    try {
+      (listenersRef.current || []).forEach(({ type, handler, opts }) => {
+        try { window.removeEventListener(type, handler, opts); } catch (e) {}
+      });
+    } catch (e) {}
+    listenersRef.current = [];
     console.log('Cleanup: Three.js cleanup complete');
     
     // Wait a bit to ensure cleanup is complete
@@ -714,9 +745,13 @@ export default function ThreeScene() {
           isDraggingRef.current = false;
         }
 
-        window.addEventListener('pointermove', onPointerMove);
-        window.addEventListener('pointerdown', onPointerDown);
-        window.addEventListener('pointerup', onPointerUp);
+  // Track listeners so we can remove them during cleanup (important on iOS)
+  window.addEventListener('pointermove', onPointerMove);
+  listenersRef.current.push({ type: 'pointermove', handler: onPointerMove });
+  window.addEventListener('pointerdown', onPointerDown);
+  listenersRef.current.push({ type: 'pointerdown', handler: onPointerDown });
+  window.addEventListener('pointerup', onPointerUp);
+  listenersRef.current.push({ type: 'pointerup', handler: onPointerUp });
 
         // Keep renderer & camera sized to the container if the viewport changes
         function onWindowResize() {
@@ -729,8 +764,9 @@ export default function ThreeScene() {
           renderer.setSize(w, h, false);
         }
   window.addEventListener('resize', onWindowResize);
+  listenersRef.current.push({ type: 'resize', handler: onWindowResize });
 
-  window.addEventListener('click', (e) => {
+  const clickHandler = (e) => {
           // Ignore interactions until intro is dismissed
           if (!introCompleteRef.current) return;
           // Dedupe after touch-based pointerup already triggered the interaction
@@ -739,8 +775,11 @@ export default function ThreeScene() {
           updateMouseFromEvent(e);
           // ignore clicks that happen while dragging
           if (!isDraggingRef.current) handleInteraction();
-        });
+  };
+  window.addEventListener('click', clickHandler);
+  listenersRef.current.push({ type: 'click', handler: clickHandler });
   window.addEventListener('pointercancel', onPointerCancel);
+  listenersRef.current.push({ type: 'pointercancel', handler: onPointerCancel });
 
         function handleInteraction() {
           // Prevent rapid navigation that can cause WebGL context issues
