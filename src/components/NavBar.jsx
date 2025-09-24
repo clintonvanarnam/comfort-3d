@@ -390,7 +390,7 @@ export default function NavBar() {
               left: 0,
               width: '100%',
               height: '100%',
-              background: 'rgba(0, 0, 0, 0.9)',
+              background: 'transparent',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
