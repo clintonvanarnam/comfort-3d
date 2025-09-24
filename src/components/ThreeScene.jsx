@@ -15,6 +15,7 @@ export default function ThreeScene() {
   const [introFading, setIntroFading] = useState(false);
   const [selectedTitle, setSelectedTitle] = useState(null);
   const [hoveredInfo, setHoveredInfo] = useState(null);
+  const [isNavigating, setIsNavigating] = useState(false);
   const containerRef = useRef();
   const router = useRouter();
   const clickedRef = useRef(null);
@@ -43,7 +44,7 @@ export default function ThreeScene() {
   const animateIdRef = useRef(null);
 
   // Cleanup function to dispose Three.js resources and stop animation
-  const cleanupThreeJS = () => {
+  const cleanupThreeJS = async () => {
     // Detect iOS for more conservative cleanup
     const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
@@ -57,6 +58,8 @@ export default function ThreeScene() {
     // On iOS, be extremely conservative - don't dispose anything to prevent context issues
     if (isIOS) {
       console.log('Cleanup: iOS detected - skipping all disposal to prevent reloads');
+      // Still wait a bit to ensure animation loop is stopped
+      await new Promise(resolve => setTimeout(resolve, 100));
       return;
     }
 
@@ -83,6 +86,9 @@ export default function ThreeScene() {
     }
     cameraRef.current = null;
     console.log('Cleanup: Three.js cleanup complete');
+    
+    // Wait a bit to ensure cleanup is complete
+    await new Promise(resolve => setTimeout(resolve, 50));
   };
 
   useEffect(() => {
@@ -609,21 +615,31 @@ export default function ThreeScene() {
             gsap.to(clickedSprite.position, { x: 0, y: 0, z: 2, duration: 1, ease: 'power2.out' });
             gsap.to(clickedSprite.scale, { x: targetWidth, y: targetHeight, duration: 1, ease: 'power2.out' });
 
-            // Navigate immediately on iOS using location.assign to avoid router conflicts
+            // Navigate with proper cleanup on iOS to prevent crashes
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
             if (isIOS) {
-              // On iOS, navigate immediately with location.assign and let animation play
-              console.log('iOS Navigation: Starting immediate navigation for', slug);
+              // On iOS, show loading screen and wait for cleanup before navigation
+              console.log('iOS Navigation: Starting cleanup sequence for', slug);
               if (slug && typeof slug === 'string' && slug.trim()) {
-                // Navigate immediately to avoid WebGL conflicts
-                window.location.href = `/posts/${slug}`;
+                // Show loading screen immediately
+                setIsNavigating(true);
                 
-                // Start animation but don't wait for it - navigation happens first
+                // Start animation
                 gsap.to(clickedSprite.material, {
                   opacity: 0.1, // Keep slightly visible instead of 0
                   duration: 0.8,
                   ease: 'power1.in',
+                });
+                
+                // Wait for cleanup to complete, then navigate
+                cleanupThreeJS().then(() => {
+                  console.log('iOS Navigation: Cleanup complete, navigating to', slug);
+                  window.location.href = `/posts/${slug}`;
+                }).catch((error) => {
+                  console.error('iOS Navigation: Cleanup failed', error);
+                  // Still try to navigate even if cleanup fails
+                  window.location.href = `/posts/${slug}`;
                 });
               }
             } else {
@@ -821,6 +837,30 @@ export default function ThreeScene() {
               {hoveredInfo.author}
             </span>
           )}
+        </div>
+      )}
+
+      {/* Loading screen during navigation */}
+      {isNavigating && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999999999,
+            color: '#fff',
+            fontFamily: 'var(--font-monument)',
+          }}
+        >
+          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>COMFORT</div>
+          <div style={{ fontSize: '1rem', opacity: 0.7 }}>Loading...</div>
         </div>
       )}
     </>
