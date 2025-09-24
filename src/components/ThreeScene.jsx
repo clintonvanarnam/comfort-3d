@@ -627,29 +627,31 @@ export default function ThreeScene() {
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
             if (isIOS) {
-              // On iOS, show loading screen and wait for cleanup before navigation
-              console.log('iOS Navigation: Starting cleanup sequence for', slug);
+              // On iOS, wait for sprite animation to complete, then show loading screen
+              console.log('iOS Navigation: Starting sprite animation for', slug);
               if (slug && typeof slug === 'string' && slug.trim()) {
-                // Show loading screen immediately
-                setIsNavigating(true);
-                
-                // Start animation
+                // Start sprite animation (position, scale, opacity)
                 gsap.to(clickedSprite.material, {
                   opacity: 0.1, // Keep slightly visible instead of 0
                   duration: 0.8,
                   ease: 'power1.in',
                 });
                 
-                // Wait for cleanup to complete, then navigate
-                cleanupThreeJS().then(() => {
-                  console.log('iOS Navigation: Cleanup complete, navigating to', slug);
-                  // Use location.replace instead of href for cleaner navigation
-                  window.location.replace(`/posts/${slug}`);
-                }).catch((error) => {
-                  console.error('iOS Navigation: Cleanup failed', error);
-                  // Still try to navigate even if cleanup fails
-                  window.location.replace(`/posts/${slug}`);
-                });
+                // Show loading screen after animation completes
+                setTimeout(() => {
+                  setIsNavigating(true);
+                  
+                  // Wait for cleanup to complete, then navigate
+                  cleanupThreeJS().then(() => {
+                    console.log('iOS Navigation: Cleanup complete, navigating to', slug);
+                    // Use location.replace instead of href for cleaner navigation
+                    window.location.replace(`/posts/${slug}`);
+                  }).catch((error) => {
+                    console.error('iOS Navigation: Cleanup failed', error);
+                    // Still try to navigate even if cleanup fails
+                    window.location.replace(`/posts/${slug}`);
+                  });
+                }, 1200); // Wait for 1.2 seconds (longer than animation duration)
               }
             } else {
               // Non-iOS: use the original animation with cleanup
