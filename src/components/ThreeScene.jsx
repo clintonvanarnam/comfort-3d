@@ -27,7 +27,6 @@ export default function ThreeScene() {
   const preloadedPostsRef = useRef(null);
   const preloadedDoneRef = useRef(false);
   const introCompleteRef = useRef(false);
-  const loadingStrategyRef = useRef(null);
   // sphere mode is always enabled by default
   const useSphereRef = useRef(true);
   const sphereGroupRef = useRef(null);
@@ -121,112 +120,11 @@ export default function ThreeScene() {
     // add a body class so other parts of the UI (like the footer) can
     // respond to the 3D-scene being active and hide UI that shouldn't overlay.
     if (typeof document !== 'undefined') document.body.classList.add('three-scene-active');
-
-    // Determine loading strategy based on connection speed and device capabilities
-    const getLoadingStrategy = () => {
-      try {
-        const nav = navigator;
-        const connection = nav && nav.connection;
-        const effectiveType = connection && connection.effectiveType;
-        const saveData = connection && connection.saveData;
-        const deviceMemory = nav.deviceMemory || 4;
-        const hardwareConcurrency = nav.hardwareConcurrency || 4;
-
-        // Mobile detection
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(nav.userAgent);
-
-        // Connection quality assessment
-        const isSlowConnection = saveData ||
-          (effectiveType && /2g|slow-2g/.test(effectiveType)) ||
-          (connection && connection.downlink && connection.downlink < 1.5);
-
-        // Device capability assessment
-        const isLowEndDevice = deviceMemory <= 2 || hardwareConcurrency <= 2;
-
-        // Determine strategy
-        if (isSlowConnection || (isMobile && isLowEndDevice)) {
-          return {
-            shouldPreload: true, // Changed: Always preload some textures
-            maxConcurrent: 2, // Conservative loading
-            preloadLimit: 6, // Preload first 6 textures even on slow connections
-            lazyLoadTrigger: 'hover', // Load on hover for slow connections
-          };
-        } else if (isMobile || isLowEndDevice) {
-          return {
-            shouldPreload: true, // Limited preloading for mobile
-            maxConcurrent: 3, // Moderate concurrency
-            preloadLimit: 12, // Preload first 12 textures
-            lazyLoadTrigger: 'visible', // Load when becoming visible
-          };
-        } else {
-          return {
-            shouldPreload: true, // Full preloading for fast connections
-            maxConcurrent: 4, // Aggressive concurrency
-            preloadLimit: null, // Preload all
-            lazyLoadTrigger: 'visible', // Load when becoming visible
-          };
-        }
-      } catch (e) {
-        // Fallback for browsers without connection API - be conservative
-        return {
-          shouldPreload: true,
-          maxConcurrent: 2,
-          preloadLimit: 8, // Conservative preload limit
-          lazyLoadTrigger: 'visible',
-        };
-      }
-    };
-
-    const loadingStrategy = getLoadingStrategy();
-    loadingStrategyRef.current = loadingStrategy;
-
-    // Texture loading queue for lazy loading
-    const textureLoadQueue = [];
-    let activeTextureLoads = 0;
-    const maxTextureLoads = loadingStrategy.maxConcurrent;
-
-    const loadTextureLazy = (url, key, onComplete) => {
-      textureLoadQueue.push({ url, key, onComplete });
-
-      const processQueue = async () => {
-        if (activeTextureLoads >= maxTextureLoads || textureLoadQueue.length === 0) return;
-
-        activeTextureLoads++;
-        const { url: loadUrl, key: loadKey, onComplete: loadOnComplete } = textureLoadQueue.shift();
-
-        try {
-          const loader = new THREE.TextureLoader();
-          const texture = await new Promise((resolve, reject) => {
-            loader.load(loadUrl, resolve, undefined, reject);
-          });
-          texture.colorSpace = THREE.SRGBColorSpace;
-          preloadedTexturesRef.current[loadKey] = texture;
-          if (loadOnComplete) loadOnComplete(texture);
-        } catch (e) {
-          console.warn('Lazy texture load failed:', loadUrl, e);
-          if (loadOnComplete) loadOnComplete(null);
-        } finally {
-          activeTextureLoads--;
-          // Process next item in queue
-          setTimeout(processQueue, 10);
-        }
-      };
-
-      processQueue();
-    };
-
     // start preloading posts and textures in the background with limited concurrency
     (async function preload() {
       try {
         const posts = await getPosts();
         preloadedPostsRef.current = posts;
-
-        // Skip preloading entirely if strategy says not to
-        if (!loadingStrategy.shouldPreload) {
-          preloadedDoneRef.current = true;
-          return;
-        }
-
         const loader = new THREE.TextureLoader();
         const items = posts.filter(p => p && p.image).map(p => ({
           key: p.slug?.current || p.slug || p._id || p.title,
@@ -238,11 +136,7 @@ export default function ThreeScene() {
           return;
         }
 
-        // Apply preload limit if specified
-        const itemsToPreload = loadingStrategy.preloadLimit ?
-          items.slice(0, loadingStrategy.preloadLimit) : items;
-
-        const maxConcurrent = loadingStrategy.maxConcurrent; // Use strategy's concurrency limit
+        const maxConcurrent = 4; // tune as needed
         let idx = 0;
 
         const loadTexturePromise = (url) => new Promise((resolve, reject) => {
@@ -256,8 +150,8 @@ export default function ThreeScene() {
         const worker = async () => {
           while (true) {
             const i = idx++;
-            if (i >= itemsToPreload.length) return;
-            const item = itemsToPreload[i];
+            if (i >= items.length) return;
+            const item = items[i];
             try {
               const tex = await loadTexturePromise(item.url);
               preloadedTexturesRef.current[item.key] = tex;
@@ -267,7 +161,7 @@ export default function ThreeScene() {
           }
         };
 
-        await Promise.all(Array.from({ length: Math.min(maxConcurrent, itemsToPreload.length) }, () => worker()));
+        await Promise.all(Array.from({ length: Math.min(maxConcurrent, items.length) }, () => worker()));
         preloadedDoneRef.current = true;
       } catch (e) {
         console.warn('Preload failed', e);
@@ -463,104 +357,7 @@ export default function ThreeScene() {
         if (preTex) {
           onTexture(preTex, true);
         } else {
-          // Create sprite with placeholder material for lazy loading
-          const placeholderMaterial = new THREE.SpriteMaterial({
-            color: 0xcccccc,
-            transparent: true,
-            opacity: 0.3
-          });
-          const sprite = new THREE.Sprite(placeholderMaterial);
-
-          const baseHeight = 1.5;
-          // Use a default aspect ratio since we don't have the image yet
-          const width = baseHeight * 1.5; // Default aspect
-          const height = baseHeight;
-          sprite.scale.set(width, height, 1);
-
-          if (useSphereRef.current) {
-            const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-            const y = 1 - (idx / (total - 1 || 1)) * 2; // from 1 to -1
-            const radiusAtY = Math.sqrt(1 - y * y);
-            const theta = goldenAngle * idx + sphereSeed;
-            const x = Math.cos(theta) * radiusAtY;
-            const z = Math.sin(theta) * radiusAtY;
-            const sphereRadius = 4;
-            sprite.position.set(x * sphereRadius, y * sphereRadius, z * sphereRadius);
-            sphereGroup.add(sprite);
-          } else {
-            sprite.position.set(Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * -2 + 2);
-            scene.add(sprite);
-          }
-
-          sprite.userData = {
-            slug: post.slug?.current || post.slug || '',
-            title: typeof post.title === 'string' ? post.title : 'Untitled',
-            author: post.author || '',
-            imageUrl: post.image || '',
-            floatPhase: Math.random() * Math.PI * 2,
-            floatSpeed: 0.5 + Math.random(),
-            floatAmplitude: 0.2 + Math.random() * 0.3,
-            baseY: sprite.position.y,
-            floating: true,
-            imageAspect: 1.5, // Default aspect
-            preloaded: false,
-            origScale: { x: sprite.scale.x, y: sprite.scale.y },
-            lazyLoading: true,
-            textureKey: key,
-          };
-          sprite.material.opacity = 0.3; // Start visible as placeholder
-          sprite.scale.set(0.001, 0.001, 0.001); // Start small for animation
-          sprites.push(sprite);
-          lateSprites.push(sprite);
-
-          // Add lazy loading trigger method
-          sprite.userData.loadTexture = () => {
-            if (sprite.userData.lazyLoading && !sprite.userData.loadingStarted) {
-              sprite.userData.loadingStarted = true;
-              loadTextureLazy(post.image, key, (texture) => {
-                if (!texture || !sprite.material) return;
-
-                try {
-                  // Replace placeholder material with actual texture
-                  const newMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 1 });
-                  sprite.material.dispose(); // Clean up placeholder
-                  sprite.material = newMaterial;
-
-                  // Update sprite dimensions based on actual image aspect
-                  const imageAspect = texture.image.width / texture.image.height;
-                  const baseHeight = 1.5;
-                  const width = baseHeight * imageAspect;
-                  const height = baseHeight;
-                  sprite.scale.set(width, height, 1);
-                  sprite.userData.origScale = { x: width, y: height };
-                  sprite.userData.imageAspect = imageAspect;
-                  sprite.userData.lazyLoading = false;
-
-                  // Animate in if scene is ready
-                  if (phase1Done) {
-                    gsap.to(sprite.material, { opacity: 1, duration: 0.2, ease: 'power1.out' });
-                    gsap.to(sprite.scale, {
-                      x: width,
-                      y: height,
-                      duration: 0.2,
-                      ease: 'back.out(1.1)'
-                    });
-                  }
-                } catch (error) {
-                  console.warn('Error applying lazy-loaded texture:', error);
-                }
-              });
-            }
-          };
-
-          // Trigger loading based on strategy
-          if (loadingStrategy.lazyLoadTrigger === 'visible') {
-            // Load when sprite becomes visible (implement visibility check in render loop)
-            sprite.userData.needsVisibilityCheck = true;
-          }
-          // For 'hover' strategy, loading will be triggered on hover/interaction
-
-          // Lazy sprites are already visible as placeholders, they'll be animated in phase 2
+          loader.load((post.image), (texture) => onTexture(texture, false));
         }
       }
       i = end;
@@ -599,14 +396,7 @@ export default function ThreeScene() {
               const scales2 = validLate.map((s) => s.scale);
               const origScales = validLate.map((s) => s.userData.origScale);
               if (mats2.length > 0) {
-                // For lazy sprites, keep current opacity (0.3), for regular late sprites animate to 1
-                const targetOpacities = validLate.map((s) => s.userData.lazyLoading ? s.material.opacity : 1);
-                gsap.to(mats2, {
-                  opacity: (i) => targetOpacities[i],
-                  duration: 0.14,
-                  ease: 'power1.out',
-                  stagger: 0.03
-                });
+                gsap.to(mats2, { opacity: 1, duration: 0.14, ease: 'power1.out', stagger: 0.03 });
                 gsap.to(scales2, {
                   x: (i, t) => origScales[i]?.x ?? t.x,
                   y: (i, t) => origScales[i]?.y ?? t.y,
@@ -683,12 +473,6 @@ export default function ThreeScene() {
           if (intersects.length > 0) {
             const hovered = intersects[0].object;
             setHoveredInfo({ title: hovered.userData.title, author: hovered.userData.author });
-
-            // Trigger lazy loading on hover if needed
-            if (hovered.userData.lazyLoading && hovered.userData.loadTexture) {
-              hovered.userData.loadTexture();
-            }
-
             if (!hovered.userData.preloaded) {
               // prefetch the route (Next) and warm the HTTP cache for the full image
               router.prefetch(`/posts/${hovered.userData.slug}`);
@@ -969,50 +753,6 @@ export default function ThreeScene() {
           sprites.forEach((s) => {
             if (s && s.lookAt) s.lookAt(camera.position);
           });
-
-          // Check visibility for lazy loading sprites
-          if (loadingStrategyRef.current && loadingStrategyRef.current.lazyLoadTrigger === 'visible') {
-            sprites.forEach((sprite) => {
-              if (sprite && sprite.userData.needsVisibilityCheck && sprite.userData.lazyLoading) {
-                // Simple frustum check - if sprite is in front of camera and not too far
-                const distance = sprite.position.distanceTo(camera.position);
-                const direction = new THREE.Vector3().subVectors(sprite.position, camera.position).normalize();
-                const dotProduct = camera.getWorldDirection(new THREE.Vector3()).dot(direction);
-
-                // Load if sprite is in front of camera (dotProduct > 0) and within reasonable distance
-                if (dotProduct > 0 && distance < 15) {
-                  sprite.userData.loadTexture();
-                  sprite.userData.needsVisibilityCheck = false;
-                }
-              }
-            });
-          }
-
-          // Memory management: unload textures for distant sprites on low-memory devices
-          if (loadingStrategyRef.current && loadingStrategyRef.current.maxConcurrent <= 2) { // Only on slower connections/devices
-            sprites.forEach((sprite) => {
-              if (sprite && sprite.material && sprite.material.map && !sprite.userData.lazyLoading) {
-                const distance = sprite.position.distanceTo(camera.position);
-                // Unload textures for sprites more than 20 units away
-                if (distance > 20 && sprite.userData.textureKey) {
-                  // Replace with placeholder material to save memory
-                  const placeholderMaterial = new THREE.SpriteMaterial({
-                    color: 0xcccccc,
-                    transparent: true,
-                    opacity: 0.3
-                  });
-                  sprite.material.dispose();
-                  sprite.material = placeholderMaterial;
-                  sprite.userData.lazyLoading = true;
-                  sprite.userData.loadingStarted = false;
-                  sprite.userData.needsVisibilityCheck = true;
-
-                  // Remove from preloaded cache to allow re-loading if needed
-                  delete preloadedTexturesRef.current[sprite.userData.textureKey];
-                }
-              }
-            });
-          }
 
           // rotate sphere group based on rotation target (drag to rotate) with a light auto-rotate
           if (useSphereRef.current && sphereGroupRef.current) {
