@@ -5,15 +5,7 @@ import AnimatedLayout from "../components/AnimatedLayout"; // we'll create this 
 import SetVh from '../components/SetVh'
 import BodyClassSetter from '@/components/BodyClassSetter';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 import { metadata as siteMetadata } from './metadata';
 
@@ -33,7 +25,7 @@ export default function RootLayout({ children }) {
       <body>
         {/* Apply font variable classes on the client only to avoid hydration
             mismatches caused by extension-injected body attributes */}
-        <BodyClassSetter classes={`${geistSans.variable} ${geistMono.variable}`} />
+      
         <SetVh />
         <AnimatedLayout>{children}</AnimatedLayout>
       </body>
