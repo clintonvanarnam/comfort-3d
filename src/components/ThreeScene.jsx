@@ -493,7 +493,14 @@ export default function ThreeScene() {
 
           if (intersects.length > 0 && !clickedRef.current) {
             const clickedSprite = intersects[0].object;
-            const { slug, imageAspect } = clickedSprite.userData;
+            const { slug, imageAspect, imageUrl } = clickedSprite.userData;
+
+            // Robust image URL check
+            if (!imageUrl || typeof imageUrl !== 'string' || !/^https?:\/\/.+|\/[^\s]+\.(jpg|jpeg|png|gif|webp|svg)$/i.test(imageUrl)) {
+              alert('This post is missing a valid image URL and cannot be displayed.');
+              return;
+            }
+
             // If sprite is inside a group (e.g., sphereGroup), reparent it to the scene
             // while preserving its world position so the animation to center is correct.
             if (clickedSprite.parent && clickedSprite.parent !== scene) {
