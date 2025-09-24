@@ -16,16 +16,38 @@ export async function getPosts() {
     }
   }`;
 
-  const data = await client.fetch(query);
+  try {
+    console.log('getPosts: Attempting to fetch from Sanity...');
+    const data = await client.fetch(query);
+    console.log('getPosts: Successfully fetched', data.length, 'posts from Sanity');
 
-  // Format for 3D sprite usage
-  return data.map(post => ({
-    _id: post._id,
-    title: post.title || '',
-    slug: post.slug?.current || (typeof post.slug === 'string' ? post.slug : ''),
-    image: post.mainImage?.asset?.url || '',
-    author: post.author?.name || '',
-  }));
+    // Format for 3D sprite usage
+    const formatted = data.map(post => ({
+      _id: post._id,
+      title: post.title || '',
+      slug: post.slug?.current || (typeof post.slug === 'string' ? post.slug : ''),
+      image: post.mainImage?.asset?.url || '',
+      author: post.author?.name || '',
+    }));
+
+    console.log('getPosts: Formatted', formatted.length, 'posts');
+    return formatted;
+  } catch (error) {
+    console.error('getPosts: Error fetching from Sanity:', error);
+    console.error('getPosts: Error type:', error.constructor?.name || typeof error);
+    console.error('getPosts: Error properties:', Object.getOwnPropertyNames(error));
+    console.error('getPosts: Error details:', {
+      message: error?.message,
+      statusCode: error?.statusCode,
+      response: error?.response,
+      stack: error?.stack,
+      name: error?.name,
+      code: error?.code
+    });
+
+    // Return empty array so the app can continue with dummy posts
+    return [];
+  }
 }
 
 // Get a single post by its slug

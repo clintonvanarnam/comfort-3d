@@ -12,13 +12,13 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20.19.x'
       - name: Install dependencies
         working-directory: studio
         run: npm ci
       - name: Build & deploy Sanity Studio
         working-directory: studio
         env:
-          SANITY_AUTH_TOKEN: ${{ secrets.SANITY_AUTH_TOKEN }}
+          SANITY_AUTH_TOKEN: ${{ secrets.SANITY_API_TOKEN }}
         run: |
           npx sanity deploy --yes
