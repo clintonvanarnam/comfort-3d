@@ -3,20 +3,22 @@ export const metadata = {
   title: 'COMFORT',
   description: 'COMFORT ideas for a better tomorrow.',
   icons: {
-    icon: '/favicon.ico?v=3',
-    shortcut: '/favicon.ico?v=3',
-    apple: '/favicon.ico?v=3',
+    icon: '/favicon/favicon.ico',
+    shortcut: '/favicon/favicon.ico',
+    apple: '/favicon/apple-touch-icon.png',
   },
   openGraph: {
     title: 'COMFORT',
     description: 'COMFORT ideas for a better tomorrow.',
     siteName: 'COMFORT',
     type: 'website',
-    // fallback image; use logo as default preview when an article image isn't available
+    // fallback image; use optimized OG image for social sharing
     images: [
       {
-        url: '/COMFORT_MAG_LOGO_WHITE.svg',
-        alt: 'COMFORT logo',
+        url: '/og.png',
+        width: 1200,
+        height: 630,
+        alt: 'COMFORT',
       },
     ],
   },
