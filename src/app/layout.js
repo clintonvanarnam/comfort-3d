@@ -16,11 +16,12 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <link rel="icon" type="image/x-icon" href="/favicon.ico?v=3" sizes="any" />
-        <link rel="icon" href="/favicon.ico?v=3" type="image/x-icon" />
-        <link rel="shortcut icon" href="/favicon.ico?v=3" type="image/x-icon" />
-        <link rel="apple-touch-icon" href="/favicon.ico?v=3" />
-        <link rel="icon" type="image/x-icon" href="data:," />
+        <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon/favicon-16x16.png" sizes="16x16" type="image/png" />
+        <link rel="icon" href="/favicon/favicon-32x32.png" sizes="32x32" type="image/png" />
+        <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
+        <link rel="icon" href="/favicon/android-chrome-192x192.png" sizes="192x192" type="image/png" />
+        <link rel="icon" href="/favicon/android-chrome-512x512.png" sizes="512x512" type="image/png" />
       </head>
       <body suppressHydrationWarning={true}>
         {/* Apply font variable classes on the client only to avoid hydration
