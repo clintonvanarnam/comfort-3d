@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.85);
+  background: rgba(0,0,0,0);
   color: #fff;
   z-index: 60;
   pointer-events: none; /* allow clicks to pass through when hidden */
@@ -32,9 +32,41 @@
 
 .progressInner {
   height: 100%;
-  background: linear-gradient(90deg, #4ade80, #06b6d4);
+  background: white;
   width: 0%;
   transition: width 220ms linear;
+}
+
+.logo {
+  width: 120px;
+  height: auto;
+  margin-bottom: 16px;
+}
+
+.hoverInfo {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: white;
+  font-family: var(--font-monument);
+  pointer-events: none;
+  z-index: 50;
+}
+
+.hoverTitle {
+  font-size: 0.9rem;
+  font-weight: 400;
+  margin-bottom: 0px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.hoverAuthor {
+  font-size: 0.9rem;
+  font-weight: 400;
+  opacity: 0.9;
 }
 
 .progressText {

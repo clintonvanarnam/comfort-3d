@@ -866,66 +866,36 @@ export default function ThreeScene() {
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
             lastNavigationTime.current = Date.now();
 
-            if (isIOS) {
-              // On iOS, wait for sprite animation to complete, then show loading screen
-              console.log('iOS Navigation: Starting sprite animation for', slug);
-              if (slug && typeof slug === 'string' && slug.trim()) {
-                // Start sprite animation (position, scale, opacity)
-                gsap.to(clickedSprite.material, {
-                  opacity: 0, // Fade to fully transparent
-                  duration: 0.8,
-                  ease: 'power1.in',
-                });
-                
-                // Show loading screen after animation completes
-                setTimeout(() => {
-                  setIsNavigating(true);
-                  
-                  // Wait for forced cleanup to complete, then navigate. Use forceDispose
-                  // on iOS to attempt to free GPU memory before the page change.
-                  cleanupThreeJS(true, true).then(() => {
-                    console.log('iOS Navigation: Forced cleanup complete, navigating to', slug);
-                    // Use location.replace instead of href for cleaner navigation
-                    window.location.replace(`/posts/${slug}`);
-                  }).catch((error) => {
-                    console.error('iOS Navigation: Forced cleanup failed', error);
-                    // Still try to navigate even if cleanup fails
-                    window.location.replace(`/posts/${slug}`);
-                  });
-                }, 1000); // Wait for 1 second (after animation completes)
-              }
-            } else {
-              // Non-iOS: use the original animation with cleanup
-              gsap.to(clickedSprite.material, {
-                opacity: 0,
-                delay: 2,
-                duration: 0.5,
-                ease: 'power1.in',
-                onComplete: () => {
-                  console.log('Navigation: Starting navigation for', slug);
-                  cleanupThreeJS();
+            // Use the same animation sequence for both iOS and desktop
+            gsap.to(clickedSprite.material, {
+              opacity: 0,
+              delay: 2,
+              duration: 0.5,
+              ease: 'power1.in',
+              onComplete: () => {
+                console.log('Navigation: Starting navigation for', slug);
+                cleanupThreeJS();
 
-                  if (slug && typeof slug === 'string' && slug.trim()) {
-                    console.log('Navigation: Attempting router.push');
-                      try {
-                        router.push(`/posts/${slug}`);
-                      } catch (error) {
-                        console.error('Router push failed, trying location.assign', error);
-                        window.location.assign(`/posts/${slug}`);
-                      }
-                  } else {
-                    console.warn('Invalid slug for navigation', slug);
-                  }
-                },
-              });
-            }
+                if (slug && typeof slug === 'string' && slug.trim()) {
+                  console.log('Navigation: Attempting router.push');
+                    try {
+                      router.push(`/posts/${slug}`);
+                    } catch (error) {
+                      console.error('Router push failed, trying location.assign', error);
+                      window.location.assign(`/posts/${slug}`);
+                    }
+                } else {
+                  console.warn('Invalid slug for navigation', slug);
+                }
+              },
+            });
           }
         }
 
         const clock = new THREE.Clock();
         let lastRenderTime = 0;
-        const targetFPS = 30; // Reduced from 60fps to improve performance on older devices
-        const frameInterval = 1000 / targetFPS; // ~33.33ms for 30fps
+        const targetFPS = 60; // Restored to 60fps
+        const frameInterval = 1000 / targetFPS; // ~16.67ms for 60fps
         
         function animate(currentTime = 0) {
           animateIdRef.current = requestAnimationFrame(animate);
@@ -1044,7 +1014,7 @@ export default function ThreeScene() {
         ref={containerRef}
         style={{ 
           width: '100vw', 
-          height: 'calc(100vh + env(safe-area-inset-bottom) + 100px)', 
+          height: 'calc(100vh + env(safe-area-inset-bottom))', 
           overflow: 'hidden', 
           background: 'black', 
           position: 'relative'
@@ -1055,12 +1025,21 @@ export default function ThreeScene() {
         {/* Loading overlay - very lightweight and throttled */}
         <div className={loadingDone ? `${styles.overlay} ${styles.hidden}` : styles.overlay} aria-hidden={loadingDone}>
           <div className={styles.loaderBox} role="status" aria-live="polite">
+            <img src="/COMFORT_MAG_LOGO_WHITE.svg" alt="Comfort Magazine Logo" className={styles.logo} />
             <div className={styles.progressText}>{loadingDone ? 'Loaded' : `Loading 3D scene — ${loadProgress}%`}</div>
             <div className={styles.progressOuter}>
               <div className={styles.progressInner} style={{ width: `${loadProgress}%` }} />
             </div>
           </div>
         </div>
+
+        {/* Hover info display */}
+        {hoveredInfo && (
+          <div className={styles.hoverInfo}>
+            <div className={styles.hoverTitle}>{hoveredInfo.title}</div>
+            <div className={styles.hoverAuthor}>{hoveredInfo.author}</div>
+          </div>
+        )}
       </div>
     </>
   );
