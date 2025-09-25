@@ -276,16 +276,7 @@ export default function NavBar() {
             }
             lastNavigationTime.current = now;
 
-            // Use router.push on iOS to avoid forced reloads that corrupt WebGL context
-            const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-            if (isIOS) {
-              // Reduced delay from 800ms to 300ms
-              setTimeout(() => {
-                router.push('/');
-              }, 300);
-            } else {
-              router.push('/');
-            }
+            router.push('/');
           }}
           style={{
             background: 'transparent',

@@ -54,26 +54,6 @@ export default function PostPage() {
         document.body.classList.remove('lightbox-open');
         document.body.style.cursor = '';
       } catch (e) {}
-
-      // Clean up dynamically added meta tags (iOS memory optimization)
-      const metaTags = [
-        'meta[name="description"]',
-        'meta[property="og:image"]',
-        'meta[property="og:title"]',
-        'meta[property="og:description"]',
-        'meta[name="twitter:title"]',
-        'meta[name="twitter:description"]',
-        'meta[name="twitter:image"]'
-      ];
-
-      metaTags.forEach(selector => {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(el => {
-          if (el && el.parentNode) {
-            el.parentNode.removeChild(el);
-          }
-        });
-      });
     };
   }, []);
 
@@ -81,85 +61,13 @@ export default function PostPage() {
     async function loadPost() {
       const fetched = await getPostBySlug(params.slug);
       setPost(fetched);
-      // Update the browser title and meta description on the client so the
+      // Update the browser title on the client so the
       // tab shows the article title immediately even if server metadata isn't applied.
       try {
   const siteSuffix = 'COMFORT';
   // Prefer author for the page title (Author | Comfort), fall back to fetched title, then siteSuffix
   const pageTitle = fetched?.author ? `${fetched.author} | ${siteSuffix}` : (fetched?.title ? `${fetched.title} | ${siteSuffix}` : siteSuffix);
   document.title = pageTitle;
-        // description: try to extract a short excerpt from the first block
-        let desc = '';
-        if (fetched?.body && Array.isArray(fetched.body)) {
-          const firstText = fetched.body.find(b => b._type === 'block' && Array.isArray(b.children));
-          if (firstText) desc = firstText.children.map(c => c.text || '').join(' ').trim().slice(0, 160);
-        }
-        if (desc) {
-          let meta = document.querySelector('meta[name="description"]');
-          if (!meta) {
-            meta = document.createElement('meta');
-            meta.name = 'description';
-            document.head.appendChild(meta);
-          }
-          meta.content = desc;
-        }
-        // Open Graph tags: image, title, description
-        const og = fetched?.mainImage?.asset?.url || null;
-        if (og) {
-          let ogTag = document.querySelector('meta[property="og:image"]');
-          if (!ogTag) {
-            ogTag = document.createElement('meta');
-            ogTag.setAttribute('property', 'og:image');
-            document.head.appendChild(ogTag);
-          }
-          ogTag.content = og;
-        }
-
-  // Set OG title and description to match server preference (use author when available)
-  const ogTitle = pageTitle;
-        let ogTitleTag = document.querySelector('meta[property="og:title"]');
-        if (!ogTitleTag) {
-          ogTitleTag = document.createElement('meta');
-          ogTitleTag.setAttribute('property', 'og:title');
-          document.head.appendChild(ogTitleTag);
-        }
-        ogTitleTag.content = ogTitle;
-
-        const ogDesc = 'COMFORT ideas for a better tomorrow.';
-        let ogDescTag = document.querySelector('meta[property="og:description"]');
-        if (!ogDescTag) {
-          ogDescTag = document.createElement('meta');
-          ogDescTag.setAttribute('property', 'og:description');
-          document.head.appendChild(ogDescTag);
-        }
-        ogDescTag.content = ogDesc;
-
-        // Twitter meta tags (mirror Open Graph)
-        let twTitle = document.querySelector('meta[name="twitter:title"]');
-        if (!twTitle) {
-          twTitle = document.createElement('meta');
-          twTitle.name = 'twitter:title';
-          document.head.appendChild(twTitle);
-        }
-        twTitle.content = ogTitle;
-
-        let twDesc = document.querySelector('meta[name="twitter:description"]');
-        if (!twDesc) {
-          twDesc = document.createElement('meta');
-          twDesc.name = 'twitter:description';
-          document.head.appendChild(twDesc);
-        }
-        twDesc.content = ogDesc;
-
-        if (og) {
-          let twImg = document.querySelector('meta[name="twitter:image"]');
-          if (!twImg) {
-            twImg = document.createElement('meta');
-            twImg.name = 'twitter:image';
-            document.head.appendChild(twImg);
-          }
-          twImg.content = og;
-        }
       } catch (e) {
         // noop
       }
@@ -468,17 +376,6 @@ export default function PostPage() {
     }
     if (!href) return;
     setPreloadHref(href);
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    link.href = href;
-    link.setAttribute('data-generated-by', 'post-hero-preload');
-    document.head.appendChild(link);
-    return () => {
-      try {
-        document.head.removeChild(link);
-      } catch (e) {}
-    };
   }, [post, urlFor]);
 
   // lightbox handlers

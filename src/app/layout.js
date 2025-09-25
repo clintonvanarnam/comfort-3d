@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/favicon.ico?v=3" />
         <link rel="icon" type="image/x-icon" href="data:," />
       </head>
-      <body>
+      <body suppressHydrationWarning={true}>
         {/* Apply font variable classes on the client only to avoid hydration
             mismatches caused by extension-injected body attributes */}
       

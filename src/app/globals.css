@@ -40,13 +40,15 @@ body.lightbox-open * {
   }
 }
 
-/* Dark mode removed: site uses the light color variables defined in :root */
+/* Prevent scrolling on home page (3D scene) */
+body.no-scroll {
+  overflow-y: hidden;
+}
 
 html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
-  overflow-y: hidden;
   /* allow footer to stick to bottom when content is short */
   min-height: 100vh;
   display: flex;

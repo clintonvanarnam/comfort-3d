@@ -21,6 +21,7 @@ export default function ThreeScene() {
   const [hoveredInfo, setHoveredInfo] = useState(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const containerRef = useRef();
+  const canvasRef = useRef(null);
   const router = useRouter();
   const clickedRef = useRef(null);
   const preloadedTexturesRef = useRef({});
@@ -77,6 +78,8 @@ export default function ThreeScene() {
   const isInitializingRef = useRef(false);
   const preloadStartedRef = useRef(false);
   const lastNavigationTime = useRef(0);
+  const cleanupPerformedRef = useRef(false);
+  const domRemovalObserverRef = useRef(null);
 
   // Texture optimization function for performance
   const optimizeTexture = (texture) => {
@@ -101,10 +104,18 @@ export default function ThreeScene() {
 
   // Cleanup function to dispose Three.js resources and stop animation
   const cleanupThreeJS = async (isUnmounting = false, forceDispose = false) => {
+    // Prevent multiple cleanups
+    if (cleanupPerformedRef.current) {
+      console.log('Cleanup: Already performed, skipping');
+      return;
+    }
+
     // Detect iOS for more conservative cleanup
     const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
     console.log('Cleanup: Starting Three.js cleanup, isIOS:', isIOS, 'isUnmounting:', isUnmounting);
+
+    cleanupPerformedRef.current = true;
 
     if (animateIdRef.current) {
       cancelAnimationFrame(animateIdRef.current);
@@ -125,16 +136,11 @@ export default function ThreeScene() {
 
     if (rendererRef.current) {
       try {
-        console.log('Cleanup: Forcibly removing canvas from DOM');
-        const canvas = rendererRef.current.domElement;
-        if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
-      } catch (e) {}
-
-      try {
-        console.log('Cleanup: Disposing renderer');
+        console.log('Cleanup: Disposing renderer without DOM manipulation');
+        // Skip canvas removal - let React handle DOM cleanup to prevent race conditions
         // Attempt to lose the context to free GPU memory
         if (rendererRef.current.forceContextLoss) {
-          try { rendererRef.current.forceContextLoss(); console.log('Cleanup: Forced context loss attempted on iOS'); } catch (e) {}
+          try { rendererRef.current.forceContextLoss(); console.log('Cleanup: Forced context loss attempted'); } catch (e) {}
         }
         rendererRef.current.dispose();
       } catch (e) {
@@ -200,6 +206,39 @@ export default function ThreeScene() {
     // add a body class so other parts of the UI (like the footer) can
     // respond to the 3D-scene being active and hide UI that shouldn't overlay.
     if (typeof document !== 'undefined') document.body.classList.add('three-scene-active');
+    // Development-only: observe DOM removals to help debug race conditions
+    try {
+      if (process.env.NODE_ENV === 'development' && typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
+        if (!domRemovalObserverRef.current) {
+          const obs = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+              if (m.removedNodes && m.removedNodes.length) {
+                for (const n of m.removedNodes) {
+                  try {
+                    if (n && n.nodeType === 1) {
+                      // Capture a stack to help identify the removal caller
+                      const stack = (new Error('DOM removal trace')).stack;
+                      try {
+                        console.warn('[DOM-REMOVAL-DEBUG] removed node:', n, 'selector:', n.id ? `#${n.id}` : (n.className ? `.${n.className}` : n.nodeName), '\nstack:', stack);
+                      } catch (e) {
+                        // ignore logging errors
+                      }
+                    }
+                  } catch (e) {}
+                }
+              }
+            }
+          });
+          try {
+            obs.observe(document, { childList: true, subtree: true });
+            domRemovalObserverRef.current = obs;
+            console.log('[DOM-REMOVAL-DEBUG] observer installed');
+          } catch (e) {
+            // ignore observer install errors
+          }
+        }
+      }
+    } catch (e) {}
     // start preloading posts and textures in the background with limited concurrency
     (async function preload() {
       if (preloadStartedRef.current) return;
@@ -263,6 +302,14 @@ export default function ThreeScene() {
 
     return () => {
       if (typeof document !== 'undefined') document.body.classList.remove('three-scene-active');
+      // disconnect the dev MutationObserver if present
+      try {
+        if (domRemovalObserverRef.current) {
+          try { domRemovalObserverRef.current.disconnect(); } catch (e) {}
+          domRemovalObserverRef.current = null;
+          console.log('[DOM-REMOVAL-DEBUG] observer disconnected');
+        }
+      } catch (e) {}
     };
   }, []);
 
@@ -281,6 +328,7 @@ export default function ThreeScene() {
       return;
     }
     isInitializingRef.current = true;
+    cleanupPerformedRef.current = false; // Reset cleanup flag on new initialization
 
     // Initialize the 3D scene as soon as the component mounts so sprites/textures
     // can be created and animated behind the intro overlay. We still keep the
@@ -323,8 +371,8 @@ export default function ThreeScene() {
     // Start the camera offset along +Z so the sphere (at origin) is centered in view
     camera.position.set(0, 0, 10);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        rendererRef.current = renderer;
+  const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvasRef.current || undefined });
+  rendererRef.current = renderer;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.NoToneMapping;
         renderer.setClearColor(0x000000, 1); // Set background to black
@@ -352,17 +400,15 @@ export default function ThreeScene() {
   camera.aspect = initialWidth / initialHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(initialWidth, initialHeight, false);
-        if (containerRef.current) {
-          containerRef.current.appendChild(renderer.domElement);
-          // avoid the browser's default touch gestures interfering with pointer events
-          renderer.domElement.style.touchAction = 'none';
-          // ensure the canvas exactly covers the container and has no extra offset
-          renderer.domElement.style.position = 'absolute';
-          renderer.domElement.style.top = '0';
-          renderer.domElement.style.left = '0';
-          renderer.domElement.style.width = '100%';
-          renderer.domElement.style.height = '100%';
-          renderer.domElement.style.display = 'block';
+        // If we have a React-managed canvas, the renderer will already use it.
+        // Fallback: append the renderer.domElement into the container if canvasRef isn't present.
+        if (!canvasRef.current) {
+          try {
+            if (containerRef.current) containerRef.current.appendChild(renderer.domElement);
+          } catch (e) {}
+        } else {
+          // ensure touchAction is disabled for the managed canvas
+          try { canvasRef.current.style.touchAction = 'none'; } catch (e) {}
         }
 
         // Ensure camera initially points at the scene origin (sphere center)
@@ -869,12 +915,13 @@ export default function ThreeScene() {
             // Use the same animation sequence for both iOS and desktop
             gsap.to(clickedSprite.material, {
               opacity: 0,
-              delay: 2,
+              delay: 0.5,
               duration: 0.5,
               ease: 'power1.in',
               onComplete: () => {
                 console.log('Navigation: Starting navigation for', slug);
-                cleanupThreeJS();
+                // Skip cleanup during navigation - let React handle unmounting naturally
+                // cleanupThreeJS();
 
                 if (slug && typeof slug === 'string' && slug.trim()) {
                   console.log('Navigation: Attempting router.push');
@@ -1021,6 +1068,13 @@ export default function ThreeScene() {
         }}
       >
   <div className="absolute top-0 left-0 w-full h-full" />
+        {/* React-managed canvas for Three.js to reduce direct DOM mutations */}
+        <canvas
+          ref={canvasRef}
+          className="three-scene-canvas"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
+          aria-hidden={true}
+        />
 
         {/* Loading overlay - very lightweight and throttled */}
         <div className={loadingDone ? `${styles.overlay} ${styles.hidden}` : styles.overlay} aria-hidden={loadingDone}>
