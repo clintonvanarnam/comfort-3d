@@ -14,6 +14,12 @@ export async function getPosts() {
         _id,
         url
       }
+    },
+    thumbnail {
+      asset->{
+        _id,
+        url
+      }
     }
   }`;
 
@@ -27,7 +33,8 @@ export async function getPosts() {
       _id: post._id,
       title: post.title || '',
       slug: post.slug?.current || (typeof post.slug === 'string' ? post.slug : ''),
-      image: post.mainImage ? getOptimizedImageUrl(post.mainImage, 500) : '',
+      image: post.thumbnail ? getOptimizedImageUrl(post.thumbnail, 800) : (post.mainImage ? getOptimizedImageUrl(post.mainImage, 500) : ''), // Use thumbnail for 3D sprites, fallback to mainImage
+      mainImage: post.mainImage ? getOptimizedImageUrl(post.mainImage, 500) : '', // Keep mainImage for other uses
       author: post.author?.name || '',
     }));
 

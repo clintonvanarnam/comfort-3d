@@ -80,7 +80,7 @@ export default function ThreeScene() {
 
   // Texture optimization function for performance
   const optimizeTexture = (texture) => {
-    // Images are already downsized by Sanity to max 500px, but we still need these optimizations:
+    // Images are now using thumbnails (800px) for sprites - no further downsizing needed
     
     // Enable mipmapping for better performance at distance
     texture.generateMipmaps = true;
@@ -225,7 +225,7 @@ export default function ThreeScene() {
         const loadTexturePromise = (url) => new Promise((resolve, reject) => {
           console.time(`Preload texture: ${url}`);
           try {
-            // Images are pre-optimized by Sanity to max 500px
+            // Images are now using thumbnails (800px) for better quality while maintaining performance
             loader.load(url, (tex) => {
               console.timeEnd(`Preload texture: ${url}`);
               // Apply Three.js optimizations for better performance
@@ -529,7 +529,7 @@ export default function ThreeScene() {
         if (preTex) {
           onTexture(preTex, true);
         } else {
-          // Images are pre-optimized by Sanity to max 500px
+          // Images are now using thumbnails (800px) for better quality while maintaining performance
           // Use the post.image URL as the identity for progress tracking
           const imgUrl = post.image;
           console.time(`Load texture: ${imgUrl}`);

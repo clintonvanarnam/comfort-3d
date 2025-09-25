@@ -34,6 +34,15 @@ export default defineType({
       },
     }),
     defineField({
+      name: 'thumbnail',
+      title: 'Thumbnail (for 3D sprites - smaller image)',
+      type: 'image',
+      description: 'Upload a high-quality image (around 800px) for use in the 3D scene sprites',
+      options: {
+        hotspot: true,
+      },
+    }),
+    defineField({
       name: 'categories',
       title: 'Categories',
       type: 'array',
