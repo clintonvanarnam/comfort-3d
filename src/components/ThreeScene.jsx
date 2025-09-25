@@ -331,7 +331,7 @@ export default function ThreeScene() {
         // Respect devicePixelRatio for crisper rendering but clamp for perf.
         // Lower the cap on low-memory or slow-network devices to reduce CPU/GPU work.
         const dpr = window.devicePixelRatio || 1;
-        let dprCap = 1; // Reduced from 2 to lower memory footprint
+        let dprCap = 2; // Increased from 1 since we're using smaller 800px textures
         try {
           const nav = navigator;
           const connection = nav && nav.connection;
@@ -443,12 +443,12 @@ export default function ThreeScene() {
           try {
             const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 1 });
             const sprite = new THREE.Sprite(material);
-          const baseHeight = 1.5;
+          const baseHeight = 2.0; // Increased since we're using smaller 800px textures
           const imageAspect = texture.image.width / texture.image.height;
           
-          // Cap maximum sprite dimensions to prevent performance issues with extreme aspect ratios
-          const maxSpriteWidth = 2.0; // Maximum width in 3D units (reduced from 3.0)
-          const maxSpriteHeight = 1.5; // Maximum height in 3D units (reduced from 2.0)
+          // Relaxed sprite dimension caps since textures are now smaller (800px vs 500px+)
+          const maxSpriteWidth = 3.0; // Increased from 2.0
+          const maxSpriteHeight = 2.0; // Increased from 1.5
           
           let width = baseHeight * imageAspect;
           let height = baseHeight;
