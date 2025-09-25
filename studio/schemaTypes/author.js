@@ -26,11 +26,6 @@ export default defineType({
       options: {
         hotspot: true,
       },
-      validation: Rule => Rule.custom((value) => {
-        if (!value || !value.asset) return true;
-        const fileSizeInMB = value.asset.size / (1024 * 1024);
-        return fileSizeInMB <= 2 ? true : 'File size must be less than 2MB';
-      }),
     }),
     defineField({
       name: 'bio',

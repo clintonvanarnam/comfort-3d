@@ -6,7 +6,6 @@ const client = createClient({
   dataset: 'production',       // ← your dataset
   apiVersion: '2023-01-01',    // use a fixed date
   useCdn: true,                // `false` if you want fresh data
-  token: process.env.SANITY_AUTH_TOKEN, // Add authentication token
 });
 
 export default client;

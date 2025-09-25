@@ -80,6 +80,8 @@ export default function ThreeScene() {
   const lastNavigationTime = useRef(0);
   const cleanupPerformedRef = useRef(false);
   const domRemovalObserverRef = useRef(null);
+  const tapCountRef = useRef(0);
+  const tapTimeoutRef = useRef(null);
 
   // Texture optimization function for performance
   const optimizeTexture = (texture) => {
@@ -180,6 +182,13 @@ export default function ThreeScene() {
       });
     } catch (e) {}
     listenersRef.current = [];
+
+    // Clear any pending tap timeout
+    if (tapTimeoutRef.current) {
+      clearTimeout(tapTimeoutRef.current);
+      tapTimeoutRef.current = null;
+    }
+
     console.log('Cleanup: Three.js cleanup complete');
     
     // Wait a bit to ensure cleanup is complete
@@ -783,10 +792,23 @@ export default function ThreeScene() {
               return;
             }
 
-            // short touch (no hold) counts as a click/tap regardless of tiny movement
-            lastInteractionTimeRef.current = Date.now();
-            updateMouseFromEvent(e);
-            handleInteraction();
+            // Handle double tap for mobile
+            tapCountRef.current += 1;
+            if (tapCountRef.current === 1) {
+              // First tap, start timeout for second tap
+              if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
+              tapTimeoutRef.current = setTimeout(() => {
+                tapCountRef.current = 0;
+              }, 300); // 300ms window for double tap
+            } else if (tapCountRef.current === 2) {
+              // Double tap detected
+              if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
+              tapCountRef.current = 0;
+              lastInteractionTimeRef.current = Date.now();
+              updateMouseFromEvent(e);
+              handleInteraction();
+            }
+
             touchMovedRef.current = false;
             isDraggingRef.current = false;
             return;
