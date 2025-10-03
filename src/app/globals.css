@@ -263,6 +263,12 @@ a {
   padding-top: 100%; /* 1:1 aspect ratio */
 }
 
+/* Underline product name when hovering over image */
+.shop-card-image:hover ~ .shop-card-content h3 a,
+.shop-card-img-wrap:hover ~ .shop-card-content h3 a {
+  text-decoration: underline;
+}
+
 .shop-card-img {
   position: absolute;
   top: 0;
