@@ -10,7 +10,7 @@ export default async function Page() {
   let products = [];
   try {
     // Fetch from a specific collection that store owners can manually sort in Shopify admin
-    const collectionHandle = process.env.SHOPIFY_COLLECTION_HANDLE || 'all';
+    const collectionHandle = process.env.SHOPIFY_COLLECTION_HANDLE || 'shop';
     
     const result = await fetchProducts({ first: 24, collectionHandle });
     // fetchProducts now returns { products, __errors }
