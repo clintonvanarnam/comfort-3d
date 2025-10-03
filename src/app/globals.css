@@ -499,6 +499,10 @@ body.three-scene-active {
   .product-image {
     grid-area: image;
   }
+  .product-controls {
+  
+    align-items: flex-start !important; /* left-align controls on smaller screens */
+  }
   .product-description, .product-controls {
     grid-area: content;
     display: flex;
@@ -515,14 +519,14 @@ body.three-scene-active {
     width: 100%;
     box-sizing: border-box;
   }
-  .product-image,
-  .product-controls,
+  .product-image {
+    order: 1 !important;
+  }
+  .product-controls {
+    order: 2 !important;
+  }
   .product-description {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    align-items: stretch !important;
-    justify-content: flex-start !important;
+    order: 3 !important;
   }
 }
 
