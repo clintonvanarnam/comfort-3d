@@ -82,6 +82,7 @@ export default function ThreeScene() {
   const domRemovalObserverRef = useRef(null);
   const tapCountRef = useRef(0);
   const tapTimeoutRef = useRef(null);
+  const ignorePointerEventsUntilRef = useRef(0);
 
   // Sound system
   const [soundEnabled, setSoundEnabled] = useState(false);
@@ -815,6 +816,8 @@ export default function ThreeScene() {
         }
 
         function onPointerMove(event) {
+          // Ignore pointer events for a short time after sound button interaction
+          if (Date.now() < ignorePointerEventsUntilRef.current) return;
           // Ignore hover interactions until the intro overlay has been dismissed
           if (!introCompleteRef.current) return;
           // always update mouse for accurate raycasting
@@ -915,6 +918,8 @@ export default function ThreeScene() {
         }
 
         function onPointerDown(e) {
+          // Ignore pointer events for a short time after sound button interaction
+          if (Date.now() < ignorePointerEventsUntilRef.current) return;
           // ensure mouse is up-to-date even if the user didn't move before tapping
           updateMouseFromEvent(e);
           if (e.pointerType === 'touch') {
@@ -943,6 +948,8 @@ export default function ThreeScene() {
         }
 
         function onPointerUp(e) {
+          // Ignore pointer events for a short time after sound button interaction
+          if (Date.now() < ignorePointerEventsUntilRef.current) return;
           // Cleanup hold timer if present
           if (touchHoldTimerRef.current) {
             clearTimeout(touchHoldTimerRef.current);
@@ -996,6 +1003,8 @@ export default function ThreeScene() {
         }
 
         function onPointerCancel(e) {
+          // Ignore pointer events for a short time after sound button interaction
+          if (Date.now() < ignorePointerEventsUntilRef.current) return;
           if (touchHoldTimerRef.current) {
             clearTimeout(touchHoldTimerRef.current);
             touchHoldTimerRef.current = null;
@@ -1332,6 +1341,8 @@ export default function ThreeScene() {
             clearTimeout(touchHoldTimerRef.current);
             touchHoldTimerRef.current = null;
           }
+          // Ignore pointer events for 500ms after sound button interaction
+          ignorePointerEventsUntilRef.current = Date.now() + 500;
           toggleSound();
         }}
         title={soundEnabled ? "Turn sound off" : "Turn sound on"}
