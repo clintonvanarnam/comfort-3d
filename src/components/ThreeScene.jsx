@@ -1313,11 +1313,7 @@ export default function ThreeScene() {
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: soundEnabled ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(6px)',
-          borderRadius: '4px',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          transition: 'all 0.3s ease',
+        
           textDecoration: soundEnabled ? 'underline' : 'none',
         }}
         onClick={() => {
