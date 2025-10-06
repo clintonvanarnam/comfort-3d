@@ -15,11 +15,12 @@
     "sanity"
   ],
   "dependencies": {
-    "@sanity/vision": "^4.10.0",
+    "@sanity/vision": "^4.10.2",
     "react": "^19.1",
     "react-dom": "^19.1",
-    "sanity": "^4.10.0",
-    "styled-components": "^6.1.18"
+    "sanity": "^4.10.2",
+    "styled-components": "^6.1.18",
+    "tone": "^15.1.22"
   },
   "devDependencies": {
     "@sanity/eslint-config-studio": "^5.0.2",

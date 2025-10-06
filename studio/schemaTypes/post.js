@@ -37,9 +37,34 @@ export default defineType({
       name: 'thumbnail',
       title: 'Thumbnail (for 3D sprites - smaller image)',
       type: 'image',
-      description: 'Upload a high-quality image (around 800px) for use in the 3D scene sprites',
+      description: 'Upload a high-quality image (around 800px) for use in the 3D scene sprites. Max 1MB file size.',
+      validation: Rule => Rule.custom(async (image, context) => {
+        if (!image || !image.asset) {
+          return true // Allow empty images and existing ones
+        }
+        
+        // For new uploads, get the asset document to check file size
+        try {
+          const {getClient} = context
+          const client = getClient({apiVersion: '2023-01-01'})
+          const asset = await client.getDocument(image.asset._ref)
+          
+          if (asset && asset.size) {
+            const fileSizeInMB = asset.size / (1024 * 1024)
+            if (fileSizeInMB > 1) {
+              return `Image file size is ${fileSizeInMB.toFixed(2)}MB. Thumbnail images must be smaller than 1MB for optimal 3D performance. Please compress the image and try again.`
+            }
+          }
+        } catch (error) {
+          // If we can't get the asset info, allow it (might be during upload)
+          return true
+        }
+        
+        return true
+      }),
       options: {
         hotspot: true,
+        accept: 'image/*',
       },
     }),
     defineField({
