@@ -1319,11 +1319,18 @@ export default function ThreeScene() {
         }}
         onClick={(e) => {
           e.stopPropagation();
-          // Reset tap state to prevent interference with sprite double-tap logic
+          // Reset all touch/pointer state to prevent interference with sprite interactions
           tapCountRef.current = 0;
           if (tapTimeoutRef.current) {
             clearTimeout(tapTimeoutRef.current);
             tapTimeoutRef.current = null;
+          }
+          touchMovedRef.current = false;
+          touchHoldActiveRef.current = false;
+          isDraggingRef.current = false;
+          if (touchHoldTimerRef.current) {
+            clearTimeout(touchHoldTimerRef.current);
+            touchHoldTimerRef.current = null;
           }
           toggleSound();
         }}
