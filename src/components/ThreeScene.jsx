@@ -1319,6 +1319,12 @@ export default function ThreeScene() {
         }}
         onClick={(e) => {
           e.stopPropagation();
+          // Reset tap state to prevent interference with sprite double-tap logic
+          tapCountRef.current = 0;
+          if (tapTimeoutRef.current) {
+            clearTimeout(tapTimeoutRef.current);
+            tapTimeoutRef.current = null;
+          }
           toggleSound();
         }}
         title={soundEnabled ? "Turn sound off" : "Turn sound on"}
