@@ -1,0 +1,79 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0);
+  color: #fff;
+  z-index: 60;
+  pointer-events: none; /* allow clicks to pass through when hidden */
+}
+
+.loaderBox {
+  width: min(420px, 80%);
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 30px rgba(0,0,0,0.6);
+  text-align: center;
+  pointer-events: auto; /* allow interactions while visible if desired */
+}
+
+.progressOuter {
+  height: 8px;
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.progressInner {
+  height: 100%;
+  background: white;
+  width: 0%;
+  transition: width 220ms linear;
+}
+
+.logo {
+  width: 120px;
+  height: auto;
+  margin-bottom: 16px;
+}
+
+.hoverInfo {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: white;
+  font-family: var(--font-monument);
+  pointer-events: none;
+  z-index: 50;
+}
+
+.hoverTitle {
+  font-size: 0.9rem;
+  font-weight: 400;
+  margin-bottom: 0px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.hoverAuthor {
+  font-size: 0.9rem;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+.progressText {
+  font-size: 13px;
+  opacity: 0.95;
+}
+
+.hidden {
+  display: none;
+}
