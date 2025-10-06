@@ -123,14 +123,11 @@ export default function ThreeScene() {
   const cleanupThreeJS = async (isUnmounting = false, forceDispose = false) => {
     // Prevent multiple cleanups
     if (cleanupPerformedRef.current) {
-      console.log('Cleanup: Already performed, skipping');
       return;
     }
 
     // Detect iOS for more conservative cleanup
     const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-    console.log('Cleanup: Starting Three.js cleanup, isIOS:', isIOS, 'isUnmounting:', isUnmounting);
 
     cleanupPerformedRef.current = true;
 
@@ -145,7 +142,6 @@ export default function ThreeScene() {
     // On iOS, be conservative by default to avoid context loss issues, but allow
     // a forced disposal when navigation requires releasing memory (forceDispose)
     if (isIOS && !forceDispose) {
-      console.log('Cleanup: iOS - stopping animation only, no disposal');
       // Just stop the animation loop, let WebGL context die naturally with page unload
       await new Promise(resolve => setTimeout(resolve, 100));
       return;
@@ -153,21 +149,19 @@ export default function ThreeScene() {
 
     if (rendererRef.current) {
       try {
-        console.log('Cleanup: Disposing renderer without DOM manipulation');
         // Skip canvas removal - let React handle DOM cleanup to prevent race conditions
         // Attempt to lose the context to free GPU memory
         if (rendererRef.current.forceContextLoss) {
-          try { rendererRef.current.forceContextLoss(); console.log('Cleanup: Forced context loss attempted'); } catch (e) {}
+          try { rendererRef.current.forceContextLoss(); } catch (e) {}
         }
         rendererRef.current.dispose();
       } catch (e) {
-        console.warn('Cleanup: Error disposing renderer', e);
+        // Error disposing renderer
       }
       rendererRef.current = null;
     }
 
     if (sceneRef.current) {
-      console.log('Cleanup: Disposing scene resources');
       // Dispose geometries and materials and textures
       sceneRef.current.traverse((object) => {
         try {
@@ -207,8 +201,6 @@ export default function ThreeScene() {
     // Clean up audio
     cleanupAudio();
 
-    console.log('Cleanup: Three.js cleanup complete');
-    
     // Wait a bit to ensure cleanup is complete
     await new Promise(resolve => setTimeout(resolve, 50));
   };
@@ -218,14 +210,11 @@ export default function ThreeScene() {
     if (audioInitializedRef.current) return;
     
     try {
-      console.log('Initializing audio...');
-      
       // Dynamically import Tone.js only when needed
       const Tone = await import('tone');
       
       // Start Tone.js audio context (requires user interaction)
       await Tone.start();
-      console.log('Tone.js started, context state:', Tone.context.state);
       
       // Create a reverb effect
       reverbRef.current = new Tone.Reverb({
@@ -249,23 +238,19 @@ export default function ThreeScene() {
       }).connect(reverbRef.current);
 
       audioInitializedRef.current = true;
-      console.log('Audio initialized successfully');
     } catch (error) {
-      console.warn('Failed to initialize audio:', error);
+      // Failed to initialize audio
       throw error;
     }
   };
 
   const playNote = (noteIndex = null) => {
-    console.log('playNote called:', { soundEnabled, synthRef: !!synthRef.current, noteIndex });
     
     if (!soundEnabled) {
-      console.log('Sound is disabled, not playing note');
       return;
     }
     
     if (!synthRef.current) {
-      console.log('No synth available, not playing note');
       return;
     }
     
@@ -274,13 +259,10 @@ export default function ThreeScene() {
       const index = noteIndex !== null ? noteIndex : Math.floor(Math.random() * pentatonicScale.length);
       const note = pentatonicScale[index % pentatonicScale.length];
       
-      console.log('Playing note:', note, 'at index:', index);
-      
       // Play the note with a short duration
       synthRef.current.triggerAttackRelease(note, '8n');
-      console.log('Note triggered successfully');
     } catch (error) {
-      console.warn('Failed to play note:', error);
+      // Failed to play note
     }
   };
 
@@ -295,32 +277,28 @@ export default function ThreeScene() {
         // Play a random note from the pentatonic scale
         const randomIndex = Math.floor(Math.random() * pentatonicScale.length);
         const note = pentatonicScale[randomIndex];
-        console.log('Playing mobile interaction note:', note);
         synthRef.current.triggerAttackRelease(note, '0.08'); // Shorter duration for mobile
         lastMobileSoundTimeRef.current = now;
       } catch (error) {
-        console.warn('Failed to play mobile interaction note:', error);
+        // Failed to play mobile interaction note
       }
     }
   };
 
   const toggleSound = async () => {
-    console.log('Sound toggle clicked, current state:', soundEnabled);
     
     if (!soundEnabled) {
       try {
         // Initialize audio when first enabling
         await initializeAudio();
         setSoundEnabled(true);
-        console.log('Sound enabled');
         // Play a welcome note
         setTimeout(() => playNote(0), 100);
       } catch (error) {
-        console.error('Failed to enable sound:', error);
+        // Failed to enable sound
       }
     } else {
       setSoundEnabled(false);
-      console.log('Sound disabled');
     }
   };
 
@@ -336,7 +314,7 @@ export default function ThreeScene() {
       }
       audioInitializedRef.current = false;
     } catch (error) {
-      console.warn('Audio cleanup error:', error);
+      // Audio cleanup error
     }
   };
 
@@ -399,7 +377,7 @@ export default function ThreeScene() {
                       // Capture a stack to help identify the removal caller
                       const stack = (new Error('DOM removal trace')).stack;
                       try {
-                        console.warn('[DOM-REMOVAL-DEBUG] removed node:', n, 'selector:', n.id ? `#${n.id}` : (n.className ? `.${n.className}` : n.nodeName), '\nstack:', stack);
+                        // [DOM-REMOVAL-DEBUG] removed node
                       } catch (e) {
                         // ignore logging errors
                       }
@@ -412,7 +390,7 @@ export default function ThreeScene() {
           try {
             obs.observe(document, { childList: true, subtree: true });
             domRemovalObserverRef.current = obs;
-            console.log('[DOM-REMOVAL-DEBUG] observer installed');
+            // [DOM-REMOVAL-DEBUG] observer installed
           } catch (e) {
             // ignore observer install errors
           }
@@ -423,7 +401,6 @@ export default function ThreeScene() {
     (async function preload() {
       if (preloadStartedRef.current) return;
       preloadStartedRef.current = true;
-      console.time('Preload textures');
       try {
         const posts = await getPosts();
         preloadedPostsRef.current = posts;
@@ -442,11 +419,9 @@ export default function ThreeScene() {
         let idx = 0;
 
         const loadTexturePromise = (url) => new Promise((resolve, reject) => {
-          console.time(`Preload texture: ${url}`);
           try {
             // Images are now using thumbnails (800px) for better quality while maintaining performance
             loader.load(url, (tex) => {
-              console.timeEnd(`Preload texture: ${url}`);
               // Apply Three.js optimizations for better performance
               optimizeTexture(tex);
               resolve(tex);
@@ -472,10 +447,9 @@ export default function ThreeScene() {
 
         await Promise.all(Array.from({ length: Math.min(maxConcurrent, items.length) }, () => worker()));
         preloadedDoneRef.current = true;
-        console.timeEnd('Preload textures');
+        // Preload textures completed
       } catch (e) {
-        console.warn('Preload failed', e);
-        console.timeEnd('Preload textures');
+        // Preload failed
         preloadedDoneRef.current = true;
       }
     })();
@@ -489,7 +463,7 @@ export default function ThreeScene() {
         if (domRemovalObserverRef.current) {
           try { domRemovalObserverRef.current.disconnect(); } catch (e) {}
           domRemovalObserverRef.current = null;
-          console.log('[DOM-REMOVAL-DEBUG] observer disconnected');
+          // [DOM-REMOVAL-DEBUG] observer disconnected
         }
       } catch (e) {}
     };
@@ -506,7 +480,6 @@ export default function ThreeScene() {
 
     // Prevent rapid remounting that can cause WebGL conflicts
     if (isInitializingRef.current) {
-      console.log('ThreeScene: Already initializing, skipping...');
       return;
     }
     isInitializingRef.current = true;
@@ -632,11 +605,8 @@ export default function ThreeScene() {
   }
 
   (function createSpritesInBatches() {
-    console.time('Create sprites in batches');
     // Check if component is still valid before starting sprite creation
     if (!rendererRef.current || !sceneRef.current) {
-      console.log('Skipping sprite batch creation - WebGL context not ready');
-      console.timeEnd('Create sprites in batches');
       return;
     }
 
@@ -655,7 +625,7 @@ export default function ThreeScene() {
 
     const processBatch = () => {
       const end = Math.min(i + batchSize, total);
-      console.log(`Processing sprite batch ${i + 1}-${end} of ${total}`);
+      // Processing sprite batch ${i + 1}-${end} of ${total}
       for (let idx = i; idx < end; idx++) {
   const post = placementPosts[idx];
         if (!post || !post.image) continue;
@@ -664,7 +634,12 @@ export default function ThreeScene() {
   const onTexture = (texture, wasPreloaded = false) => {
           // Check if renderer is still valid before creating WebGL resources
           if (!rendererRef.current || !sceneRef.current) {
-            console.log('Skipping sprite creation - WebGL context not ready');
+            return;
+          }
+
+          // Safety check: ensure texture is valid and loaded
+          if (!texture || !texture.image) {
+            // Skipping sprite creation - invalid texture
             return;
           }
 
@@ -750,7 +725,7 @@ export default function ThreeScene() {
             // ignore progress tracking errors
           }
           } catch (error) {
-            console.warn('Error creating sprite:', error);
+            // Error creating sprite
           }
         };
 
@@ -760,16 +735,12 @@ export default function ThreeScene() {
           // Images are now using thumbnails (800px) for better quality while maintaining performance
           // Use the post.image URL as the identity for progress tracking
           const imgUrl = post.image;
-          console.time(`Load texture: ${imgUrl}`);
           loader.load(imgUrl, (texture) => {
-            console.timeEnd(`Load texture: ${imgUrl}`);
             // Apply Three.js optimizations for better performance
             optimizeTexture(texture);
             onTexture(texture, false);
           }, undefined, (err) => {
-            console.timeEnd(`Load texture: ${imgUrl}`);
             // on error, still mark URL as loaded so loader doesn't hang
-            console.warn('Texture load failed for', imgUrl, err);
             try {
               if (imgUrl && !loadedUrls.has(imgUrl)) {
                 loadedUrls.add(imgUrl);
@@ -788,7 +759,7 @@ export default function ThreeScene() {
     };
 
     processBatch();
-    console.timeEnd('Create sprites in batches');
+    // Create sprites in batches completed
   })();
 
   // After all sprites have been added, run a quick two-phase staggered entrance
@@ -898,12 +869,11 @@ export default function ThreeScene() {
             const hovered = intersects[0].object;
             const currentTitle = hovered.userData.title;
             
-            console.log('Hover detected:', currentTitle, 'Last hovered:', lastHoveredTitleRef.current);
+            // Hover detected
             
             // Play a subtle hover sound only if this is a new hover
             if (lastHoveredTitleRef.current !== currentTitle) {
-              console.log('New hover detected, attempting to play sound:', currentTitle);
-              console.log('Current sound state - enabled:', soundEnabledRef.current, 'synth:', !!synthRef.current);
+              // New hover detected, attempting to play sound
               
               // Update the ref immediately to prevent multiple plays
               lastHoveredTitleRef.current = currentTitle;
@@ -914,16 +884,16 @@ export default function ThreeScene() {
                   // Play a random note from the pentatonic minor scale
                   const randomIndex = Math.floor(Math.random() * pentatonicScale.length);
                   const note = pentatonicScale[randomIndex];
-                  console.log('Playing hover note:', note);
+                  // Playing hover note
                   synthRef.current.triggerAttackRelease(note, '0.1');
                 } catch (error) {
-                  console.warn('Failed to play hover note:', error);
+                  // Failed to play hover note
                 }
               } else {
-                console.log('Sound disabled or no synth, skipping hover sound');
+                // Sound disabled or no synth, skipping hover sound
               }
             } else {
-              console.log('Same sprite hovered, not playing sound again');
+              // Same sprite hovered, not playing sound again
             }
             
             setHoveredInfo({ title: hovered.userData.title, author: hovered.userData.author });
@@ -1076,7 +1046,7 @@ export default function ThreeScene() {
           const now = Date.now();
           const timeSinceLastNav = now - lastNavigationTime.current;
           if (timeSinceLastNav < 2000) {
-            console.log('Sprite navigation blocked - too soon since last navigation');
+            // Sprite navigation blocked - too soon since last navigation
             return;
           }
 
@@ -1158,18 +1128,18 @@ export default function ThreeScene() {
                 duration: 0.5,
                 ease: 'power1.in',
                 onComplete: () => {
-                  console.log('Navigation: Starting navigation for', slug);
+                  // Navigation: Starting navigation for ${slug}
                   
                   if (slug && typeof slug === 'string' && slug.trim()) {
-                    console.log('Navigation: Attempting router.push');
+                    // Navigation: Attempting router.push
                     try {
                       router.push(`/posts/${slug}`);
                     } catch (error) {
-                      console.error('Router push failed, trying location.assign', error);
+                      // Router push failed, trying location.assign
                       window.location.assign(`/posts/${slug}`);
                     }
                   } else {
-                    console.warn('Invalid slug for navigation', slug);
+                    // Invalid slug for navigation
                   }
                 },
               });
@@ -1177,10 +1147,10 @@ export default function ThreeScene() {
 
             // If speech synthesis is happening, wait for it to finish before fading
             if (soundEnabledRef.current && !speechFinished) {
-              console.log('Keeping sprite visible during speech...');
+              // Keeping sprite visible during speech...
               const checkSpeechFinished = () => {
                 if (speechFinished) {
-                  console.log('Speech finished, starting fade and navigation');
+                  // Speech finished, starting fade and navigation
                   performFadeAndNavigate();
                 } else {
                   // Check again after a short delay
@@ -1254,7 +1224,10 @@ export default function ThreeScene() {
             const distance = cameraPosition.distanceTo(sprite.position);
             
             // Unload textures for distant sprites to save GPU memory
+            // TEMPORARILY DISABLED to debug white rectangle issue
+            /*
             if (distance > unloadDistance && !sprite.userData.preloaded && sprite.material.map) {
+              // Unloading texture for distant sprite
               // Store reference to reload later if needed
               if (!sprite.userData.textureUrl) {
                 sprite.userData.textureUrl = sprite.userData.imageUrl;
@@ -1264,8 +1237,11 @@ export default function ThreeScene() {
               sprite.material.map = null;
               sprite.material.needsUpdate = true;
             }
+            */
             
             // Reload texture if sprite comes close again
+            // TEMPORARILY DISABLED to debug white rectangle issue
+            /*
             if (distance < unloadDistance * 0.8 && !sprite.material.map && sprite.userData.textureUrl) {
               // Reload texture for non-preloaded sprites that came back into view
               const loader = new THREE.TextureLoader();
@@ -1277,6 +1253,7 @@ export default function ThreeScene() {
                 }
               });
             }
+            */
           });
 
           // rotate sphere group based on rotation target (drag to rotate) with a light auto-rotate
@@ -1308,14 +1285,11 @@ export default function ThreeScene() {
 
   if (!mounted) return null;
 
-  console.log('ThreeScene render:', { soundEnabled, audioInitialized: audioInitializedRef.current });
-
   return (
     <>
       <NavBar />
-      {console.log('Rendering sound button...')}
 
-      {/* Sound toggle button - simplified like the working test button */}
+      {/* Sound toggle button - typography matching SHOP and ABOUT */}
       <div 
         style={{
           position: 'absolute',
@@ -1330,27 +1304,28 @@ export default function ThreeScene() {
             bottom: 'auto'
           }),
           zIndex: 9999999999,
-          width: '48px',
-          height: '48px',
-          borderRadius: '50%',
-          backgroundColor: soundEnabled ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(6px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          color: 'white',
-          display: 'flex',
+          color: '#fff',
+          fontFamily: 'var(--font-monument)',
+          fontWeight: 700,
+          fontSize: '0.9rem',
+          cursor: 'pointer',
+          padding: '0.5rem 1rem',
+          display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          cursor: 'pointer',
-          fontSize: '18px',
-          transition: 'all 0.3s ease'
+          backgroundColor: soundEnabled ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(6px)',
+          borderRadius: '4px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          transition: 'all 0.3s ease',
+          textDecoration: soundEnabled ? 'underline' : 'none',
         }}
         onClick={() => {
-          console.log('Sound div button clicked!', { soundEnabled });
           toggleSound();
         }}
         title={soundEnabled ? "Turn sound off" : "Turn sound on"}
       >
-        {soundEnabled ? '🔊' : '🔇'}
+        {soundEnabled ? 'SOUND ON' : 'SOUND OFF'}
       </div>
 
       {/* Canvas container - always mounted so scene can initialize and load assets */}
