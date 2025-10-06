@@ -1297,11 +1297,13 @@ export default function ThreeScene() {
           ...(windowWidth <= 768 ? {
             bottom: '1rem',
             left: '1rem',
-            top: 'auto'
+            top: 'auto',
+            padding: '0.25rem 0'
           } : {
             top: '1rem',
             left: '1rem',
-            bottom: 'auto'
+            bottom: 'auto',
+            padding: '0.5rem 1rem'
           }),
           zIndex: 9999999999,
           color: '#fff',
@@ -1309,14 +1311,14 @@ export default function ThreeScene() {
           fontWeight: 700,
           fontSize: '0.9rem',
           cursor: 'pointer',
-          padding: '0.5rem 1rem',
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
         
           textDecoration: soundEnabled ? 'underline' : 'none',
         }}
-        onClick={() => {
+        onClick={(e) => {
+          e.stopPropagation();
           toggleSound();
         }}
         title={soundEnabled ? "Turn sound off" : "Turn sound on"}
