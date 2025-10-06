@@ -83,6 +83,21 @@ export default function ThreeScene() {
   const tapCountRef = useRef(0);
   const tapTimeoutRef = useRef(null);
 
+  // Sound system
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const synthRef = useRef(null);
+  const reverbRef = useRef(null);
+  const audioInitializedRef = useRef(false);
+  const soundEnabledRef = useRef(false);
+  const lastHoveredTitleRef = useRef(null);
+  const lastMobileSoundTimeRef = useRef(0);
+
+  // Window size tracking for responsive button positioning
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+  // Pentatonic minor scale notes (A minor pentatonic across 2 octaves)
+  const pentatonicScale = ['A3', 'C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5'];
+
   // Texture optimization function for performance
   const optimizeTexture = (texture) => {
     // Images are now using thumbnails (800px) for sprites - no further downsizing needed
@@ -189,10 +204,140 @@ export default function ThreeScene() {
       tapTimeoutRef.current = null;
     }
 
+    // Clean up audio
+    cleanupAudio();
+
     console.log('Cleanup: Three.js cleanup complete');
     
     // Wait a bit to ensure cleanup is complete
     await new Promise(resolve => setTimeout(resolve, 50));
+  };
+
+  // Audio functions
+  const initializeAudio = async () => {
+    if (audioInitializedRef.current) return;
+    
+    try {
+      console.log('Initializing audio...');
+      
+      // Dynamically import Tone.js only when needed
+      const Tone = await import('tone');
+      
+      // Start Tone.js audio context (requires user interaction)
+      await Tone.start();
+      console.log('Tone.js started, context state:', Tone.context.state);
+      
+      // Create a reverb effect
+      reverbRef.current = new Tone.Reverb({
+        decay: 5.5,
+        wet: 0.7,
+        preDelay: 0.1
+      }).toDestination();
+      
+      // Create a simple synth connected to reverb
+      synthRef.current = new Tone.Synth({
+        oscillator: {
+          type: 'sine'
+        },
+        envelope: {
+          attack: 0.2,
+          decay: 0.3,
+          sustain: 0.4,
+          release: 0.9
+        },
+        volume: -4 // Make it quieter
+      }).connect(reverbRef.current);
+
+      audioInitializedRef.current = true;
+      console.log('Audio initialized successfully');
+    } catch (error) {
+      console.warn('Failed to initialize audio:', error);
+      throw error;
+    }
+  };
+
+  const playNote = (noteIndex = null) => {
+    console.log('playNote called:', { soundEnabled, synthRef: !!synthRef.current, noteIndex });
+    
+    if (!soundEnabled) {
+      console.log('Sound is disabled, not playing note');
+      return;
+    }
+    
+    if (!synthRef.current) {
+      console.log('No synth available, not playing note');
+      return;
+    }
+    
+    try {
+      // If no specific note provided, pick a random one from pentatonic scale
+      const index = noteIndex !== null ? noteIndex : Math.floor(Math.random() * pentatonicScale.length);
+      const note = pentatonicScale[index % pentatonicScale.length];
+      
+      console.log('Playing note:', note, 'at index:', index);
+      
+      // Play the note with a short duration
+      synthRef.current.triggerAttackRelease(note, '8n');
+      console.log('Note triggered successfully');
+    } catch (error) {
+      console.warn('Failed to play note:', error);
+    }
+  };
+
+  // Play random sound during mobile interactions (throttled)
+  const playMobileInteractionSound = () => {
+    const now = Date.now();
+    // Throttle mobile sounds to every 300ms to avoid overwhelming audio
+    if (now - lastMobileSoundTimeRef.current < 300) return;
+    
+    if (soundEnabledRef.current && synthRef.current) {
+      try {
+        // Play a random note from the pentatonic scale
+        const randomIndex = Math.floor(Math.random() * pentatonicScale.length);
+        const note = pentatonicScale[randomIndex];
+        console.log('Playing mobile interaction note:', note);
+        synthRef.current.triggerAttackRelease(note, '0.08'); // Shorter duration for mobile
+        lastMobileSoundTimeRef.current = now;
+      } catch (error) {
+        console.warn('Failed to play mobile interaction note:', error);
+      }
+    }
+  };
+
+  const toggleSound = async () => {
+    console.log('Sound toggle clicked, current state:', soundEnabled);
+    
+    if (!soundEnabled) {
+      try {
+        // Initialize audio when first enabling
+        await initializeAudio();
+        setSoundEnabled(true);
+        console.log('Sound enabled');
+        // Play a welcome note
+        setTimeout(() => playNote(0), 100);
+      } catch (error) {
+        console.error('Failed to enable sound:', error);
+      }
+    } else {
+      setSoundEnabled(false);
+      console.log('Sound disabled');
+    }
+  };
+
+  const cleanupAudio = () => {
+    try {
+      if (synthRef.current) {
+        synthRef.current.dispose();
+        synthRef.current = null;
+      }
+      if (reverbRef.current) {
+        reverbRef.current.dispose();
+        reverbRef.current = null;
+      }
+      audioInitializedRef.current = false;
+    } catch (error) {
+      console.warn('Audio cleanup error:', error);
+    }
   };
 
   useEffect(() => {
@@ -200,6 +345,32 @@ export default function ThreeScene() {
     // whether the intro overlay has been dismissed without stale closures
     introCompleteRef.current = introComplete;
   }, [introComplete]);
+
+  useEffect(() => {
+    // Keep soundEnabledRef in sync with soundEnabled state to avoid stale closures
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    // Handle window resize for responsive button positioning with debouncing
+    let resizeTimeout;
+    const handleResize = () => {
+      // Clear previous timeout
+      clearTimeout(resizeTimeout);
+      // Set new timeout to debounce the resize event
+      resizeTimeout = setTimeout(() => {
+        setWindowWidth(window.innerWidth);
+      }, 100); // 100ms debounce
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    // Cleanup listener and timeout on unmount
+    return () => {
+      clearTimeout(resizeTimeout);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   useEffect(() => {
   // Only update hoveredInfo UI, do not play speech on hover
@@ -311,6 +482,8 @@ export default function ThreeScene() {
 
     return () => {
       if (typeof document !== 'undefined') document.body.classList.remove('three-scene-active');
+      // Clean up audio resources
+      cleanupAudio();
       // disconnect the dev MutationObserver if present
       try {
         if (domRemovalObserverRef.current) {
@@ -378,7 +551,7 @@ export default function ThreeScene() {
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     cameraRef.current = camera;
     // Start the camera offset along +Z so the sphere (at origin) is centered in view
-    camera.position.set(0, 0, 10);
+    camera.position.set(0, 0, 100);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvasRef.current || undefined });
   rendererRef.current = renderer;
@@ -693,6 +866,9 @@ export default function ThreeScene() {
               sphereRotationTargetRef.current.x += dy * touchXFactor;
               lastPointerRef.current.x = event.clientX;
               lastPointerRef.current.y = event.clientY;
+              
+              // Play random sound during mobile drag interaction
+              playMobileInteractionSound();
             }
 
             // do not run hover raycasting for touch pointers (prevents hover jitter)
@@ -720,6 +896,36 @@ export default function ThreeScene() {
 
           if (intersects.length > 0) {
             const hovered = intersects[0].object;
+            const currentTitle = hovered.userData.title;
+            
+            console.log('Hover detected:', currentTitle, 'Last hovered:', lastHoveredTitleRef.current);
+            
+            // Play a subtle hover sound only if this is a new hover
+            if (lastHoveredTitleRef.current !== currentTitle) {
+              console.log('New hover detected, attempting to play sound:', currentTitle);
+              console.log('Current sound state - enabled:', soundEnabledRef.current, 'synth:', !!synthRef.current);
+              
+              // Update the ref immediately to prevent multiple plays
+              lastHoveredTitleRef.current = currentTitle;
+              
+              // Check sound state using ref to avoid stale closure
+              if (soundEnabledRef.current && synthRef.current) {
+                try {
+                  // Play a random note from the pentatonic minor scale
+                  const randomIndex = Math.floor(Math.random() * pentatonicScale.length);
+                  const note = pentatonicScale[randomIndex];
+                  console.log('Playing hover note:', note);
+                  synthRef.current.triggerAttackRelease(note, '0.1');
+                } catch (error) {
+                  console.warn('Failed to play hover note:', error);
+                }
+              } else {
+                console.log('Sound disabled or no synth, skipping hover sound');
+              }
+            } else {
+              console.log('Same sprite hovered, not playing sound again');
+            }
+            
             setHoveredInfo({ title: hovered.userData.title, author: hovered.userData.author });
             if (!hovered.userData.preloaded) {
               // prefetch the route (Next) and warm the HTTP cache for the full image
@@ -733,6 +939,7 @@ export default function ThreeScene() {
               hovered.userData.preloaded = true;
             }
           } else {
+            lastHoveredTitleRef.current = null;
             setHoveredInfo(null);
           }
         }
@@ -903,8 +1110,9 @@ export default function ThreeScene() {
             // disable hover-based speech after a user click
             hoverEnabledRef.current = false;
 
-            // speak the title and author once on click
-            if (typeof window !== 'undefined' && window.speechSynthesis && window.SpeechSynthesisUtterance) {
+            // speak the title and author once on click (only if sound is enabled)
+            let speechFinished = false;
+            if (soundEnabledRef.current && typeof window !== 'undefined' && window.speechSynthesis && window.SpeechSynthesisUtterance) {
               window.speechSynthesis.cancel();
               const utt = new window.SpeechSynthesisUtterance();
               utt.text = clickedSprite.userData.author
@@ -912,7 +1120,16 @@ export default function ThreeScene() {
                 : clickedSprite.userData.title;
               utt.rate = 1.05;
               utt.pitch = 1.1;
+              
+              // Set up event listener to know when speech is finished
+              utt.onend = () => {
+                speechFinished = true;
+              };
+              
               window.speechSynthesis.speak(utt);
+            } else {
+              // If no speech, mark as finished immediately
+              speechFinished = true;
             }
 
             sprites.forEach(sprite => sprite.userData.floating = false);
@@ -934,30 +1151,47 @@ export default function ThreeScene() {
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
             lastNavigationTime.current = Date.now();
 
-            // Use the same animation sequence for both iOS and desktop
-            gsap.to(clickedSprite.material, {
-              opacity: 0,
-              delay: 0.5,
-              duration: 0.5,
-              ease: 'power1.in',
-              onComplete: () => {
-                console.log('Navigation: Starting navigation for', slug);
-                // Skip cleanup during navigation - let React handle unmounting naturally
-                // cleanupThreeJS();
-
-                if (slug && typeof slug === 'string' && slug.trim()) {
-                  console.log('Navigation: Attempting router.push');
+            // Function to handle the final fade-out and navigation
+            const performFadeAndNavigate = () => {
+              gsap.to(clickedSprite.material, {
+                opacity: 0,
+                duration: 0.5,
+                ease: 'power1.in',
+                onComplete: () => {
+                  console.log('Navigation: Starting navigation for', slug);
+                  
+                  if (slug && typeof slug === 'string' && slug.trim()) {
+                    console.log('Navigation: Attempting router.push');
                     try {
                       router.push(`/posts/${slug}`);
                     } catch (error) {
                       console.error('Router push failed, trying location.assign', error);
                       window.location.assign(`/posts/${slug}`);
                     }
+                  } else {
+                    console.warn('Invalid slug for navigation', slug);
+                  }
+                },
+              });
+            };
+
+            // If speech synthesis is happening, wait for it to finish before fading
+            if (soundEnabledRef.current && !speechFinished) {
+              console.log('Keeping sprite visible during speech...');
+              const checkSpeechFinished = () => {
+                if (speechFinished) {
+                  console.log('Speech finished, starting fade and navigation');
+                  performFadeAndNavigate();
                 } else {
-                  console.warn('Invalid slug for navigation', slug);
+                  // Check again after a short delay
+                  setTimeout(checkSpeechFinished, 100);
                 }
-              },
-            });
+              };
+              checkSpeechFinished();
+            } else {
+              // No speech or speech already finished, start fade after short delay
+              setTimeout(performFadeAndNavigate, 500);
+            }
           }
         }
 
@@ -1050,7 +1284,7 @@ export default function ThreeScene() {
             const sphereGroup = sphereGroupRef.current;
             // gentle auto-rotation when not interacting
             if (!isDraggingRef.current) {
-              sphereRotationTargetRef.current.y += 0.0012; // auto spin
+              sphereRotationTargetRef.current.y += 0.0022; // auto spin
             }
             sphereGroup.rotation.y += (sphereRotationTargetRef.current.y - sphereGroup.rotation.y) * 0.1;
             sphereGroup.rotation.x += (sphereRotationTargetRef.current.x - sphereGroup.rotation.x) * 0.08;
@@ -1074,9 +1308,50 @@ export default function ThreeScene() {
 
   if (!mounted) return null;
 
+  console.log('ThreeScene render:', { soundEnabled, audioInitialized: audioInitializedRef.current });
+
   return (
     <>
       <NavBar />
+      {console.log('Rendering sound button...')}
+
+      {/* Sound toggle button - simplified like the working test button */}
+      <div 
+        style={{
+          position: 'absolute',
+          // Desktop: top left, Mobile: bottom left
+          ...(windowWidth <= 768 ? {
+            bottom: '1rem',
+            left: '1rem',
+            top: 'auto'
+          } : {
+            top: '1rem',
+            left: '1rem',
+            bottom: 'auto'
+          }),
+          zIndex: 9999999999,
+          width: '48px',
+          height: '48px',
+          borderRadius: '50%',
+          backgroundColor: soundEnabled ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(6px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          fontSize: '18px',
+          transition: 'all 0.3s ease'
+        }}
+        onClick={() => {
+          console.log('Sound div button clicked!', { soundEnabled });
+          toggleSound();
+        }}
+        title={soundEnabled ? "Turn sound off" : "Turn sound on"}
+      >
+        {soundEnabled ? '🔊' : '🔇'}
+      </div>
 
       {/* Canvas container - always mounted so scene can initialize and load assets */}
       <div
