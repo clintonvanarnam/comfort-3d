@@ -679,7 +679,7 @@ export default function ThreeScene() {
             const theta = goldenAngle * idx + sphereSeed;
             const x = Math.cos(theta) * radiusAtY;
             const z = Math.sin(theta) * radiusAtY;
-            const sphereRadius = 4;
+            const sphereRadius = 4.5;
             sprite.position.set(x * sphereRadius, y * sphereRadius, z * sphereRadius);
             sphereGroup.add(sprite);
           } else {
