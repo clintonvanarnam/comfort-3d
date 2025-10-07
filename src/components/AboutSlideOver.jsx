@@ -175,30 +175,12 @@ export default function AboutSlideOver({ open, onClose, initialBody = null, init
           )}
         </div>
 
-        {/* Logo (bottom of panel, outside scroll area) */}
-        <style>{`@keyframes logoBlink{0%,49%{opacity:1}50%,100%{opacity:0}} @media (prefers-reduced-motion: reduce){ .logoBlink{animation:none !important;}}`}</style>
-        <div
-          style={{
+          {/* Removed flashing logo per client request; keeping bottom spacing for layout consistency */}
+          <div style={{
             flexShrink: 0,
             width: '100%',
-            background: '#000',
-            paddingTop: 0,
-            paddingRight: '1rem',
-            // On mobile, use safe-area-inset-bottom; on desktop, add extra bottom padding
-            paddingBottom: 'calc(env(safe-area-inset-bottom) + 2rem)',
-            paddingLeft: '1rem',
-            display: 'flex',
-            justifyContent: 'flex-start',
-            alignItems: 'center',
-          }}
-        >
-          <img
-            src="/COMFORT_MAG_LOGO_WHITE.svg"
-            alt="COMFORT"
-            className="logoBlink"
-            style={{ display: 'block', width: 'auto', maxWidth: 280, height: 'auto', animation: 'logoBlink 1s steps(1,start) infinite' }}
-          />
-        </div>
+            paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)'
+          }} />
       </aside>
     </div>
   );

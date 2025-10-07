@@ -68,7 +68,7 @@ export default function ThreeScene() {
   const touchHoldActiveRef = useRef(false);
   const pointerDownTimeRef = useRef(0);
   const sphereRotationTargetRef = useRef({ x: 0, y: 0 });
-  const hoverEnabledRef = useRef(true);
+  // Removed: hoverEnabledRef (speech/hover speech feature deprecated)
   // Refs for Three.js resources to enable cleanup
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
@@ -1086,30 +1086,7 @@ export default function ThreeScene() {
             clickedRef.current = clickedSprite;
             setSelectedTitle(clickedSprite.userData.title);
 
-            // disable hover-based speech after a user click
-            hoverEnabledRef.current = false;
-
-            // speak the title and author once on click (only if sound is enabled)
-            let speechFinished = false;
-            if (soundEnabledRef.current && typeof window !== 'undefined' && window.speechSynthesis && window.SpeechSynthesisUtterance) {
-              window.speechSynthesis.cancel();
-              const utt = new window.SpeechSynthesisUtterance();
-              utt.text = clickedSprite.userData.author
-                ? `${clickedSprite.userData.title} by ${clickedSprite.userData.author}`
-                : clickedSprite.userData.title;
-              utt.rate = 1.05;
-              utt.pitch = 1.1;
-              
-              // Set up event listener to know when speech is finished
-              utt.onend = () => {
-                speechFinished = true;
-              };
-              
-              window.speechSynthesis.speak(utt);
-            } else {
-              // If no speech, mark as finished immediately
-              speechFinished = true;
-            }
+            // Removed text-to-speech feature (client request)
 
             sprites.forEach(sprite => sprite.userData.floating = false);
 
@@ -1123,54 +1100,28 @@ export default function ThreeScene() {
             const targetHeight = 2;
             const targetWidth = targetHeight * imageAspect;
 
-            gsap.to(clickedSprite.position, { x: 0, y: 0, z: 0, duration: 1, ease: 'power2.out' });
-            gsap.to(clickedSprite.scale, { x: targetWidth, y: targetHeight, duration: 1, ease: 'power2.out' });
+            gsap.to(clickedSprite.position, { x: 0, y: 0, z: 0, duration: 0.8, ease: 'power2.out' });
+            gsap.to(clickedSprite.scale, { 
+              x: targetWidth, 
+              y: targetHeight, 
+              duration: 0.8, 
+              ease: 'power2.out',
+              onComplete: () => {
+                if (slug && typeof slug === 'string' && slug.trim()) {
+                  try {
+                    router.push(`/posts/${slug}`);
+                  } catch (e) {
+                    try { window.location.href = `/posts/${slug}`; } catch (_) {}
+                  }
+                }
+              }
+            });
 
             // Navigate with proper cleanup on iOS to prevent crashes
             const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
             lastNavigationTime.current = Date.now();
 
-            // Function to handle the final fade-out and navigation
-            const performFadeAndNavigate = () => {
-              gsap.to(clickedSprite.material, {
-                opacity: 0,
-                duration: 0.5,
-                ease: 'power1.in',
-                onComplete: () => {
-                  // Navigation: Starting navigation for ${slug}
-                  
-                  if (slug && typeof slug === 'string' && slug.trim()) {
-                    // Navigation: Attempting router.push
-                    try {
-                      router.push(`/posts/${slug}`);
-                    } catch (error) {
-                      // Router push failed, trying location.assign
-                      window.location.assign(`/posts/${slug}`);
-                    }
-                  } else {
-                    // Invalid slug for navigation
-                  }
-                },
-              });
-            };
-
-            // If speech synthesis is happening, wait for it to finish before fading
-            if (soundEnabledRef.current && !speechFinished) {
-              // Keeping sprite visible during speech...
-              const checkSpeechFinished = () => {
-                if (speechFinished) {
-                  // Speech finished, starting fade and navigation
-                  performFadeAndNavigate();
-                } else {
-                  // Check again after a short delay
-                  setTimeout(checkSpeechFinished, 100);
-                }
-              };
-              checkSpeechFinished();
-            } else {
-              // No speech or speech already finished, start fade after short delay
-              setTimeout(performFadeAndNavigate, 500);
-            }
+            // Removed fade-out: navigate immediately after centering/scale completes
           }
         }
 
