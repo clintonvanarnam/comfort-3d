@@ -737,7 +737,7 @@ body.three-scene-active {
   .post-meta-row .post-author {
     max-width: 100%;
     text-align: center;
-    font-size: 3.5rem;
+    font-size: 3rem;
     line-height: .9;
   }
   /* Prevent author names from being hyphenated on small screens; force
