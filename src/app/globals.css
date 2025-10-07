@@ -748,6 +748,7 @@ body.three-scene-active {
     word-break: normal;
     overflow-wrap: normal;
     max-width: 500px;
+    margin-top: -10px;  
   }
 }
 
