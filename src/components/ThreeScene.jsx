@@ -679,7 +679,13 @@ export default function ThreeScene() {
             const theta = goldenAngle * idx + sphereSeed;
             const x = Math.cos(theta) * radiusAtY;
             const z = Math.sin(theta) * radiusAtY;
-            const sphereRadius = 4.5;
+            // Responsive sphere radius: 4.5 on narrow/mobile, up to 6 on desktop.
+            // We interpolate between 4.5 (<=640px) and 6 (>=1200px) for smoother scaling.
+            let vw = (typeof window !== 'undefined') ? window.innerWidth : 1200;
+            const minW = 640; // mobile breakpoint lower bound
+            const maxW = 1200; // desktop upper bound for interpolation
+            const t = Math.max(0, Math.min(1, (vw - minW) / (maxW - minW)));
+            const sphereRadius = 4.5 + (5.5 - 4.5) * t; // lerp
             sprite.position.set(x * sphereRadius, y * sphereRadius, z * sphereRadius);
             sphereGroup.add(sprite);
           } else {

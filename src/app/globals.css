@@ -1,6 +1,13 @@
 .post-lightbox-caption {
   color: #fff !important;
   margin-top: 1rem;
+  max-width: 850px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  box-sizing: border-box;
 }
 .post-lightbox-caption * {
   color: #fff !important;
