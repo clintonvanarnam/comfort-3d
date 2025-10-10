@@ -1065,12 +1065,12 @@ export default function ThreeScene() {
                   tapCountRef.current = 0;
                   lastTappedSpriteRef.current = null;
                 }, 300);
-                handleInteraction(false); // single tap
+                handleInteraction(false, tempMouse); // single tap
               } else if (tapCountRef.current === 2 && currentSprite === lastTappedSpriteRef.current) {
                 if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
                 tapCountRef.current = 0;
                 lastTappedSpriteRef.current = null;
-                handleInteraction(true); // double tap
+                handleInteraction(true, tempMouse); // double tap
               } else {
                 tapCountRef.current = 1;
                 lastTappedSpriteRef.current = currentSprite;
@@ -1079,7 +1079,7 @@ export default function ThreeScene() {
                   tapCountRef.current = 0;
                   lastTappedSpriteRef.current = null;
                 }, 300);
-                handleInteraction(false); // single tap
+                handleInteraction(false, tempMouse); // single tap
               }
             } else {
               console.log('[TAP] User tapped at:', { x: tapX, y: tapY }, 'No sprite selected');
@@ -1158,7 +1158,7 @@ export default function ThreeScene() {
   window.addEventListener('pointercancel', onPointerCancel);
   listenersRef.current.push({ type: 'pointercancel', handler: onPointerCancel });
 
-        function handleInteraction(fromMobileDoubleTap = false) {
+        function handleInteraction(fromMobileDoubleTap = false, mouseCoords = null) {
           // Prevent rapid navigation that can cause WebGL context issues
           const now = Date.now();
           const timeSinceLastNav = now - lastNavigationTime.current;
@@ -1167,13 +1167,29 @@ export default function ThreeScene() {
             return;
           }
 
-          raycaster.setFromCamera(mouse, camera);
+          const currentMouse = mouseCoords || mouse;
+          raycaster.setFromCamera(currentMouse, camera);
           const intersects = raycaster.intersectObjects(sprites);
+
+          // Debug: Log sprite positions
+          console.log('🔍 Sprite Positions:');
+          sprites.forEach((sprite, index) => {
+            const worldPos = new THREE.Vector3();
+            sprite.getWorldPosition(worldPos);
+            console.log(`Sprite ${index}: ${sprite.userData.title} at (${worldPos.x.toFixed(2)}, ${worldPos.y.toFixed(2)}, ${worldPos.z.toFixed(2)})`);
+          });
+
+          // Debug: Log raycaster info
+          console.log('🚀 Raycaster Info:', {
+            origin: raycaster.ray.origin,
+            direction: raycaster.ray.direction,
+            mouseCoords: { x: currentMouse.x, y: currentMouse.y }
+          });
 
           // Debug mode: show click coordinates and intersect results
           if (debugMode) {
             console.log('🎯 Debug Click Info:', {
-              mouseCoords: { x: mouse.x, y: mouse.y },
+              mouseCoords: { x: currentMouse.x, y: currentMouse.y },
               intersectsFound: intersects.length,
               clickedTitle: intersects.length > 0 ? intersects[0].object.userData.title : 'None',
               allIntersects: intersects.map((hit, i) => ({
