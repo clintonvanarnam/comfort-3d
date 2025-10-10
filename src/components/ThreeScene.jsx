@@ -975,7 +975,7 @@ export default function ThreeScene() {
             isDraggingRef.current = false;
             pointerDownTimeRef.current = Date.now();
             // start a hold timer; only after this delay will movement become rotation
-            const holdDelay = 250; // ms - 0.25 second hold requirement
+            const holdDelay = 125; // ms - 0.125 second hold requirement
             if (touchHoldTimerRef.current) clearTimeout(touchHoldTimerRef.current);
             touchHoldTimerRef.current = setTimeout(() => {
               console.log('Touch hold timer activated - rotation now allowed');
