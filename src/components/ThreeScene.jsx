@@ -958,7 +958,8 @@ export default function ThreeScene() {
           
           if (e.pointerType === 'touch') {
             console.log('Touch down - starting touch tracking');
-            updateMouseFromEvent(e);
+            // DO NOT update mouse coordinates for touch events to prevent camera jump
+            // updateMouseFromEvent(e); // REMOVED - this was causing camera to jump on touch
             // initialize touch tracking; don't mark as dragging yet
             touchStartRef.current.x = e.clientX;
             touchStartRef.current.y = e.clientY;
@@ -1024,20 +1025,20 @@ export default function ThreeScene() {
 
             // Handle double tap for mobile - must be on the same sprite
             console.log('Processing touch as potential click/tap');
-            updateMouseFromEvent(e);
-            const raycaster = new THREE.Raycaster();
-            const mouse = new THREE.Vector2();
             
-            // Get current mouse coordinates
+            // Only update mouse coordinates if we're actually checking for sprite interaction
+            // Create temporary mouse coordinates for raycasting without affecting camera
+            const tempMouse = new THREE.Vector2();
             if (renderer && renderer.domElement) {
               const rect = renderer.domElement.getBoundingClientRect();
               const x = (e.clientX - rect.left) / rect.width;
               const y = (e.clientY - rect.top) / rect.height;
-              mouse.x = x * 2 - 1;
-              mouse.y = -(y * 2 - 1);
+              tempMouse.x = x * 2 - 1;
+              tempMouse.y = -(y * 2 - 1);
             }
             
-            raycaster.setFromCamera(mouse, camera);
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(tempMouse, camera);
             const intersects = raycaster.intersectObjects(sprites);
             const currentSprite = intersects.length > 0 ? intersects[0].object : null;
             
