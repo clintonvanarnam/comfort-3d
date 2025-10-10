@@ -1,3 +1,13 @@
+            // Log camera position and lookAt target
+            const camPos = raycastCamera.position.clone();
+            let camTarget = null;
+            if (raycastCamera.getWorldDirection) {
+              camTarget = raycastCamera.getWorldDirection(new THREE.Vector3());
+            }
+            console.log('[TAP DEBUG] Camera position:', camPos, 'look direction:', camTarget);
+            // Log raycaster origin and direction
+            raycaster.setFromCamera(tempMouse, raycastCamera);
+            console.log('[TAP DEBUG] Ray origin:', raycaster.ray.origin, 'direction:', raycaster.ray.direction);
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
