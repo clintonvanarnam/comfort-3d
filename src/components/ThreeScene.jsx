@@ -828,30 +828,15 @@ export default function ThreeScene() {
         function updateMouseFromEvent(event) {
             // Prevent mouse updates during active touch sessions
             if (activeTouchSessionRef.current) {
-              console.log('🚫 Blocking mouse update during active touch session');
               return;
             }
-          
-          if (!renderer || !renderer.domElement) return;
-          const rect = renderer.domElement.getBoundingClientRect();
-          const x = (event.clientX - rect.left) / rect.width;
-          const y = (event.clientY - rect.top) / rect.height;
-          
-          const oldMouse = { x: mouse.x, y: mouse.y };
-          mouse.x = x * 2 - 1;
-          mouse.y = - (y * 2 - 1);
-          
-          // DEBUG: Log mouse coordinate changes
-          if (debugMode) {
-            console.log('🖱️ Mouse Update:', {
-              eventType: event.type,
-              pointerType: event.pointerType,
-              oldMouse,
-              newMouse: { x: mouse.x, y: mouse.y },
-              clientCoords: { x: event.clientX, y: event.clientY },
-              callStack: new Error().stack.split('\n')[1]
-            });
-          }
+            if (!renderer || !renderer.domElement) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            const x = (event.clientX - rect.left) / rect.width;
+            const y = (event.clientY - rect.top) / rect.height;
+            const oldMouse = { x: mouse.x, y: mouse.y };
+            mouse.x = x * 2 - 1;
+            mouse.y = - (y * 2 - 1);
           
           // Update debug mouse position if debug mode is enabled
           if (debugMode) {
@@ -1061,9 +1046,11 @@ export default function ThreeScene() {
             const intersects = raycaster.intersectObjects(sprites);
             const currentSprite = intersects.length > 0 ? intersects[0].object : null;
             // Always allow sprite selection on tap
+            const tapX = e.clientX;
+            const tapY = e.clientY;
             if (currentSprite) {
+              console.log('[TAP] User tapped at:', { x: tapX, y: tapY }, 'Selected sprite:', currentSprite.name || currentSprite.id || currentSprite.uuid);
               lastInteractionTimeRef.current = Date.now();
-              // Double tap detection (optional, keep if needed)
               tapCountRef.current += 1;
               if (tapCountRef.current === 1) {
                 lastTappedSpriteRef.current = currentSprite;
@@ -1079,7 +1066,6 @@ export default function ThreeScene() {
                 lastTappedSpriteRef.current = null;
                 handleInteraction(true); // double tap
               } else {
-                // Different sprite or no sprite - treat as single tap
                 tapCountRef.current = 1;
                 lastTappedSpriteRef.current = currentSprite;
                 if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
@@ -1089,6 +1075,8 @@ export default function ThreeScene() {
                 }, 300);
                 handleInteraction(false); // single tap
               }
+            } else {
+              console.log('[TAP] User tapped at:', { x: tapX, y: tapY }, 'No sprite selected');
             }
             touchMovedRef.current = false;
             isDraggingRef.current = false;
