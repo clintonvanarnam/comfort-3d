@@ -829,8 +829,22 @@ export default function ThreeScene() {
           const rect = renderer.domElement.getBoundingClientRect();
           const x = (event.clientX - rect.left) / rect.width;
           const y = (event.clientY - rect.top) / rect.height;
+          
+          const oldMouse = { x: mouse.x, y: mouse.y };
           mouse.x = x * 2 - 1;
           mouse.y = - (y * 2 - 1);
+          
+          // DEBUG: Log mouse coordinate changes
+          if (debugMode) {
+            console.log('🖱️ Mouse Update:', {
+              eventType: event.type,
+              pointerType: event.pointerType,
+              oldMouse,
+              newMouse: { x: mouse.x, y: mouse.y },
+              clientCoords: { x: event.clientX, y: event.clientY },
+              callStack: new Error().stack.split('\n')[1]
+            });
+          }
           
           // Update debug mouse position if debug mode is enabled
           if (debugMode) {
@@ -1115,8 +1129,15 @@ export default function ThreeScene() {
   listenersRef.current.push({ type: 'resize', handler: onWindowResize });
 
   const clickHandler = (e) => {
+          console.log('🖱️ Click Handler triggered:', e.type, e.pointerType);
+          
           // Ignore interactions until intro is dismissed
           if (!introCompleteRef.current) return;
+          // Ignore touch events completely - they're handled by pointer events
+          if (e.pointerType === 'touch') {
+            console.log('🚫 Blocking click handler for touch event');
+            return;
+          }
           // Dedupe after touch-based pointerup already triggered the interaction
           if (Date.now() - lastInteractionTimeRef.current < 500) return;
           // update mouse from the click location (covers taps without prior move)
@@ -1255,6 +1276,9 @@ export default function ThreeScene() {
           
           const t = clock.getElapsedTime();
 
+          // DEBUG: Track camera movement
+          const prevCameraPos = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+
           // Orbital camera: full rotation around the sphere based on mouse
           const radius = 10;
           if (!clickedRef.current) {
@@ -1269,10 +1293,37 @@ export default function ThreeScene() {
             const targetY = radius * Math.cos(polar);
             const targetZ = radius * Math.sin(polar) * Math.sin(azimuth);
 
+            // DEBUG: Log mouse coordinates and target positions
+            if (debugMode) {
+              console.log('🎥 Camera Debug:', {
+                mouseCoords: { x: mouse.x, y: mouse.y },
+                azimuth,
+                polar,
+                targetPosition: { x: targetX, y: targetY, z: targetZ },
+                currentPosition: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+                clickedState: clickedRef.current
+              });
+            }
+
             // smooth towards target
             camera.position.x += (targetX - camera.position.x) * 0.08;
             camera.position.y += (targetY - camera.position.y) * 0.08;
             camera.position.z += (targetZ - camera.position.z) * 0.08;
+            
+            // DEBUG: Log significant camera movement
+            const deltaX = Math.abs(camera.position.x - prevCameraPos.x);
+            const deltaY = Math.abs(camera.position.y - prevCameraPos.y);
+            const deltaZ = Math.abs(camera.position.z - prevCameraPos.z);
+            const totalDelta = deltaX + deltaY + deltaZ;
+            
+            if (debugMode && totalDelta > 0.01) {
+              console.log('📹 Camera Movement Detected:', {
+                delta: { x: deltaX, y: deltaY, z: deltaZ, total: totalDelta },
+                from: prevCameraPos,
+                to: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+                mouseCoords: { x: mouse.x, y: mouse.y }
+              });
+            }
           } else {
             // when a sprite is clicked, ease camera back to a frontal view centered on origin
             const target = { x: 0, y: 0, z: 5 };
