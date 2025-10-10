@@ -1048,7 +1048,9 @@ export default function ThreeScene() {
               console.log('[TAP DEBUG] Normalized device coords:', { x: tempMouse.x, y: tempMouse.y });
             }
             const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(tempMouse, camera);
+            const raycastCamera = cameraRef.current || camera;
+            console.log('[TAP DEBUG] Raycasting with camera:', raycastCamera);
+            raycaster.setFromCamera(tempMouse, raycastCamera);
             const intersects = raycaster.intersectObjects(sprites);
             const currentSprite = intersects.length > 0 ? intersects[0].object : null;
             // Always allow sprite selection on tap
