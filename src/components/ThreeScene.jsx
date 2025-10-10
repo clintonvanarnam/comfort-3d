@@ -720,10 +720,7 @@ export default function ThreeScene() {
             origScale: { x: sprite.scale.x, y: sprite.scale.y },
           };
           sprite.material.opacity = 0;
-          sprite.scale.set(0.001, 0.001, 0.001);
-          sprites.push(sprite);
-          if (wasPreloaded) preloadedSprites.push(sprite);
-          else lateSprites.push(sprite);
+          // Animate sprite entrance if needed, but always ensure scale is correct for selection
           if (phase1Done && !wasPreloaded) {
             gsap.to(sprite.material, { opacity: 1, duration: 0.14, ease: 'power1.out' });
             gsap.to(sprite.scale, {
@@ -732,7 +729,13 @@ export default function ThreeScene() {
               duration: 0.14,
               ease: 'back.out(1.1)'
             });
+          } else {
+            // Always set scale to original immediately for selection reliability
+            sprite.scale.set(sprite.userData.origScale.x, sprite.userData.origScale.y, 1);
           }
+          sprites.push(sprite);
+          if (wasPreloaded) preloadedSprites.push(sprite);
+          else lateSprites.push(sprite);
           // progress tracking based on unique image URLs
           try {
             const url = post.image;
