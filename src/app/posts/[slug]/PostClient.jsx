@@ -182,15 +182,16 @@ export default function PostPage() {
 
       // ensure known start state so animations are visible even if CSS changed
   gsap.set(['.post-main-image'], { y: 24, opacity: 0 });
-  gsap.set(['.post-title'], { y: 30, opacity: 0 });
+  gsap.set(['.post-title'], { y: 100, opacity: 0 });
   gsap.set(['.post-author'], { y: 20, opacity: 0 });
   gsap.set(['.post-body'], { y: 20, opacity: 0 });
 
       const tl = gsap.timeline();
       // animate the hero image upward (translateY only, no scale)
-      tl.to('.post-main-image', { y: 0, opacity: 1, duration: 0.7, ease: 'power2.out' })
-        .to('.post-title', { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, '-=0.45')
-        .to('.post-author', { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out' }, '-=0.4')
+      tl
+        .to('.post-title', { y: 0, opacity: 1, duration: 1, ease: 'power2.out' }, '-=0.45')        
+        .to('.post-author', { y: 0, opacity: 1, duration: 1, ease: 'power2.out' }, '-=0.4')
+        .to('.post-main-image', { y: 0, opacity: 1, duration: 1, ease: 'power2.out' }, '-=0.4')
         .to('.post-body', { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, '-=0.45');
     }, scope);
     return () => ctx.revert();
