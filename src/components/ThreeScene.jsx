@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { getPosts } from '@/lib/getPosts';
 import gsap from 'gsap';
 import NavBar from './NavBar';
@@ -23,6 +23,7 @@ export default function ThreeScene() {
   const containerRef = useRef();
   const canvasRef = useRef(null);
   const router = useRouter();
+  const pathname = usePathname();
   const clickedRef = useRef(null);
   const preloadedTexturesRef = useRef({});
   // Loading progress state (throttled updates)
@@ -335,6 +336,27 @@ export default function ThreeScene() {
     // Keep soundEnabledRef in sync with soundEnabled state to avoid stale closures
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
+
+  // Dispatch page:ready event when the 3D scene loading is complete
+  useEffect(() => {
+    if (loadingDone && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('page:ready'));
+    }
+  }, [loadingDone]);
+
+  // Dispatch page:ready on mount if scene is already loaded
+  useEffect(() => {
+    if (loadingDone && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('page:ready'));
+    }
+  }, []); // Runs on mount
+
+  // Dispatch page:ready when navigating to homepage and scene is loaded
+  useEffect(() => {
+    if (pathname === '/' && loadingDone && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('page:ready'));
+    }
+  }, [pathname, loadingDone]);
 
   useEffect(() => {
     // Handle window resize for responsive button positioning with debouncing
@@ -1436,6 +1458,7 @@ export default function ThreeScene() {
           background: 'black', 
           position: 'relative'
         }}
+        className="three-scene-container"
       >
   <div className="absolute top-0 left-0 w-full h-full" />
         {/* React-managed canvas for Three.js to reduce direct DOM mutations */}

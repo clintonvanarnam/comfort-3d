@@ -95,6 +95,12 @@
   font-size: 18px;
 }
 
+/* Adjust container height when footer is visible to leave room for footer */
+.footer-visible .three-scene-container {
+  height: calc(100vh - 180px) !important; /* Footer height estimate */
+  transition: height 0.6s ease; /* Smooth transition */
+}
+
 
 
 

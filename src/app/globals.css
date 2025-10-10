@@ -52,6 +52,11 @@ body.no-scroll {
   overflow-y: hidden;
 }
 
+/* Allow scrolling when footer is visible */
+.footer-visible.body.no-scroll {
+  overflow-y: auto;
+}
+
 html,
 body {
   max-width: 100vw;
