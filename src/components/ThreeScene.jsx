@@ -843,17 +843,23 @@ export default function ThreeScene() {
           if (Date.now() < ignorePointerEventsUntilRef.current) return;
           // Ignore hover interactions until the intro overlay has been dismissed
           if (!introCompleteRef.current) return;
-          // always update mouse for accurate raycasting
-          updateMouseFromEvent(event);
+          
+          console.log('onPointerMove:', event.pointerType);
 
           // Touch-specific handling: avoid treating touch moves as hover.
           if (event.pointerType === 'touch') {
+            console.log('Touch move detected - blocking hover and raycasting');
+            
             // determine whether this is a drag (move) vs a tap
             const dx = event.clientX - touchStartRef.current.x;
             const dy = event.clientY - touchStartRef.current.y;
             const dist = Math.hypot(dx, dy);
+            
+            console.log('Touch movement:', { dist, touchHoldActive: touchHoldActiveRef.current });
+            
             // Only allow rotation if hold timer has activated AND user moved enough
             if (touchHoldActiveRef.current && dist > 50) {
+              console.log('Touch rotation allowed');
               touchMovedRef.current = true;
               isDraggingRef.current = true;
               // dramatically reduce multipliers for touch so mobile rotation is much slower
@@ -871,6 +877,9 @@ export default function ThreeScene() {
             // do not run hover raycasting for touch pointers (prevents hover jitter)
             return;
           }
+
+          // always update mouse for accurate raycasting (only for non-touch)
+          updateMouseFromEvent(event);
 
           // Mouse/pen pointer: existing hover + drag behavior
           // if dragging, update rotation target based on pointer delta (drag-to-rotate)
@@ -944,8 +953,12 @@ export default function ThreeScene() {
           // Ignore pointer events for a short time after sound button interaction
           if (Date.now() < ignorePointerEventsUntilRef.current) return;
           // ensure mouse is up-to-date even if the user didn't move before tapping
-          updateMouseFromEvent(e);
+          
+          console.log('onPointerDown:', e.pointerType);
+          
           if (e.pointerType === 'touch') {
+            console.log('Touch down - starting touch tracking');
+            updateMouseFromEvent(e);
             // initialize touch tracking; don't mark as dragging yet
             touchStartRef.current.x = e.clientX;
             touchStartRef.current.y = e.clientY;
@@ -957,6 +970,7 @@ export default function ThreeScene() {
             const holdDelay = 1000; // ms - 1 second hold requirement
             if (touchHoldTimerRef.current) clearTimeout(touchHoldTimerRef.current);
             touchHoldTimerRef.current = setTimeout(() => {
+              console.log('Touch hold timer activated - rotation now allowed');
               touchHoldActiveRef.current = true;
               // begin drag state only when hold becomes active
               isDraggingRef.current = true;
@@ -964,6 +978,7 @@ export default function ThreeScene() {
               lastPointerRef.current.y = e.clientY;
             }, holdDelay);
           } else {
+            updateMouseFromEvent(e);
             isDraggingRef.current = true;
             lastPointerRef.current.x = e.clientX;
             lastPointerRef.current.y = e.clientY;
@@ -973,8 +988,12 @@ export default function ThreeScene() {
         function onPointerUp(e) {
           // Ignore pointer events for a short time after sound button interaction
           if (Date.now() < ignorePointerEventsUntilRef.current) return;
+          
+          console.log('onPointerUp:', e?.pointerType);
+          
           // Cleanup hold timer if present
           if (touchHoldTimerRef.current) {
+            console.log('Clearing touch hold timer');
             clearTimeout(touchHoldTimerRef.current);
             touchHoldTimerRef.current = null;
           }
@@ -983,6 +1002,7 @@ export default function ThreeScene() {
           // interactions so a tap used to reveal the scene doesn't also
           // select a sprite underneath.
           if (!introCompleteRef.current) {
+            console.log('Intro not complete - ignoring pointer up');
             // reset transient touch/drag state
             touchMovedRef.current = false;
             isDraggingRef.current = false;
@@ -991,8 +1011,11 @@ export default function ThreeScene() {
           }
 
           if (e && e.pointerType === 'touch') {
+            console.log('Touch up - touchHoldActive:', touchHoldActiveRef.current, 'touchMoved:', touchMovedRef.current);
+            
             // If the hold became active, we were dragging; stop dragging and don't treat as a click
             if (touchHoldActiveRef.current) {
+              console.log('Touch hold was active - ending drag, not processing click');
               touchHoldActiveRef.current = false;
               isDraggingRef.current = false;
               touchMovedRef.current = false;
@@ -1000,6 +1023,7 @@ export default function ThreeScene() {
             }
 
             // Handle double tap for mobile - must be on the same sprite
+            console.log('Processing touch as potential click/tap');
             updateMouseFromEvent(e);
             const raycaster = new THREE.Raycaster();
             const mouse = new THREE.Vector2();
