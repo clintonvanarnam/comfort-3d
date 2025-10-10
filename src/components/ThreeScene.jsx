@@ -1060,31 +1060,26 @@ export default function ThreeScene() {
             raycaster.setFromCamera(tempMouse, camera);
             const intersects = raycaster.intersectObjects(sprites);
             const currentSprite = intersects.length > 0 ? intersects[0].object : null;
-            tapCountRef.current += 1;
-            if (tapCountRef.current === 1) {
-              // First tap - record which sprite was tapped
-              lastTappedSpriteRef.current = currentSprite;
-              if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-              tapTimeoutRef.current = setTimeout(() => {
-                tapCountRef.current = 0;
-                lastTappedSpriteRef.current = null;
-              }, 300); // 300ms window for double tap
-              // If a sprite was tapped, trigger interaction immediately
-              if (currentSprite) {
-                lastInteractionTimeRef.current = Date.now();
-                handleInteraction(false); // false = single tap
-              }
-            } else if (tapCountRef.current === 2) {
-              // Second tap - check if it's the same sprite
-              if (currentSprite && currentSprite === lastTappedSpriteRef.current) {
-                // Double tap on same sprite detected
+            // Always allow sprite selection on tap
+            if (currentSprite) {
+              lastInteractionTimeRef.current = Date.now();
+              // Double tap detection (optional, keep if needed)
+              tapCountRef.current += 1;
+              if (tapCountRef.current === 1) {
+                lastTappedSpriteRef.current = currentSprite;
+                if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
+                tapTimeoutRef.current = setTimeout(() => {
+                  tapCountRef.current = 0;
+                  lastTappedSpriteRef.current = null;
+                }, 300);
+                handleInteraction(false); // single tap
+              } else if (tapCountRef.current === 2 && currentSprite === lastTappedSpriteRef.current) {
                 if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
                 tapCountRef.current = 0;
                 lastTappedSpriteRef.current = null;
-                lastInteractionTimeRef.current = Date.now();
-                handleInteraction(true); // Pass true to indicate mobile double-tap
+                handleInteraction(true); // double tap
               } else {
-                // Different sprite or no sprite - reset and treat as first tap
+                // Different sprite or no sprite - treat as single tap
                 tapCountRef.current = 1;
                 lastTappedSpriteRef.current = currentSprite;
                 if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
@@ -1092,17 +1087,11 @@ export default function ThreeScene() {
                   tapCountRef.current = 0;
                   lastTappedSpriteRef.current = null;
                 }, 300);
-                // If a sprite was tapped, trigger interaction immediately
-                if (currentSprite) {
-                  lastInteractionTimeRef.current = Date.now();
-                  handleInteraction(false); // false = single tap
-                }
+                handleInteraction(false); // single tap
               }
             }
-
             touchMovedRef.current = false;
             isDraggingRef.current = false;
-            // Clear active touch session after a short delay to prevent click events from updating mouse
             setTimeout(() => {
               activeTouchSessionRef.current = false;
               console.log('Touch session ended - mouse updates re-enabled');
