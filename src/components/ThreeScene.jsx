@@ -67,6 +67,7 @@ export default function ThreeScene() {
   const touchHoldTimerRef = useRef(null);
   const touchHoldActiveRef = useRef(false);
   const pointerDownTimeRef = useRef(0);
+    const activeTouchSessionRef = useRef(false);
   const sphereRotationTargetRef = useRef({ x: 0, y: 0 });
   // Removed: hoverEnabledRef (speech/hover speech feature deprecated)
   // Refs for Three.js resources to enable cleanup
@@ -825,6 +826,12 @@ export default function ThreeScene() {
         // pointer & mouse handling
         // Helper: map an event's client coords to normalized device coords relative to the canvas
         function updateMouseFromEvent(event) {
+            // Prevent mouse updates during active touch sessions
+            if (activeTouchSessionRef.current) {
+              console.log('🚫 Blocking mouse update during active touch session');
+              return;
+            }
+          
           if (!renderer || !renderer.domElement) return;
           const rect = renderer.domElement.getBoundingClientRect();
           const x = (event.clientX - rect.left) / rect.width;
@@ -972,6 +979,7 @@ export default function ThreeScene() {
           
           if (e.pointerType === 'touch') {
             console.log('Touch down - starting touch tracking');
+              activeTouchSessionRef.current = true;
             // DO NOT update mouse coordinates for touch events to prevent camera jump
             // updateMouseFromEvent(e); // REMOVED - this was causing camera to jump on touch
             // initialize touch tracking; don't mark as dragging yet
@@ -1088,6 +1096,11 @@ export default function ThreeScene() {
 
             touchMovedRef.current = false;
             isDraggingRef.current = false;
+              // Clear active touch session after a short delay to prevent click events from updating mouse
+              setTimeout(() => {
+                activeTouchSessionRef.current = false;
+                console.log('Touch session ended - mouse updates re-enabled');
+              }, 100);
             return;
           }
 
@@ -1105,6 +1118,7 @@ export default function ThreeScene() {
           touchHoldActiveRef.current = false;
           touchMovedRef.current = false;
           isDraggingRef.current = false;
+            activeTouchSessionRef.current = false;
         }
 
   // Track listeners so we can remove them during cleanup (important on iOS)
@@ -1133,11 +1147,16 @@ export default function ThreeScene() {
           
           // Ignore interactions until intro is dismissed
           if (!introCompleteRef.current) return;
-          // Ignore touch events completely - they're handled by pointer events
-          if (e.pointerType === 'touch') {
-            console.log('🚫 Blocking click handler for touch event');
-            return;
-          }
+            // Ignore touch events completely - they're handled by pointer events
+            // Check multiple ways to detect touch events as pointerType might not always be set
+            if (e.pointerType === 'touch' || 
+           activeTouchSessionRef.current ||
+                e.sourceCapabilities?.firesTouchEvents === true ||
+                (e.detail === 0 && e.clientX !== undefined && e.clientY !== undefined && 
+                 /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))) {
+              console.log('🚫 Blocking click handler for touch event (pointerType:', e.pointerType, 'sourceCapabilities:', e.sourceCapabilities?.firesTouchEvents, ')');
+              return;
+            }
           // Dedupe after touch-based pointerup already triggered the interaction
           if (Date.now() - lastInteractionTimeRef.current < 500) return;
           // update mouse from the click location (covers taps without prior move)
