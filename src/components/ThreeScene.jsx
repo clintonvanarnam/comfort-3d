@@ -850,22 +850,18 @@ export default function ThreeScene() {
           // Ignore hover interactions until the intro overlay has been dismissed
           if (!introCompleteRef.current) return;
           
-          console.log('onPointerMove:', event.pointerType);
 
           // Touch-specific handling: avoid treating touch moves as hover.
           if (event.pointerType === 'touch') {
-            console.log('Touch move detected - blocking hover and raycasting');
             
             // determine whether this is a drag (move) vs a tap
             const dx = event.clientX - touchStartRef.current.x;
             const dy = event.clientY - touchStartRef.current.y;
             const dist = Math.hypot(dx, dy);
             
-            console.log('Touch movement:', { dist, touchHoldActive: touchHoldActiveRef.current });
-            
             // Only allow rotation if hold timer has activated AND user moved enough
             if (touchHoldActiveRef.current && dist > 50) {
-              console.log('Touch rotation allowed');
+              
               touchMovedRef.current = true;
               isDraggingRef.current = true;
               // dramatically reduce multipliers for touch so mobile rotation is much slower
@@ -960,10 +956,8 @@ export default function ThreeScene() {
           if (Date.now() < ignorePointerEventsUntilRef.current) return;
           // ensure mouse is up-to-date even if the user didn't move before tapping
           
-          console.log('onPointerDown:', e.pointerType);
           
           if (e.pointerType === 'touch') {
-            console.log('Touch down - starting touch tracking');
               activeTouchSessionRef.current = true;
             // DO NOT update mouse coordinates for touch events to prevent camera jump
             // updateMouseFromEvent(e); // REMOVED - this was causing camera to jump on touch
@@ -978,7 +972,6 @@ export default function ThreeScene() {
             const holdDelay = 125; // ms - 0.125 second hold requirement
             if (touchHoldTimerRef.current) clearTimeout(touchHoldTimerRef.current);
             touchHoldTimerRef.current = setTimeout(() => {
-              console.log('Touch hold timer activated - rotation now allowed');
               touchHoldActiveRef.current = true;
               // begin drag state only when hold becomes active
               isDraggingRef.current = true;
@@ -997,11 +990,9 @@ export default function ThreeScene() {
           // Ignore pointer events for a short time after sound button interaction
           if (Date.now() < ignorePointerEventsUntilRef.current) return;
           
-          console.log('onPointerUp:', e?.pointerType);
           
           // Cleanup hold timer if present
           if (touchHoldTimerRef.current) {
-            console.log('Clearing touch hold timer');
             clearTimeout(touchHoldTimerRef.current);
             touchHoldTimerRef.current = null;
           }
@@ -1010,7 +1001,6 @@ export default function ThreeScene() {
           // interactions so a tap used to reveal the scene doesn't also
           // select a sprite underneath.
           if (!introCompleteRef.current) {
-            console.log('Intro not complete - ignoring pointer up');
             // reset transient touch/drag state
             touchMovedRef.current = false;
             isDraggingRef.current = false;
@@ -1019,11 +1009,9 @@ export default function ThreeScene() {
           }
 
           if (e && e.pointerType === 'touch') {
-            console.log('Touch up - touchHoldActive:', touchHoldActiveRef.current, 'touchMoved:', touchMovedRef.current);
             
             // If the hold became active, we were dragging; stop dragging and don't treat as a click
             if (touchHoldActiveRef.current) {
-              console.log('Touch hold was active - ending drag, not processing click');
               touchHoldActiveRef.current = false;
               isDraggingRef.current = false;
               touchMovedRef.current = false;
@@ -1031,21 +1019,15 @@ export default function ThreeScene() {
             }
 
             // Handle tap for mobile - allow single tap to select sprites
-            console.log('Processing touch as potential click/tap');
             // Create temporary mouse coordinates for raycasting without affecting camera
             const tempMouse = new THREE.Vector2();
             if (renderer && renderer.domElement) {
               const rect = renderer.domElement.getBoundingClientRect();
-              // Log bounding rect and tap coordinates
-              console.log('[TAP DEBUG] Canvas bounding rect:', rect);
-              console.log('[TAP DEBUG] Raw tap coords:', { x: e.clientX, y: e.clientY });
               // Calculate coordinates relative to canvas
               const x = (e.clientX - rect.left) / rect.width;
               const y = (e.clientY - rect.top) / rect.height;
-              // Log normalized device coordinates
               tempMouse.x = x * 2 - 1;
               tempMouse.y = -(y * 2 - 1);
-              console.log('[TAP DEBUG] Normalized device coords:', { x: tempMouse.x, y: tempMouse.y });
             }
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(tempMouse, camera);
@@ -1055,7 +1037,6 @@ export default function ThreeScene() {
             const tapX = e.clientX;
             const tapY = e.clientY;
             if (currentSprite) {
-              console.log('[TAP] User tapped at:', { x: tapX, y: tapY }, 'Selected sprite:', currentSprite.name || currentSprite.id || currentSprite.uuid);
               lastInteractionTimeRef.current = Date.now();
               tapCountRef.current += 1;
               if (tapCountRef.current === 1) {
@@ -1082,13 +1063,11 @@ export default function ThreeScene() {
                 handleInteraction(false, tempMouse); // single tap
               }
             } else {
-              console.log('[TAP] User tapped at:', { x: tapX, y: tapY }, 'No sprite selected');
             }
             touchMovedRef.current = false;
             isDraggingRef.current = false;
             setTimeout(() => {
               activeTouchSessionRef.current = false;
-              console.log('Touch session ended - mouse updates re-enabled');
             }, 100);
             return;
           }
@@ -1132,7 +1111,6 @@ export default function ThreeScene() {
   listenersRef.current.push({ type: 'resize', handler: onWindowResize });
 
   const clickHandler = (e) => {
-          console.log('🖱️ Click Handler triggered:', e.type, e.pointerType);
           
           // Ignore interactions until intro is dismissed
           if (!introCompleteRef.current) return;
@@ -1143,7 +1121,6 @@ export default function ThreeScene() {
                 e.sourceCapabilities?.firesTouchEvents === true ||
                 (e.detail === 0 && e.clientX !== undefined && e.clientY !== undefined && 
                  /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))) {
-              console.log('🚫 Blocking click handler for touch event (pointerType:', e.pointerType, 'sourceCapabilities:', e.sourceCapabilities?.firesTouchEvents, ')');
               return;
             }
           // Dedupe after touch-based pointerup already triggered the interaction
@@ -1171,34 +1148,8 @@ export default function ThreeScene() {
           raycaster.setFromCamera(currentMouse, camera);
           const intersects = raycaster.intersectObjects(sprites);
 
-          // Debug: Log sprite positions
-          console.log('🔍 Sprite Positions:');
-          sprites.forEach((sprite, index) => {
-            const worldPos = new THREE.Vector3();
-            sprite.getWorldPosition(worldPos);
-            console.log(`Sprite ${index}: ${sprite.userData.title} at (${worldPos.x.toFixed(2)}, ${worldPos.y.toFixed(2)}, ${worldPos.z.toFixed(2)})`);
-          });
-
-          // Debug: Log raycaster info
-          console.log('🚀 Raycaster Info:', {
-            origin: raycaster.ray.origin,
-            direction: raycaster.ray.direction,
-            mouseCoords: { x: currentMouse.x, y: currentMouse.y }
-          });
-
           // Debug mode: show click coordinates and intersect results
           if (debugMode) {
-            console.log('🎯 Debug Click Info:', {
-              mouseCoords: { x: currentMouse.x, y: currentMouse.y },
-              intersectsFound: intersects.length,
-              clickedTitle: intersects.length > 0 ? intersects[0].object.userData.title : 'None',
-              allIntersects: intersects.map((hit, i) => ({
-                index: i,
-                title: hit.object.userData.title,
-                distance: hit.distance
-              })),
-              interactionType: fromMobileDoubleTap ? 'mobile-double-tap' : 'desktop-click'
-            });
 
             // In debug mode, only highlight on proper interaction (desktop click OR mobile double-tap)
             if (intersects.length > 0) {
@@ -1216,7 +1167,6 @@ export default function ThreeScene() {
                 clickedSprite.material.color.setHex(0xffff00); // bright yellow for visibility
               }
               
-              console.log('🟡 Highlighted sprite:', clickedSprite.userData.title);
             }
             return; // Exit early in debug mode - don't navigate
           }
@@ -1332,12 +1282,6 @@ export default function ThreeScene() {
             const totalDelta = deltaX + deltaY + deltaZ;
             
             if (debugMode && totalDelta > 0.01) {
-              console.log('📹 Camera Movement Detected:', {
-                delta: { x: deltaX, y: deltaY, z: deltaZ, total: totalDelta },
-                from: prevCameraPos,
-                to: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
-                mouseCoords: { x: mouse.x, y: mouse.y }
-              });
             }
           } else {
             // when a sprite is clicked, ease camera back to a frontal view centered on origin
