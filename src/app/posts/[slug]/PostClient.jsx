@@ -192,7 +192,13 @@ export default function PostPage() {
         .to('.post-title', { y: 0, opacity: 1, duration: 1, ease: 'power2.out' }, '-=0.45')        
         .to('.post-author', { y: 0, opacity: 1, duration: 1, ease: 'power2.out' }, '-=0.4')
         .to('.post-main-image', { y: 0, opacity: 1, duration: 1, ease: 'power2.out' }, '-=0.4')
-        .to('.post-body', { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, '-=0.45');
+        .to('.post-body', { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, '-=0.45')
+        .call(() => {
+          // Dispatch page ready event after entrance animation completes
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('page:ready'));
+          }
+        });
     }, scope);
     return () => ctx.revert();
   }, [transitionDone, post]);
