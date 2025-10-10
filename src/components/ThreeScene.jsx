@@ -1045,10 +1045,8 @@ export default function ThreeScene() {
               return;
             }
 
-            // Handle double tap for mobile - must be on the same sprite
+            // Handle tap for mobile - allow single tap to select sprites
             console.log('Processing touch as potential click/tap');
-            
-            // Only update mouse coordinates if we're actually checking for sprite interaction
             // Create temporary mouse coordinates for raycasting without affecting camera
             const tempMouse = new THREE.Vector2();
             if (renderer && renderer.domElement) {
@@ -1058,12 +1056,10 @@ export default function ThreeScene() {
               tempMouse.x = x * 2 - 1;
               tempMouse.y = -(y * 2 - 1);
             }
-            
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(tempMouse, camera);
             const intersects = raycaster.intersectObjects(sprites);
             const currentSprite = intersects.length > 0 ? intersects[0].object : null;
-            
             tapCountRef.current += 1;
             if (tapCountRef.current === 1) {
               // First tap - record which sprite was tapped
@@ -1073,6 +1069,11 @@ export default function ThreeScene() {
                 tapCountRef.current = 0;
                 lastTappedSpriteRef.current = null;
               }, 300); // 300ms window for double tap
+              // If a sprite was tapped, trigger interaction immediately
+              if (currentSprite) {
+                lastInteractionTimeRef.current = Date.now();
+                handleInteraction(false); // false = single tap
+              }
             } else if (tapCountRef.current === 2) {
               // Second tap - check if it's the same sprite
               if (currentSprite && currentSprite === lastTappedSpriteRef.current) {
@@ -1091,16 +1092,21 @@ export default function ThreeScene() {
                   tapCountRef.current = 0;
                   lastTappedSpriteRef.current = null;
                 }, 300);
+                // If a sprite was tapped, trigger interaction immediately
+                if (currentSprite) {
+                  lastInteractionTimeRef.current = Date.now();
+                  handleInteraction(false); // false = single tap
+                }
               }
             }
 
             touchMovedRef.current = false;
             isDraggingRef.current = false;
-              // Clear active touch session after a short delay to prevent click events from updating mouse
-              setTimeout(() => {
-                activeTouchSessionRef.current = false;
-                console.log('Touch session ended - mouse updates re-enabled');
-              }, 100);
+            // Clear active touch session after a short delay to prevent click events from updating mouse
+            setTimeout(() => {
+              activeTouchSessionRef.current = false;
+              console.log('Touch session ended - mouse updates re-enabled');
+            }, 100);
             return;
           }
 
