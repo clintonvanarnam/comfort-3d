@@ -852,9 +852,8 @@ export default function ThreeScene() {
             const dx = event.clientX - touchStartRef.current.x;
             const dy = event.clientY - touchStartRef.current.y;
             const dist = Math.hypot(dx, dy);
-            // Require larger movement AND time delay for intentional rotation
-            const timeSinceDown = Date.now() - pointerDownTimeRef.current;
-            if (dist > 35 && timeSinceDown > 1000) { // Increased to 1000ms (1 second) hold requirement
+            // Only allow rotation if hold timer has activated AND user moved enough
+            if (touchHoldActiveRef.current && dist > 50) {
               touchMovedRef.current = true;
               isDraggingRef.current = true;
               // dramatically reduce multipliers for touch so mobile rotation is much slower
@@ -955,7 +954,7 @@ export default function ThreeScene() {
             isDraggingRef.current = false;
             pointerDownTimeRef.current = Date.now();
             // start a hold timer; only after this delay will movement become rotation
-            const holdDelay = 250; // ms - tuneable
+            const holdDelay = 1000; // ms - 1 second hold requirement
             if (touchHoldTimerRef.current) clearTimeout(touchHoldTimerRef.current);
             touchHoldTimerRef.current = setTimeout(() => {
               touchHoldActiveRef.current = true;
