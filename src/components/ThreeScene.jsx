@@ -852,8 +852,9 @@ export default function ThreeScene() {
             const dx = event.clientX - touchStartRef.current.x;
             const dy = event.clientY - touchStartRef.current.y;
             const dist = Math.hypot(dx, dy);
-            // require a larger movement on touch to begin dragging to avoid accidental rotation
-            if (dist > 18) {
+            // Require larger movement AND time delay for intentional rotation
+            const timeSinceDown = Date.now() - pointerDownTimeRef.current;
+            if (dist > 35 && timeSinceDown > 200) { // Increased from 18px and added 200ms delay
               touchMovedRef.current = true;
               isDraggingRef.current = true;
               // dramatically reduce multipliers for touch so mobile rotation is much slower
@@ -1034,7 +1035,7 @@ export default function ThreeScene() {
                 tapCountRef.current = 0;
                 lastTappedSpriteRef.current = null;
                 lastInteractionTimeRef.current = Date.now();
-                handleInteraction();
+                handleInteraction(true); // Pass true to indicate mobile double-tap
               } else {
                 // Different sprite or no sprite - reset and treat as first tap
                 tapCountRef.current = 1;
@@ -1104,7 +1105,7 @@ export default function ThreeScene() {
   window.addEventListener('pointercancel', onPointerCancel);
   listenersRef.current.push({ type: 'pointercancel', handler: onPointerCancel });
 
-        function handleInteraction() {
+        function handleInteraction(fromMobileDoubleTap = false) {
           // Prevent rapid navigation that can cause WebGL context issues
           const now = Date.now();
           const timeSinceLastNav = now - lastNavigationTime.current;
@@ -1126,10 +1127,11 @@ export default function ThreeScene() {
                 index: i,
                 title: hit.object.userData.title,
                 distance: hit.distance
-              }))
+              })),
+              interactionType: fromMobileDoubleTap ? 'mobile-double-tap' : 'desktop-click'
             });
 
-            // In debug mode, just highlight the clicked sprite instead of navigating
+            // In debug mode, only highlight on proper interaction (desktop click OR mobile double-tap)
             if (intersects.length > 0) {
               const clickedSprite = intersects[0].object;
               
