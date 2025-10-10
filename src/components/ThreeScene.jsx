@@ -82,6 +82,7 @@ export default function ThreeScene() {
   const domRemovalObserverRef = useRef(null);
   const tapCountRef = useRef(0);
   const tapTimeoutRef = useRef(null);
+  const lastTappedSpriteRef = useRef(null);
   const ignorePointerEventsUntilRef = useRef(0);
 
   // Sound system
@@ -998,21 +999,52 @@ export default function ThreeScene() {
               return;
             }
 
-            // Handle double tap for mobile
+            // Handle double tap for mobile - must be on the same sprite
+            updateMouseFromEvent(e);
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            
+            // Get current mouse coordinates
+            if (renderer && renderer.domElement) {
+              const rect = renderer.domElement.getBoundingClientRect();
+              const x = (e.clientX - rect.left) / rect.width;
+              const y = (e.clientY - rect.top) / rect.height;
+              mouse.x = x * 2 - 1;
+              mouse.y = -(y * 2 - 1);
+            }
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(sprites);
+            const currentSprite = intersects.length > 0 ? intersects[0].object : null;
+            
             tapCountRef.current += 1;
             if (tapCountRef.current === 1) {
-              // First tap, start timeout for second tap
+              // First tap - record which sprite was tapped
+              lastTappedSpriteRef.current = currentSprite;
               if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
               tapTimeoutRef.current = setTimeout(() => {
                 tapCountRef.current = 0;
+                lastTappedSpriteRef.current = null;
               }, 300); // 300ms window for double tap
             } else if (tapCountRef.current === 2) {
-              // Double tap detected
-              if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-              tapCountRef.current = 0;
-              lastInteractionTimeRef.current = Date.now();
-              updateMouseFromEvent(e);
-              handleInteraction();
+              // Second tap - check if it's the same sprite
+              if (currentSprite && currentSprite === lastTappedSpriteRef.current) {
+                // Double tap on same sprite detected
+                if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
+                tapCountRef.current = 0;
+                lastTappedSpriteRef.current = null;
+                lastInteractionTimeRef.current = Date.now();
+                handleInteraction();
+              } else {
+                // Different sprite or no sprite - reset and treat as first tap
+                tapCountRef.current = 1;
+                lastTappedSpriteRef.current = currentSprite;
+                if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
+                tapTimeoutRef.current = setTimeout(() => {
+                  tapCountRef.current = 0;
+                  lastTappedSpriteRef.current = null;
+                }, 300);
+              }
             }
 
             touchMovedRef.current = false;
@@ -1337,6 +1369,7 @@ export default function ThreeScene() {
           e.stopPropagation();
           // Reset all touch/pointer state to prevent interference with sprite interactions
           tapCountRef.current = 0;
+          lastTappedSpriteRef.current = null;
           if (tapTimeoutRef.current) {
             clearTimeout(tapTimeoutRef.current);
             tapTimeoutRef.current = null;
