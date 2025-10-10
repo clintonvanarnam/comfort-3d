@@ -1048,8 +1048,20 @@ export default function ThreeScene() {
               console.log('[TAP DEBUG] Normalized device coords:', { x: tempMouse.x, y: tempMouse.y });
             }
             const raycaster = new THREE.Raycaster();
+            // Increase sprite hitbox threshold for raycasting
+            raycaster.params.Sprite.threshold = 0.5;
             const raycastCamera = cameraRef.current || camera;
             console.log('[TAP DEBUG] Raycasting with camera:', raycastCamera);
+            // Log all sprite positions, scales, and distances from camera
+            sprites.forEach((sprite, idx) => {
+              const spriteWorldPos = sprite.getWorldPosition(new THREE.Vector3());
+              const camWorldPos = raycastCamera.getWorldPosition(new THREE.Vector3());
+              const dist = spriteWorldPos.distanceTo(camWorldPos);
+              console.log(`[SPRITE DEBUG] Sprite #${idx} pos:`, spriteWorldPos, 'scale:', sprite.scale, 'distance from camera:', dist);
+            });
+            // Log tap world position (unprojected from NDC)
+            const tapWorldPos = new THREE.Vector3(tempMouse.x, tempMouse.y, 0.5).unproject(raycastCamera);
+            console.log('[TAP DEBUG] Tap world position:', tapWorldPos);
             raycaster.setFromCamera(tempMouse, raycastCamera);
             const intersects = raycaster.intersectObjects(sprites);
             const currentSprite = intersects.length > 0 ? intersects[0].object : null;
