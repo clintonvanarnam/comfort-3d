@@ -1,13 +1,3 @@
-            // Log camera position and lookAt target
-            const camPos = raycastCamera.position.clone();
-            let camTarget = null;
-            if (raycastCamera.getWorldDirection) {
-              camTarget = raycastCamera.getWorldDirection(new THREE.Vector3());
-            }
-            console.log('[TAP DEBUG] Camera position:', camPos, 'look direction:', camTarget);
-            // Log raycaster origin and direction
-            raycaster.setFromCamera(tempMouse, raycastCamera);
-            console.log('[TAP DEBUG] Ray origin:', raycaster.ray.origin, 'direction:', raycaster.ray.direction);
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
@@ -730,7 +720,10 @@ export default function ThreeScene() {
             origScale: { x: sprite.scale.x, y: sprite.scale.y },
           };
           sprite.material.opacity = 0;
-          // Animate sprite entrance if needed, but always ensure scale is correct for selection
+          sprite.scale.set(0.001, 0.001, 0.001);
+          sprites.push(sprite);
+          if (wasPreloaded) preloadedSprites.push(sprite);
+          else lateSprites.push(sprite);
           if (phase1Done && !wasPreloaded) {
             gsap.to(sprite.material, { opacity: 1, duration: 0.14, ease: 'power1.out' });
             gsap.to(sprite.scale, {
@@ -739,13 +732,7 @@ export default function ThreeScene() {
               duration: 0.14,
               ease: 'back.out(1.1)'
             });
-          } else {
-            // Always set scale to original immediately for selection reliability
-            sprite.scale.set(sprite.userData.origScale.x, sprite.userData.origScale.y, 1);
           }
-          sprites.push(sprite);
-          if (wasPreloaded) preloadedSprites.push(sprite);
-          else lateSprites.push(sprite);
           // progress tracking based on unique image URLs
           try {
             const url = post.image;
@@ -1061,53 +1048,7 @@ export default function ThreeScene() {
               console.log('[TAP DEBUG] Normalized device coords:', { x: tempMouse.x, y: tempMouse.y });
             }
             const raycaster = new THREE.Raycaster();
-            // Increase sprite hitbox threshold for raycasting
-            raycaster.params.Sprite.threshold = 0.5;
-            const raycastCamera = cameraRef.current || camera;
-            console.log('[TAP DEBUG] Raycasting with camera:', raycastCamera);
-            // Log all sprite positions, scales, and distances from camera
-            sprites.forEach((sprite, idx) => {
-              const spriteWorldPos = sprite.getWorldPosition(new THREE.Vector3());
-              const camWorldPos = raycastCamera.getWorldPosition(new THREE.Vector3());
-              const dist = spriteWorldPos.distanceTo(camWorldPos);
-              console.log(`[SPRITE DEBUG] Sprite #${idx} pos:`, spriteWorldPos, 'scale:', sprite.scale, 'distance from camera:', dist);
-            });
-            // Log tap world position (unprojected from NDC)
-            // Calculate average sprite distance from camera
-            const camWorldPos = raycastCamera.getWorldPosition(new THREE.Vector3());
-            const avgSpriteDist = sprites.length > 0 ? (sprites.reduce((sum, sprite) => sum + camWorldPos.distanceTo(sprite.position), 0) / sprites.length) : 10;
-            // Project tap world position to average sprite distance
-            const tapWorldPos = camWorldPos.clone().add(raycaster.ray.direction.clone().multiplyScalar(avgSpriteDist));
-            console.log('[TAP DEBUG] Tap world position (avg dist):', tapWorldPos);
-            // Visualize the ray in the scene for debugging
-            if (window.THREE && window.scene) {
-              const rayMaterial = new window.THREE.LineBasicMaterial({ color: 0xff0000 });
-              const rayGeometry = new window.THREE.BufferGeometry().setFromPoints([
-                camWorldPos.clone(),
-                tapWorldPos.clone()
-              ]);
-              const rayLine = new window.THREE.Line(rayGeometry, rayMaterial);
-              rayLine.name = 'debug-tap-ray';
-              // Remove previous debug ray if present
-              const oldRay = window.scene.getObjectByName('debug-tap-ray');
-              if (oldRay) window.scene.remove(oldRay);
-              window.scene.add(rayLine);
-            }
-            raycaster.setFromCamera(tempMouse, raycastCamera);
-            // Log ray origin and direction
-            console.log('[TAP DEBUG] Ray origin:', raycaster.ray.origin, 'direction:', raycaster.ray.direction);
-            // Log intersection points for each sprite
-            sprites.forEach((sprite, idx) => {
-              // Use bounding sphere for intersection test
-              const intersection = raycaster.ray.intersectSphere(
-                new THREE.Sphere(sprite.position, sprite.scale.x)
-              );
-              if (intersection) {
-                console.log(`[TAP DEBUG] Ray intersects sprite #${idx} at`, intersection);
-              } else {
-                console.log(`[TAP DEBUG] Ray misses sprite #${idx}`);
-              }
-            });
+            raycaster.setFromCamera(tempMouse, camera);
             const intersects = raycaster.intersectObjects(sprites);
             const currentSprite = intersects.length > 0 ? intersects[0].object : null;
             // Always allow sprite selection on tap
