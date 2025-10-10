@@ -854,7 +854,7 @@ export default function ThreeScene() {
             const dist = Math.hypot(dx, dy);
             // Require larger movement AND time delay for intentional rotation
             const timeSinceDown = Date.now() - pointerDownTimeRef.current;
-            if (dist > 35 && timeSinceDown > 200) { // Increased from 18px and added 200ms delay
+            if (dist > 35 && timeSinceDown > 1000) { // Increased to 1000ms (1 second) hold requirement
               touchMovedRef.current = true;
               isDraggingRef.current = true;
               // dramatically reduce multipliers for touch so mobile rotation is much slower
