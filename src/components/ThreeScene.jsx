@@ -1096,6 +1096,26 @@ export default function ThreeScene() {
                 distance: hit.distance
               }))
             });
+
+            // In debug mode, just highlight the clicked sprite instead of navigating
+            if (intersects.length > 0) {
+              const clickedSprite = intersects[0].object;
+              
+              // Reset all sprites to normal color first
+              sprites.forEach(sprite => {
+                if (sprite.material && sprite.material.color) {
+                  sprite.material.color.setHex(0xffffff); // white (normal)
+                }
+              });
+              
+              // Highlight the clicked sprite in bright white/yellow
+              if (clickedSprite.material && clickedSprite.material.color) {
+                clickedSprite.material.color.setHex(0xffff00); // bright yellow for visibility
+              }
+              
+              console.log('🟡 Highlighted sprite:', clickedSprite.userData.title);
+            }
+            return; // Exit early in debug mode - don't navigate
           }
 
           if (intersects.length > 0 && !clickedRef.current) {
