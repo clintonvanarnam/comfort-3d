@@ -1073,8 +1073,26 @@ export default function ThreeScene() {
               console.log(`[SPRITE DEBUG] Sprite #${idx} pos:`, spriteWorldPos, 'scale:', sprite.scale, 'distance from camera:', dist);
             });
             // Log tap world position (unprojected from NDC)
-            const tapWorldPos = new THREE.Vector3(tempMouse.x, tempMouse.y, 0.5).unproject(raycastCamera);
-            console.log('[TAP DEBUG] Tap world position:', tapWorldPos);
+            // Calculate average sprite distance from camera
+            const camWorldPos = raycastCamera.getWorldPosition(new THREE.Vector3());
+            const avgSpriteDist = sprites.length > 0 ? (sprites.reduce((sum, sprite) => sum + camWorldPos.distanceTo(sprite.position), 0) / sprites.length) : 10;
+            // Project tap world position to average sprite distance
+            const tapWorldPos = camWorldPos.clone().add(raycaster.ray.direction.clone().multiplyScalar(avgSpriteDist));
+            console.log('[TAP DEBUG] Tap world position (avg dist):', tapWorldPos);
+            // Visualize the ray in the scene for debugging
+            if (window.THREE && window.scene) {
+              const rayMaterial = new window.THREE.LineBasicMaterial({ color: 0xff0000 });
+              const rayGeometry = new window.THREE.BufferGeometry().setFromPoints([
+                camWorldPos.clone(),
+                tapWorldPos.clone()
+              ]);
+              const rayLine = new window.THREE.Line(rayGeometry, rayMaterial);
+              rayLine.name = 'debug-tap-ray';
+              // Remove previous debug ray if present
+              const oldRay = window.scene.getObjectByName('debug-tap-ray');
+              if (oldRay) window.scene.remove(oldRay);
+              window.scene.add(rayLine);
+            }
             raycaster.setFromCamera(tempMouse, raycastCamera);
             // Log ray origin and direction
             console.log('[TAP DEBUG] Ray origin:', raycaster.ray.origin, 'direction:', raycaster.ray.direction);
