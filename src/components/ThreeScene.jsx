@@ -1076,6 +1076,20 @@ export default function ThreeScene() {
             const tapWorldPos = new THREE.Vector3(tempMouse.x, tempMouse.y, 0.5).unproject(raycastCamera);
             console.log('[TAP DEBUG] Tap world position:', tapWorldPos);
             raycaster.setFromCamera(tempMouse, raycastCamera);
+            // Log ray origin and direction
+            console.log('[TAP DEBUG] Ray origin:', raycaster.ray.origin, 'direction:', raycaster.ray.direction);
+            // Log intersection points for each sprite
+            sprites.forEach((sprite, idx) => {
+              // Use bounding sphere for intersection test
+              const intersection = raycaster.ray.intersectSphere(
+                new THREE.Sphere(sprite.position, sprite.scale.x)
+              );
+              if (intersection) {
+                console.log(`[TAP DEBUG] Ray intersects sprite #${idx} at`, intersection);
+              } else {
+                console.log(`[TAP DEBUG] Ray misses sprite #${idx}`);
+              }
+            });
             const intersects = raycaster.intersectObjects(sprites);
             const currentSprite = intersects.length > 0 ? intersects[0].object : null;
             // Always allow sprite selection on tap
