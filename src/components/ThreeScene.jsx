@@ -1036,10 +1036,16 @@ export default function ThreeScene() {
             const tempMouse = new THREE.Vector2();
             if (renderer && renderer.domElement) {
               const rect = renderer.domElement.getBoundingClientRect();
+              // Log bounding rect and tap coordinates
+              console.log('[TAP DEBUG] Canvas bounding rect:', rect);
+              console.log('[TAP DEBUG] Raw tap coords:', { x: e.clientX, y: e.clientY });
+              // Calculate coordinates relative to canvas
               const x = (e.clientX - rect.left) / rect.width;
               const y = (e.clientY - rect.top) / rect.height;
+              // Log normalized device coordinates
               tempMouse.x = x * 2 - 1;
               tempMouse.y = -(y * 2 - 1);
+              console.log('[TAP DEBUG] Normalized device coords:', { x: tempMouse.x, y: tempMouse.y });
             }
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(tempMouse, camera);
