@@ -96,6 +96,10 @@ export default function ThreeScene() {
   // Window size tracking for responsive button positioning
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
+  // Debug mode for mobile click testing
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugMousePos, setDebugMousePos] = useState({ x: 0, y: 0 });
+
   // Pentatonic minor scale notes (A minor pentatonic across 2 octaves)
   const pentatonicScale = ['A3', 'C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5'];
 
@@ -362,6 +366,13 @@ export default function ThreeScene() {
     if (sphereSeedRef.current === null) {
       sphereSeedRef.current = Math.random() * Math.PI * 2;
     }
+    
+    // Check for debug mode URL parameter
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      setDebugMode(urlParams.has('debug'));
+    }
+    
     // add a body class so other parts of the UI (like the footer) can
     // respond to the 3D-scene being active and hide UI that shouldn't overlay.
     if (typeof document !== 'undefined') document.body.classList.add('three-scene-active');
@@ -819,6 +830,11 @@ export default function ThreeScene() {
           const y = (event.clientY - rect.top) / rect.height;
           mouse.x = x * 2 - 1;
           mouse.y = - (y * 2 - 1);
+          
+          // Update debug mouse position if debug mode is enabled
+          if (debugMode) {
+            setDebugMousePos({ x: mouse.x, y: mouse.y });
+          }
         }
 
         function onPointerMove(event) {
@@ -1067,6 +1083,20 @@ export default function ThreeScene() {
 
           raycaster.setFromCamera(mouse, camera);
           const intersects = raycaster.intersectObjects(sprites);
+
+          // Debug mode: show click coordinates and intersect results
+          if (debugMode) {
+            console.log('🎯 Debug Click Info:', {
+              mouseCoords: { x: mouse.x, y: mouse.y },
+              intersectsFound: intersects.length,
+              clickedTitle: intersects.length > 0 ? intersects[0].object.userData.title : 'None',
+              allIntersects: intersects.map((hit, i) => ({
+                index: i,
+                title: hit.object.userData.title,
+                distance: hit.distance
+              }))
+            });
+          }
 
           if (intersects.length > 0 && !clickedRef.current) {
             const clickedSprite = intersects[0].object;
@@ -1343,6 +1373,28 @@ export default function ThreeScene() {
           <div className={styles.hoverInfo}>
             <div className={styles.hoverTitle}>{hoveredInfo.title}</div>
             <div className={styles.hoverAuthor}>{hoveredInfo.author}</div>
+          </div>
+        )}
+
+        {/* Debug mode indicator */}
+        {debugMode && (
+          <div style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
+            background: 'rgba(255, 0, 0, 0.8)',
+            color: 'white',
+            padding: '0.5rem',
+            borderRadius: '4px',
+            fontSize: '0.8rem',
+            fontFamily: 'monospace',
+            zIndex: 9999999999
+          }}>
+            🐛 DEBUG MODE
+            <br />
+            Check console for click info
+            <br />
+            Mouse: {debugMousePos.x.toFixed(2)}, {debugMousePos.y.toFixed(2)}
           </div>
         )}
       </div>
