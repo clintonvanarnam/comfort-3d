@@ -1296,16 +1296,7 @@ export default function ThreeScene() {
             const targetZ = radius * Math.sin(polar) * Math.sin(azimuth);
 
             // DEBUG: Log mouse coordinates and target positions
-            if (debugMode) {
-              console.log('🎥 Camera Debug:', {
-                mouseCoords: { x: mouse.x, y: mouse.y },
-                azimuth,
-                polar,
-                targetPosition: { x: targetX, y: targetY, z: targetZ },
-                currentPosition: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
-                clickedState: clickedRef.current
-              });
-            }
+            // Camera debug logging removed
 
             // smooth towards target
             camera.position.x += (targetX - camera.position.x) * 0.08;
