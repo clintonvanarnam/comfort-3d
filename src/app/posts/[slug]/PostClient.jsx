@@ -110,11 +110,6 @@ export default function PostPage() {
               setTransitionDone(true);
               sessionStorage.removeItem('transitionPost');
 
-              // Dispatch page ready event for AnimatedLayout
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('page:ready'));
-              }
-
               // Animate content upward
               if (contentRef.current) {
                 gsap.fromTo(
@@ -128,17 +123,9 @@ export default function PostPage() {
         );
       } else {
         setTransitionDone(true);
-        // Dispatch page ready event for AnimatedLayout
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('page:ready'));
-        }
       }
     } else {
       setTransitionDone(true);
-      // Dispatch page ready event for AnimatedLayout
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('page:ready'));
-      }
     }
   }, [params.slug]);
 

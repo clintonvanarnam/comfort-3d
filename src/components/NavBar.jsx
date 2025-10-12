@@ -223,9 +223,9 @@ export default function NavBar() {
             <button
               onClick={() => { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cart:open')); }}
               style={{
-                position: isMobile ? 'absolute' : 'relative',
-                left: isMobile ? 0 : 'auto',
-                top: isMobile ? 25 : 'auto',
+                position: (isMobile || pathname === '/') ? 'absolute' : 'relative',
+                left: (isMobile || pathname === '/') ? 0 : 'auto',
+                top: (isMobile || pathname === '/') ? 25 : 'auto',
                 background: 'transparent',
                 border: 'none',
                 color: '#fff',
@@ -239,7 +239,7 @@ export default function NavBar() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 height: '64px',
-                zIndex: isMobile ? 2147483648 : 'auto',
+                zIndex: (isMobile || pathname === '/') ? 2147483648 : 'auto',
               }}
               aria-label={`Cart with ${cartCount} items`}
             >

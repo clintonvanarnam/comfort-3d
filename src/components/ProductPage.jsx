@@ -114,7 +114,7 @@ export default function ProductPage({ product }) {
             <div>
               <div className="select-wrap">
                 <select aria-label="Select size" className="size-select" value={selectedVariant} onChange={(e) => setSelectedVariant(e.target.value)}>
-                  <option value="" disabled>SELECT A SIZE</option>
+                  <option value="" disabled>SELECT AN OPTION</option>
                   {product.variants.map((v) => {
                     const soldOut = v.availableForSale === false;
                     const label = (v.title || v.selectedOptions?.map(o=>o.value).join(' / ') || v.id) + (soldOut ? ' - SOLD OUT' : '');
