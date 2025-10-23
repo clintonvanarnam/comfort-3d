@@ -58,6 +58,25 @@ export async function getPosts() {
   }
 }
 
+// Get all posts for sitemap generation (simpler query)
+export async function getAllPosts() {
+  const query = `*[_type == "post"]{
+    _id,
+    slug,
+    _createdAt,
+    _updatedAt,
+    publishedAt
+  }`;
+
+  try {
+    const data = await client.fetch(query);
+    return data;
+  } catch (error) {
+    console.error('getAllPosts: Error fetching from Sanity:', error);
+    return [];
+  }
+}
+
 // Get a single post by its slug
 export async function getPostBySlug(slug) {
   const query = `*[_type == "post" && slug.current == $slug][0]{

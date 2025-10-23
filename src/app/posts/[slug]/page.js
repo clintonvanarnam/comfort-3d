@@ -1,8 +1,21 @@
 // Server wrapper for the client post page.
 // Exports generateMetadata so Next.js can set per-post <title> and meta description,
 // while delegating the interactive client UI to the existing `PostClient` component.
-import { getPostBySlug } from '@/lib/getPosts';
+import { getPostBySlug, getAllPosts } from '@/lib/getPosts';
 import PostClient from './PostClient';
+
+// Generate static paths for all posts at build time
+export async function generateStaticParams() {
+  try {
+    const posts = await getAllPosts();
+    return posts.map((post) => ({
+      slug: post.slug.current,
+    }));
+  } catch (error) {
+    console.error('Error generating static params:', error);
+    return [];
+  }
+}
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -26,6 +39,25 @@ export async function generateMetadata({ params }) {
     // Force Open Graph description to brand message per request
     const ogDescription = 'COMFORT ideas for a better tomorrow.';
 
+    // JSON-LD structured data
+    const jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: post?.title,
+      author: {
+        '@type': 'Person',
+        name: post?.author || 'COMFORT',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'COMFORT',
+      },
+      datePublished: post?.publishedAt,
+      dateModified: post?.publishedAt,
+      description: description,
+      image: ogImage,
+    };
+
     return {
       title,
       description: description || undefined,
@@ -41,6 +73,9 @@ export async function generateMetadata({ params }) {
         title,
         description: ogDescription,
         images: ogImage ? [ogImage] : undefined,
+      },
+      other: {
+        'application/ld+json': JSON.stringify(jsonLd),
       },
     };
   } catch (e) {
