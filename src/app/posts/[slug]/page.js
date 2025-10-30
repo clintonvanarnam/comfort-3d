@@ -17,6 +17,9 @@ export async function generateStaticParams() {
   }
 }
 
+// Revalidate posts every hour
+export const revalidate = 3600;
+
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   if (!slug) return {};
@@ -61,11 +64,15 @@ export async function generateMetadata({ params }) {
     return {
       title,
       description: description || undefined,
+      alternates: {
+        canonical: `https://www.comfortmagazine.world/posts/${slug}`,
+      },
       openGraph: {
         title,
         description: ogDescription,
         siteName: 'COMFORT',
         type: 'article',
+        url: `https://www.comfortmagazine.world/posts/${slug}`,
         images: ogImage ? [{ url: ogImage, alt: post?.mainImage?.alt || post?.title || '' }] : undefined,
       },
       twitter: {
@@ -83,8 +90,19 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default function PostPageServer(props) {
-  // Render the client component which handles fetching/display and interactions
-  // `page.jsx` expects to run as a client component.
-  return <PostClient {...props} />;
+export default async function PostPageServer({ params }) {
+  // Fetch the post data on the server
+  const { slug } = await params;
+  let post = null;
+  
+  try {
+    if (slug) {
+      post = await getPostBySlug(slug);
+    }
+  } catch (error) {
+    console.error('Error fetching post:', error);
+  }
+
+  // Render the client component with the server-fetched data
+  return <PostClient initialPost={post} />;
 }

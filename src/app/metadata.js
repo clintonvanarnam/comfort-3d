@@ -1,5 +1,6 @@
 // src/app/metadata.js
 export const metadata = {
+  metadataBase: new URL('https://www.comfortmagazine.world'),
   title: 'COMFORT',
   description: 'COMFORT ideas for a better tomorrow.',
   icons: {

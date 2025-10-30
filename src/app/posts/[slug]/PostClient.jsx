@@ -11,9 +11,9 @@ import PostCarousel from '@/components/PostCarousel';
 import RelatedContent from '@/components/RelatedContent';
 import { getPosts } from '@/lib/getPosts';
 
-export default function PostPage() {
+export default function PostPage({ initialPost }) {
   const params = useParams();
-  const [post, setPost] = useState(null);
+  const [post, setPost] = useState(initialPost || null);
   const [transitionDone, setTransitionDone] = useState(false);
   const transitionImageRef = useRef();
   const contentRef = useRef();
@@ -58,22 +58,34 @@ export default function PostPage() {
   }, []);
 
   useEffect(() => {
-    async function loadPost() {
-      const fetched = await getPostBySlug(params.slug);
-      setPost(fetched);
-      // Update the browser title on the client so the
-      // tab shows the article title immediately even if server metadata isn't applied.
+    // Only fetch if we don't have initial post data
+    if (!initialPost) {
+      async function loadPost() {
+        const fetched = await getPostBySlug(params.slug);
+        setPost(fetched);
+        // Update the browser title on the client so the
+        // tab shows the article title immediately even if server metadata isn't applied.
+        try {
+    const siteSuffix = 'COMFORT';
+    // Prefer author for the page title (Author | Comfort), fall back to fetched title, then siteSuffix
+    const pageTitle = fetched?.author ? `${fetched.author} | ${siteSuffix}` : (fetched?.title ? `${fetched.title} | ${siteSuffix}` : siteSuffix);
+    document.title = pageTitle;
+        } catch (e) {
+          // noop
+        }
+      }
+      loadPost();
+    } else {
+      // Update title for initial post
       try {
-  const siteSuffix = 'COMFORT';
-  // Prefer author for the page title (Author | Comfort), fall back to fetched title, then siteSuffix
-  const pageTitle = fetched?.author ? `${fetched.author} | ${siteSuffix}` : (fetched?.title ? `${fetched.title} | ${siteSuffix}` : siteSuffix);
-  document.title = pageTitle;
+        const siteSuffix = 'COMFORT';
+        const pageTitle = initialPost?.author ? `${initialPost.author} | ${siteSuffix}` : (initialPost?.title ? `${initialPost.title} | ${siteSuffix}` : siteSuffix);
+        document.title = pageTitle;
       } catch (e) {
         // noop
       }
     }
-    loadPost();
-  }, [params.slug]);
+  }, [params.slug, initialPost]);
 
   // Safari detection for image stabilization
   useEffect(() => {
