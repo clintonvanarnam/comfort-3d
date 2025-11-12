@@ -65,11 +65,11 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: #000000; /* Default black background to prevent white flash */
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
   font-family: var(--font-monument);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
