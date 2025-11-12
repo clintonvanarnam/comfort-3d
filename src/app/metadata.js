@@ -13,10 +13,11 @@ export const metadata = {
     description: 'COMFORT ideas for a better tomorrow.',
     siteName: 'COMFORT',
     type: 'website',
+    url: 'https://www.comfortmagazine.world',
     // fallback image; use optimized OG image for social sharing
     images: [
       {
-        url: '/og.png',
+        url: 'https://www.comfortmagazine.world/og.png',
         width: 1200,
         height: 630,
         alt: 'COMFORT',
