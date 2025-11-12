@@ -14,13 +14,15 @@ export const metadata = {
     siteName: 'COMFORT',
     type: 'website',
     url: 'https://www.comfortmagazine.world',
+    locale: 'en_US',
     // fallback image; use optimized OG image for social sharing
     images: [
       {
         url: 'https://www.comfortmagazine.world/og.png',
         width: 1200,
         height: 630,
-        alt: 'COMFORT',
+        alt: 'COMFORT Magazine - Ideas for a better tomorrow',
+        type: 'image/png',
       },
     ],
   },
