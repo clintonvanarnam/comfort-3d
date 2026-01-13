@@ -1,50 +1,25 @@
 {
-
   "name": "comfort-3d",
-
   "version": "0.1.0",
-
   "private": true,
-
   "type": "module",
-
   "scripts": {
-
     "dev": "next dev",
-
     "build": "next build",
-
     "start": "next start",
-
     "lint": "next lint"
-
   },
-
   "dependencies": {
-
     "@portabletext/react": "^3.2.1",
-
     "@sanity/client": "^7.8.2",
-
     "@sanity/image-url": "^1.2.0",
-
     "embla-carousel-autoplay": "^8.6.0",
-
     "embla-carousel-react": "^8.6.0",
-
     "gsap": "^3.13.0",
-
-    "next": "^15.5.4",
-
+    "next": "15.5.9",
     "react": "^19.1.1",
-
     "react-dom": "^19.1.1",
-
     "three": "^0.179.1",
-
     "tone": "^15.1.22"
-
   }
-
 }
-
